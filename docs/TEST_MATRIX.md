@@ -348,6 +348,24 @@
 - [x] **Delete Primary Auto-Promotion:** Deleting primary image promotes the next available image in gallery (`PROD-IMG-021`).
 - [x] **Compensating S3 Deletion on DB Failure:** DB transaction failure triggers compensating S3 delete to prevent orphaned storage (`PROD-IMG-022`).
 - [x] **Audit Logging without Secrets:** Structured audit logs emitted (`PRODUCT_IMAGE_UPLOADED`, `PRODUCT_IMAGE_SET_PRIMARY`, `PRODUCT_IMAGE_DELETED`) without credentials or presigned URLs (`PROD-IMG-023`).
+
+### 1.5.3 Product Lifecycle Controls (`PRODUCT` / `FEAT-PROD-003`)
+- [x] **Active Product Order Readiness:** `ACTIVE` product returns true for `canOrder()` and passes `Product::ensureCanOrder()` contract without exception (`PROD-LIFE-001`).
+- [x] **Inactive Product Order Block:** `INACTIVE` product returns false for `canOrder()` and throws `ValidationException` on `Product::ensureCanOrder()` with descriptive SKU/name message (`PROD-LIFE-002`).
+- [x] **Admin Deactivation Flow:** Active Administrator deactivates product from `ACTIVE` to `INACTIVE` with operational reason note (`PROD-LIFE-003`).
+- [x] **Admin Reactivation Flow:** Active Administrator reactivates product from `INACTIVE` to `ACTIVE` with operational reason note (`PROD-LIFE-004`).
+- [x] **Super Admin Lifecycle Control:** Super Admin can transition product lifecycle states (`ACTIVE` <-> `INACTIVE`) (`PROD-LIFE-005`).
+- [x] **Salesman Status Mutation Denial:** Salesman attempting to update product status rejected with 403 Forbidden (`PROD-LIFE-006`).
+- [x] **Warehouse Manager Status Mutation Denial:** Warehouse Manager attempting to update product status rejected with 403 Forbidden (`PROD-LIFE-007`).
+- [x] **Accountant & Delivery Partner Denial:** Accountant and Delivery Partner rejected with 403 Forbidden on product lifecycle mutation (`PROD-LIFE-008`).
+- [x] **Unauthenticated Guest Redirection:** Unauthenticated status update requests redirect to login (`PROD-LIFE-009`).
+- [x] **Inactive / Suspended Actor Protection:** Inactive, suspended, or disabled administrator accounts blocked by middleware and rejected by service layer (`PROD-LIFE-010`).
+- [x] **No-Op Status Transition Suppression:** Requesting transition to current status performs zero database writes and emits zero duplicate audit logs (`PROD-LIFE-011`).
+- [x] **Invalid Status Payload Rejection:** Malformed status strings (`SUSPENDED`, `DELETED`, `ARCHIVED`, `DRAFT`) rejected with 422 Unprocessable Entity (`PROD-LIFE-012`).
+- [x] **Reason Field Length Validation:** Optional operational reason capped at 500 characters; oversized strings rejected with 422 (`PROD-LIFE-013`).
+- [x] **Audit Classification:** Structured audit events (`PRODUCT_ACTIVATED`, `PRODUCT_DEACTIVATED`) emitted with previous/new status, actor ID, SKU, and operational reason without secrets (`PROD-LIFE-014`).
+- [x] **Image & S3 Object Preservation Invariant:** Deactivating product strictly preserves `product_images` database rows, primary status, and private S3 objects (`PROD-LIFE-015`).
+- [x] **General Product Update Lifecycle Protection:** Updating status through general `PUT /products/{id}` endpoint enforces transition validation, locks row, and emits authoritative lifecycle audit events (`PROD-LIFE-016`).
 - [x] **RULE-DOC-001 Invariant:** Product images are never exposed on formal invoices (`PROD-IMG-024`).
 
 ### 1.6 Pricing Engine (`PRICING`)

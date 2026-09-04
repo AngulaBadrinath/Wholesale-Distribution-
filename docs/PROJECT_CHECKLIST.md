@@ -81,7 +81,7 @@
 ### Product & Category Management
 - [x] `FEAT-PROD-001`: Product Master CRUD (SKU, cost, default selling, minimum price, MRP)
 - [x] `FEAT-PROD-002`: Product Image Upload & Storage (Private S3)
-- [ ] `FEAT-PROD-003`: Product Lifecycle Controls (`ACTIVE`, `INACTIVE`)
+- [x] `FEAT-PROD-003`: Product Lifecycle Controls (`ACTIVE`, `INACTIVE`)
 - [ ] `FEAT-CAT-001`: Product Category Management & Hierarchy
 
 ---

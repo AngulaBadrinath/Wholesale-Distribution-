@@ -306,6 +306,20 @@ class ProductService
                 $this->ensureActorIsActiveAndAuthorized($actor, Permission::PRODUCT_PRICE_UPDATE);
             }
 
+            // Check if status changed
+            $previousStatus = $lockedProduct->status;
+            $newStatus = $data->status instanceof ProductStatus ? $data->status : ProductStatus::tryFrom((string) $data->status);
+
+            $statusChanged = ($newStatus && $newStatus !== $previousStatus);
+
+            if ($statusChanged && $newStatus) {
+                if (! $previousStatus->canTransitionTo($newStatus)) {
+                    throw ValidationException::withMessages([
+                        'status' => "Cannot transition product status from {$previousStatus->label()} to {$newStatus->label()}.",
+                    ]);
+                }
+            }
+
             $original = $lockedProduct->only(array_keys($data->toArray()));
             $newValues = $data->toArray();
             $newValues['sku'] = $newSku;
@@ -349,6 +363,24 @@ class ProductService
                 ]);
             }
 
+            if ($statusChanged && $newStatus) {
+                $statusAction = ($newStatus === ProductStatus::ACTIVE) ? 'PRODUCT_ACTIVATED' : 'PRODUCT_DEACTIVATED';
+                Log::info("Product status transitioned: {$statusAction}", [
+                    'event' => 'audit.product_event',
+                    'action' => $statusAction,
+                    'actor_id' => $actor->id,
+                    'actor_email' => $actor->email,
+                    'actor_role' => $actor->role?->value,
+                    'product_id' => $lockedProduct->id,
+                    'sku' => $lockedProduct->sku,
+                    'previous_status' => $previousStatus?->value ?? (string) $previousStatus,
+                    'new_status' => $newStatus->value,
+                    'reason' => 'Updated via general product master edit',
+                    'ip_address' => $ip,
+                    'timestamp' => now()->toIso8601String(),
+                ]);
+            }
+
             return $lockedProduct->load('category:id,name,code');
         });
     }
@@ -357,6 +389,7 @@ class ProductService
      * Transition product lifecycle status.
      *
      * @throws AuthorizationException
+     * @throws ValidationException
      */
     public function updateStatus(
         Product $product,
@@ -379,6 +412,12 @@ class ProductService
             // No-op check: identical status returns without duplicate writes or audits
             if ($previousStatus === $newStatus) {
                 return $lockedProduct;
+            }
+
+            if (! $previousStatus->canTransitionTo($newStatus)) {
+                throw ValidationException::withMessages([
+                    'status' => "Cannot transition product status from {$previousStatus->label()} to {$newStatus->label()}.",
+                ]);
             }
 
             $action = ($newStatus === ProductStatus::ACTIVE) ? 'PRODUCT_ACTIVATED' : 'PRODUCT_DEACTIVATED';
