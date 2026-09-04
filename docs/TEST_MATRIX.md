@@ -499,6 +499,30 @@
 - [x] **Authoritative Constraint Collision Handler:** Direct `UniqueConstraintViolationException` (SQLSTATE `23505`) caught, rolled back, and recovered into winner order (`ORD-IDEMP-016`).
 - [x] **Sequential Order Number Stability:** Idempotent replays preserve existing `order_number` without advancing or consuming PostgreSQL `order_number_seq` (`ORD-IDEMP-017`).
 
+### 1.8.5 Salesman Order History & Multi-State Timeline (`ORDER HISTORY` / `FEAT-ORD-006`)
+- [x] **Scoped Salesman History Listing:** Salesman lists exclusively their own submitted orders; other salesmen's orders strictly excluded (`ORD-HIST-001`).
+- [x] **Direct Single-Resource IDOR Protection (403):** Salesman attempting direct URL access to another salesman's order rejected with HTTP 403 Forbidden without metadata leakage (`ORD-HIST-002`).
+- [x] **Admin Global History Visibility:** Admin and Super Admin retain full visibility across all orders from all salesmen (`ORD-HIST-003`).
+- [x] **Unauthenticated Redirection to Login:** Unauthenticated requests to `/salesman/orders` redirect to login (`ORD-HIST-004`).
+- [x] **Draft Order Segregation Invariant:** History list strictly excludes `status = DRAFT` orders, preserving draft isolation in `/salesman/orders/drafts` (`ORD-HIST-005`).
+- [x] **Search by Order Number:** Case-insensitive search on `order_number` returns exact and partial matches (`ORD-HIST-006`).
+- [x] **Search by Customer Name:** Case-insensitive search on customer `name` filters order records accurately (`ORD-HIST-007`).
+- [x] **Search by Customer Code:** Search on customer `code` filters order records accurately (`ORD-HIST-008`).
+- [x] **Filter by Order Status:** Status filter (`status=APPROVED`, `status=SUBMITTED`, etc.) returns matching subsets (`ORD-HIST-009`).
+- [x] **Filter by Fulfillment Status:** Fulfillment filter (`fulfillment_status=DELIVERED`, `fulfillment_status=UNALLOCATED`) returns matching subsets (`ORD-HIST-010`).
+- [x] **Filter by Payment Status:** Payment filter (`payment_status=PAID`, `payment_status=UNPAID`) returns matching subsets (`ORD-HIST-011`).
+- [x] **Filter by Delivery Status:** Delivery filter (`delivery_status=OUT_FOR_DELIVERY`, `delivery_status=PENDING_ASSIGNMENT`) returns matching subsets (`ORD-HIST-012`).
+- [x] **Filter by Date Range:** Date filters (`date_from` and `date_to`) filter accurately on `submitted_at` timestamps (`ORD-HIST-013`).
+- [x] **Deterministic Reverse-Chronological Sort:** Default sort orders records newest `submitted_at` first, with deterministic `id` DESC tiebreaker (`ORD-HIST-014`).
+- [x] **Bounded Pagination (15 Per Page):** Server-side pagination caps page size at 15 items and preserves filter query parameters (`ORD-HIST-015`).
+- [x] **Authentic Milestone Timeline Generation:** Order detail view returns verified milestones (`created`, `submitted`, `approved`, `cancelled`, `completed`) with exact persisted timestamps and actor names without fabricated transition timestamps (`ORD-HIST-016`).
+- [x] **Approved Order Milestone Tracing:** Approved order timeline includes `approved_at` timestamp and approver name (`ORD-HIST-017`).
+- [x] **Cancelled Order Reason Tracing:** Cancelled/rejected order timeline includes `cancelled_at` timestamp, canceller name, and mandatory cancellation reason (`ORD-HIST-018`).
+- [x] **Customer Reassignment Historical Ownership:** Reassigning a customer to a new salesman preserves the original salesman's historical order ownership and visibility (`ORD-HIST-019`).
+- [x] **Zero Cost Price Leakage:** Order history list and detail view payloads strictly omit `cost_price` (`ORD-HIST-020`).
+- [x] **Invalid Filter Rejection (422):** Malformed status filter values rejected with 422 validation error (`ORD-HIST-021`).
+- [x] **Bounded Query Execution (No N+1):** History list query executes in bounded database queries using selective column eager loading and `withCount('items')` (`ORD-HIST-022`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

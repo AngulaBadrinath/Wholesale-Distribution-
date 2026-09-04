@@ -272,6 +272,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ORD-005`.
 
+### CHANGE-009: FEAT-ORD-006 Salesman Order History & Multi-State Timeline
+- **Change ID:** `CHANGE-009`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the flagship Salesman Order History Workspace (`GET /salesman/orders`) and enrich the Order Detail view (`GET /salesman/orders/{order}`) with an authentic, non-fabricated Multi-State Timeline. The workspace enforces 100% server-authoritative scoping (`orders.salesman_id = authenticated_actor.id` for Salesmen; Admin/Super Admin/Accountant global visibility), multi-column search (`order_number`, customer `name`, customer `code`), independent status dimension filtering (`status`, `fulfillment_status`, `payment_status`, `delivery_status`), date range filtering (`date_from`, `date_to`), bounded server-side pagination (15 items/page with query string preservation), and deterministic ordering (`submitted_at DESC, id DESC`). Draft orders are strictly excluded from history to preserve separation in `/salesman/orders/drafts`. Order detail view embeds `OrderTimeline` rendering verifiable milestones (`created`, `submitted`, `approved`, `cancelled`, `completed`) with exact persisted database timestamps and recorded actor identities, paired with the live workflow status snapshot across all 5 independent dimensions (`OrderStatusBadge`), without synthesizing fake intermediate transition timestamps.
+- **Reason:** Provide sales representatives with an auditable, high-density, accessible, and responsive workspace to track customer orders across their entire lifecycle, while preserving zero-trust security and eliminating data leakage.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P1`
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §25.1 (Salesman Ordering & Order History).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.6 (Multi-Dimension Status Model), §18 (Database & Transaction Integrity).
+- **Affected Security:** Zero client trust (`RULE-SEC-002`); salesman scoping enforced (`RULE-ORD-003`); direct IDOR blocked with HTTP 403 Forbidden (`RULE-SEC-003`); zero exposure of `cost_price` (`RULE-PRI-001`).
+- **Affected Frontend:** `resources/js/Pages/Salesman/Orders/Index.tsx`, `resources/js/Pages/Salesman/Orders/Partials/*` (`OrderHistoryFilters.tsx`, `OrderHistoryTable.tsx`, `OrderHistoryCard.tsx`, `OrderStatusBadge.tsx`, `OrderTimeline.tsx`), `Show.tsx`, `AppLayout.tsx`, `order.ts`.
+- **Affected Tickets:** `FEAT-ORD-006` completed.
+- **Inventory Impact:** None.
+- **Order Impact:** Standardized order history query and authentic milestone timeline model.
+- **Payment Impact:** Payment status dimension displayed accurately as live snapshot.
+- **Tax Impact:** None; line tax snapshots displayed immutably.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None (existing table indexes and columns fully support all query paths).
+- **Testing Impact:** Added 22 comprehensive feature tests in `SalesmanOrderHistoryTest.php`. Full test suite at 646 tests (3,962 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-006`.
+
 ---
 
 ## 3. Template for Future Change Requests

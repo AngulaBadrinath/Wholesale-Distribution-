@@ -36,6 +36,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasProductView = auth?.user?.permissions?.includes('product.view') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasTaxManage = auth?.user?.permissions?.includes('product.tax.update') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasOrderCreate = auth?.user?.permissions?.includes('order.create') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
+    const hasOrderView = auth?.user?.permissions?.includes('order.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -82,26 +83,39 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
 
                     {/* Navigation Items */}
                     <div className="flex-1 overflow-y-auto px-3 py-4">
-                        {hasOrderCreate && (
+                        {(hasOrderView || hasOrderCreate) && (
                             <>
                                 <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
                                     Orders & Sales
                                 </div>
                                 <nav className="space-y-1 mb-6">
-                                    <Link
-                                        href="/salesman/orders/create"
-                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                    >
-                                        <Package className="h-4 w-4 text-primary" />
-                                        <span>New Sales Order</span>
-                                    </Link>
-                                    <Link
-                                        href="/salesman/orders/drafts"
-                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                    >
-                                        <Receipt className="h-4 w-4 text-primary" />
-                                        <span>Draft Orders</span>
-                                    </Link>
+                                    {hasOrderView && (
+                                        <Link
+                                            href="/salesman/orders"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Receipt className="h-4 w-4 text-primary" />
+                                            <span>Order History</span>
+                                        </Link>
+                                    )}
+                                    {hasOrderCreate && (
+                                        <>
+                                            <Link
+                                                href="/salesman/orders/create"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Package className="h-4 w-4 text-primary" />
+                                                <span>New Sales Order</span>
+                                            </Link>
+                                            <Link
+                                                href="/salesman/orders/drafts"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Receipt className="h-4 w-4 text-muted-foreground" />
+                                                <span>Draft Orders</span>
+                                            </Link>
+                                        </>
+                                    )}
                                 </nav>
                             </>
                         )}

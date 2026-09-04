@@ -164,6 +164,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     Route::middleware('permission:order.view')->group(function () {
+        Route::get('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'index'])->name('salesman.orders.index');
         Route::get('/salesman/orders/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'show'])->whereNumber('order')->name('salesman.orders.show');
     });
 });

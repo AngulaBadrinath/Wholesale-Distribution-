@@ -143,6 +143,16 @@ class Order extends Model
     }
 
     /**
+     * Get the staff user who cancelled or rejected this order.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /**
      * Get the items belonging to this order.
      *
      * @return HasMany<OrderItem, $this>

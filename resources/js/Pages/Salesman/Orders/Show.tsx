@@ -5,6 +5,8 @@ import { OrderDetail } from '@/types/order';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
+import OrderStatusBadge from './Partials/OrderStatusBadge';
+import OrderTimeline from './Partials/OrderTimeline';
 import {
     CheckCircle2,
     Building,
@@ -16,6 +18,8 @@ import {
     Receipt,
     ShieldCheck,
     FileText,
+    ArrowLeft,
+    ListFilter,
 } from 'lucide-react';
 
 interface OrderShowPageProps {
@@ -24,13 +28,41 @@ interface OrderShowPageProps {
 
 export default function OrderShow({ order }: OrderShowPageProps) {
     const totalUnits = order.items.reduce((sum, item) => sum + item.ordered_quantity, 0);
+    const submittedDate = order.submitted_at ? new Date(order.submitted_at) : new Date(order.created_at);
 
     return (
         <AppLayout title={`Order ${order.order_number}`}>
-            <Head title={`Order ${order.order_number} — Confirmation`} />
+            <Head title={`Order ${order.order_number} — Detail & Timeline`} />
 
             <div className="max-w-6xl mx-auto space-y-6 pb-16">
-                {/* Success Banner */}
+                {/* Navigation Breadcrumb & Actions Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+                    <div className="flex items-center gap-2">
+                        <Link href="/salesman/orders">
+                            <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                                <ArrowLeft className="h-3.5 w-3.5" />
+                                <span>Back to Order History</span>
+                            </Button>
+                        </Link>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Link href="/salesman/orders">
+                            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                                <ListFilter className="h-3.5 w-3.5" />
+                                <span>All Orders</span>
+                            </Button>
+                        </Link>
+                        <Link href="/salesman/orders/create">
+                            <Button size="sm" className="gap-1.5 text-xs">
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>New Order</span>
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Status Notice Banner (When freshly submitted or active) */}
                 <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -38,32 +70,26 @@ export default function OrderShow({ order }: OrderShowPageProps) {
                         </div>
                         <div>
                             <h2 className="text-base font-bold text-emerald-900 dark:text-emerald-200">
-                                Order Placed Successfully
+                                Order Record Committed
                             </h2>
                             <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                                Order <span className="font-mono font-bold">{order.order_number}</span> has been committed to the system in submitted status.
+                                Order <span className="font-mono font-bold">{order.order_number}</span> is persisted with immutable pricing and tax snapshots.
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/salesman/orders/create">
-                            <Button size="sm" className="gap-1.5 text-xs">
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>New Order</span>
-                            </Button>
-                        </Link>
                         <Link href="/customers">
                             <Button variant="outline" size="sm" className="text-xs">
-                                Customers
+                                Customer Accounts
                             </Button>
                         </Link>
                     </div>
                 </div>
 
-                {/* Header Information Card */}
+                {/* Header Information Card with Independent Multi-State Dimensions */}
                 <Card>
                     <CardHeader className="pb-4 border-b">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                     <Receipt className="h-5 w-5 text-primary" />
@@ -74,25 +100,55 @@ export default function OrderShow({ order }: OrderShowPageProps) {
                                 <CardDescription className="flex items-center gap-2 text-xs">
                                     <Calendar className="h-3.5 w-3.5" />
                                     <span>
-                                        Submitted on {new Date(order.created_at).toLocaleString()}
+                                        Committed on {submittedDate.toLocaleString()}
                                     </span>
                                 </CardDescription>
                             </div>
 
-                            {/* Independent Status Dimensions */}
+                            {/* Independent Status Dimensions Badges */}
                             <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="default" className="text-xs">
-                                    Status: {order.status_label}
-                                </Badge>
+                                <OrderStatusBadge
+                                    dimension="order"
+                                    label={order.status_label}
+                                    variant={order.status_badge_variant}
+                                    showDimensionLabel
+                                    size="md"
+                                />
                                 {order.fulfillment_status_label && (
-                                    <Badge variant="outline" className="text-xs">
-                                        Fulfillment: {order.fulfillment_status_label}
-                                    </Badge>
+                                    <OrderStatusBadge
+                                        dimension="fulfillment"
+                                        label={order.fulfillment_status_label}
+                                        variant={order.fulfillment_badge_variant}
+                                        showDimensionLabel
+                                        size="md"
+                                    />
                                 )}
                                 {order.payment_status_label && (
-                                    <Badge variant="outline" className="text-xs">
-                                        Payment: {order.payment_status_label}
-                                    </Badge>
+                                    <OrderStatusBadge
+                                        dimension="payment"
+                                        label={order.payment_status_label}
+                                        variant={order.payment_badge_variant}
+                                        showDimensionLabel
+                                        size="md"
+                                    />
+                                )}
+                                {order.delivery_status_label && (
+                                    <OrderStatusBadge
+                                        dimension="delivery"
+                                        label={order.delivery_status_label}
+                                        variant={order.delivery_badge_variant}
+                                        showDimensionLabel
+                                        size="md"
+                                    />
+                                )}
+                                {order.adjustment_status && order.adjustment_status !== 'NONE' && order.adjustment_status_label && (
+                                    <OrderStatusBadge
+                                        dimension="adjustment"
+                                        label={order.adjustment_status_label}
+                                        variant={order.adjustment_badge_variant}
+                                        showDimensionLabel
+                                        size="md"
+                                    />
                                 )}
                             </div>
                         </div>
@@ -149,6 +205,11 @@ export default function OrderShow({ order }: OrderShowPageProps) {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Multi-State Timeline Section */}
+                {order.timeline && order.timeline.length > 0 && (
+                    <OrderTimeline timeline={order.timeline} />
+                )}
 
                 {/* Order Items Table */}
                 <Card>
@@ -246,6 +307,14 @@ export default function OrderShow({ order }: OrderShowPageProps) {
                                     ${parseFloat(order.tax_total).toFixed(2)}
                                 </span>
                             </div>
+                            {parseFloat(order.adjustment_total) !== 0 && (
+                                <div className="flex justify-between text-sm text-muted-foreground">
+                                    <span>Adjustments:</span>
+                                    <span className="font-mono font-medium text-foreground">
+                                        ${parseFloat(order.adjustment_total).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
                             <div className="pt-3 border-t flex justify-between items-baseline">
                                 <span className="text-base font-bold text-foreground">Grand Total:</span>
                                 <span className="text-2xl font-bold font-mono text-primary">

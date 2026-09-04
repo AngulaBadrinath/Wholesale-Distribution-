@@ -113,10 +113,23 @@ export interface OrderItemDetail {
     line_total: string;
 }
 
+export interface OrderTimelineEvent {
+    id: string;
+    title: string;
+    description: string | null;
+    timestamp: string | null;
+    actor_name: string | null;
+    status: 'completed' | 'current' | 'pending' | 'cancelled';
+    badge_label?: string | null;
+    badge_variant?: string | null;
+    icon: 'created' | 'submitted' | 'approved' | 'processing' | 'completed' | 'cancelled' | 'fulfillment' | 'payment' | 'delivery';
+}
+
 export interface OrderDetail {
     id: number;
     order_number: string;
     idempotency_key: string;
+    draft_token?: string | null;
     status: OrderStatus;
     status_label: string;
     status_badge_variant: string;
@@ -129,6 +142,9 @@ export interface OrderDetail {
     delivery_status: DeliveryStatus | null;
     delivery_status_label: string | null;
     delivery_badge_variant: string | null;
+    adjustment_status?: AdjustmentStatus | null;
+    adjustment_status_label?: string | null;
+    adjustment_badge_variant?: string | null;
     currency: string;
     subtotal: string;
     tax_total: string;
@@ -136,6 +152,18 @@ export interface OrderDetail {
     grand_total: string;
     notes: string | null;
     submitted_at: string | null;
+    approved_at?: string | null;
+    approver?: {
+        id: number;
+        name: string;
+    } | null;
+    cancelled_at?: string | null;
+    canceller?: {
+        id: number;
+        name: string;
+    } | null;
+    cancellation_reason?: string | null;
+    completed_at?: string | null;
     created_at: string;
     customer: {
         id: number;
@@ -154,6 +182,53 @@ export interface OrderDetail {
         email: string;
     };
     items: OrderItemDetail[];
+    timeline?: OrderTimelineEvent[];
+}
+
+export interface OrderHistoryItem {
+    id: number;
+    order_number: string;
+    idempotency_key: string;
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        contact_name: string | null;
+        phone: string | null;
+    };
+    status: OrderStatus;
+    status_label: string;
+    status_badge_variant: string;
+    fulfillment_status: FulfillmentStatus | null;
+    fulfillment_status_label: string | null;
+    fulfillment_badge_variant: string | null;
+    payment_status: PaymentStatus | null;
+    payment_status_label: string | null;
+    payment_badge_variant: string | null;
+    delivery_status: DeliveryStatus | null;
+    delivery_status_label: string | null;
+    delivery_badge_variant: string | null;
+    adjustment_status: AdjustmentStatus | null;
+    adjustment_status_label: string | null;
+    adjustment_badge_variant: string | null;
+    currency: string;
+    subtotal: string;
+    tax_total: string;
+    adjustment_total: string;
+    grand_total: string;
+    item_count: number;
+    submitted_at: string | null;
+    created_at: string;
+}
+
+export interface OrderHistoryFilters {
+    search?: string;
+    status?: string;
+    fulfillment_status?: string;
+    payment_status?: string;
+    delivery_status?: string;
+    date_from?: string;
+    date_to?: string;
 }
 
 export interface OrderDraftSummary {

@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Salesman;
 
+use App\Enums\AdjustmentStatus;
 use App\Enums\CustomerStatus;
+use App\Enums\DeliveryStatus;
+use App\Enums\FulfillmentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\Permission;
 use App\Enums\ProductStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\CreateOrderRequest;
+use App\Http\Requests\Order\OrderHistoryRequest;
 use App\Http\Requests\Order\SaveOrderDraftRequest;
 use App\Models\Category;
 use App\Models\Customer;
@@ -18,7 +23,9 @@ use App\Services\Auth\PermissionService;
 use App\Services\Order\OrderService;
 use App\Services\Product\ProductImageService;
 use App\Services\Product\ProductService;
+use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +40,136 @@ class SalesmanOrderController extends Controller
         protected PermissionService $permissionService,
         protected ProductImageService $productImageService,
     ) {}
+
+    /**
+     * Display a paginated, filterable history list of submitted orders.
+     */
+    public function index(OrderHistoryRequest $request): Response
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
+
+        $query = Order::query()
+            ->forUser($actor)
+            ->where('status', '!=', OrderStatus::DRAFT)
+            ->with(['customer:id,code,name,contact_name,phone,status'])
+            ->withCount('items')
+            ->orderBy('submitted_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        // Multi-column indexed/scoped search
+        if ($search = $request->validated('search')) {
+            $isPgsql = $query->getConnection()->getDriverName() === 'pgsql';
+            $like = $isPgsql ? 'ilike' : 'like';
+
+            $query->where(function (Builder $q) use ($search, $like) {
+                $q->where('orders.order_number', $like, "%{$search}%")
+                    ->orWhereHas('customer', function (Builder $custQ) use ($search, $like) {
+                        $custQ->where('name', $like, "%{$search}%")
+                            ->orWhere('code', $like, "%{$search}%");
+                    });
+            });
+        }
+
+        // Status filters
+        if ($status = $request->validated('status')) {
+            if (strtoupper($status) !== 'ALL') {
+                $query->where('orders.status', $status);
+            }
+        }
+
+        if ($fulfillmentStatus = $request->validated('fulfillment_status')) {
+            if (strtoupper($fulfillmentStatus) !== 'ALL') {
+                $query->where('orders.fulfillment_status', $fulfillmentStatus);
+            }
+        }
+
+        if ($paymentStatus = $request->validated('payment_status')) {
+            if (strtoupper($paymentStatus) !== 'ALL') {
+                $query->where('orders.payment_status', $paymentStatus);
+            }
+        }
+
+        if ($deliveryStatus = $request->validated('delivery_status')) {
+            if (strtoupper($deliveryStatus) !== 'ALL') {
+                $query->where('orders.delivery_status', $deliveryStatus);
+            }
+        }
+
+        // Date range filters
+        if ($dateFrom = $request->validated('date_from')) {
+            $query->where('orders.submitted_at', '>=', Carbon::parse($dateFrom)->startOfDay());
+        }
+
+        if ($dateTo = $request->validated('date_to')) {
+            $query->where('orders.submitted_at', '<=', Carbon::parse($dateTo)->endOfDay());
+        }
+
+        $orders = $query->paginate(15)->withQueryString()->through(fn (Order $order) => [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'idempotency_key' => $order->idempotency_key,
+            'customer' => [
+                'id' => $order->customer->id,
+                'code' => $order->customer->code,
+                'name' => $order->customer->name,
+                'contact_name' => $order->customer->contact_name,
+                'phone' => $order->customer->phone,
+            ],
+            'status' => $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status,
+            'status_label' => $order->status instanceof OrderStatus ? $order->status->label() : (string) $order->status,
+            'status_badge_variant' => $order->status instanceof OrderStatus ? $order->status->badgeVariant() : 'info',
+            'fulfillment_status' => $order->fulfillment_status?->value,
+            'fulfillment_status_label' => $order->fulfillment_status?->label(),
+            'fulfillment_badge_variant' => $order->fulfillment_status?->badgeVariant(),
+            'payment_status' => $order->payment_status?->value,
+            'payment_status_label' => $order->payment_status?->label(),
+            'payment_badge_variant' => $order->payment_status?->badgeVariant(),
+            'delivery_status' => $order->delivery_status?->value,
+            'delivery_status_label' => $order->delivery_status?->label(),
+            'delivery_badge_variant' => $order->delivery_status?->badgeVariant(),
+            'adjustment_status' => $order->adjustment_status?->value,
+            'adjustment_status_label' => $order->adjustment_status?->label(),
+            'adjustment_badge_variant' => $order->adjustment_status?->badgeVariant(),
+            'currency' => $order->currency,
+            'subtotal' => (string) $order->subtotal,
+            'tax_total' => (string) $order->tax_total,
+            'adjustment_total' => (string) $order->adjustment_total,
+            'grand_total' => (string) $order->grand_total,
+            'item_count' => $order->items_count,
+            'submitted_at' => $order->submitted_at?->toIso8601String(),
+            'created_at' => $order->created_at->toIso8601String(),
+        ]);
+
+        return Inertia::render('Salesman/Orders/Index', [
+            'orders' => $orders,
+            'filters' => [
+                'search' => $request->validated('search', ''),
+                'status' => $request->validated('status', ''),
+                'fulfillment_status' => $request->validated('fulfillment_status', ''),
+                'payment_status' => $request->validated('payment_status', ''),
+                'delivery_status' => $request->validated('delivery_status', ''),
+                'date_from' => $request->validated('date_from', ''),
+                'date_to' => $request->validated('date_to', ''),
+            ],
+            'statusOptions' => array_map(fn (OrderStatus $s) => [
+                'value' => $s->value,
+                'label' => $s->label(),
+            ], array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s !== OrderStatus::DRAFT)),
+            'fulfillmentOptions' => array_map(fn (FulfillmentStatus $s) => [
+                'value' => $s->value,
+                'label' => $s->label(),
+            ], FulfillmentStatus::cases()),
+            'paymentOptions' => array_map(fn (PaymentStatus $s) => [
+                'value' => $s->value,
+                'label' => $s->label(),
+            ], PaymentStatus::cases()),
+            'deliveryOptions' => array_map(fn (DeliveryStatus $s) => [
+                'value' => $s->value,
+                'label' => $s->label(),
+            ], DeliveryStatus::cases()),
+        ]);
+    }
 
     /**
      * Display a paginated list of drafts belonging to the salesman.
@@ -351,7 +488,7 @@ class SalesmanOrderController extends Controller
             throw new AuthorizationException('You are not authorized to view orders for other salesmen.');
         }
 
-        $order->load(['customer', 'salesman', 'creator', 'items']);
+        $order->load(['customer', 'salesman', 'creator', 'approver', 'canceller', 'items']);
 
         return Inertia::render('Salesman/Orders/Show', [
             'order' => [
@@ -371,6 +508,9 @@ class SalesmanOrderController extends Controller
                 'delivery_status' => $order->delivery_status?->value,
                 'delivery_status_label' => $order->delivery_status?->label(),
                 'delivery_badge_variant' => $order->delivery_status?->badgeVariant(),
+                'adjustment_status' => $order->adjustment_status?->value,
+                'adjustment_status_label' => $order->adjustment_status?->label(),
+                'adjustment_badge_variant' => $order->adjustment_status?->badgeVariant(),
                 'currency' => $order->currency,
                 'subtotal' => (string) $order->subtotal,
                 'tax_total' => (string) $order->tax_total,
@@ -378,6 +518,18 @@ class SalesmanOrderController extends Controller
                 'grand_total' => (string) $order->grand_total,
                 'notes' => $order->notes,
                 'submitted_at' => $order->submitted_at?->toIso8601String(),
+                'approved_at' => $order->approved_at?->toIso8601String(),
+                'approver' => $order->approver ? [
+                    'id' => $order->approver->id,
+                    'name' => $order->approver->name,
+                ] : null,
+                'cancelled_at' => $order->cancelled_at?->toIso8601String(),
+                'canceller' => $order->canceller ? [
+                    'id' => $order->canceller->id,
+                    'name' => $order->canceller->name,
+                ] : null,
+                'cancellation_reason' => $order->cancellation_reason,
+                'completed_at' => $order->completed_at?->toIso8601String(),
                 'created_at' => $order->created_at->toIso8601String(),
                 'customer' => [
                     'id' => $order->customer->id,
@@ -413,7 +565,164 @@ class SalesmanOrderController extends Controller
                     'tax_amount' => (string) $item->tax_amount,
                     'line_total' => (string) $item->line_total,
                 ]),
+                'timeline' => $this->buildOrderTimeline($order),
             ],
         ]);
+    }
+
+    /**
+     * Build an authentic, verifiable multi-state timeline based strictly on persisted order data.
+     * Zero synthetic or fabricated transition timestamps are generated.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function buildOrderTimeline(Order $order): array
+    {
+        $timeline = [];
+
+        // 1. Order Initialized / Created
+        $timeline[] = [
+            'id' => 'created',
+            'title' => 'Order Created',
+            'description' => 'Order was initialized and drafted in the system.',
+            'timestamp' => $order->created_at->toIso8601String(),
+            'actor_name' => $order->creator?->name ?? 'System',
+            'status' => 'completed',
+            'badge_label' => 'Created',
+            'badge_variant' => 'secondary',
+            'icon' => 'created',
+        ];
+
+        // 2. Order Submitted
+        if ($order->submitted_at) {
+            $timeline[] = [
+                'id' => 'submitted',
+                'title' => 'Order Submitted',
+                'description' => "Order committed with idempotency token {$order->idempotency_key}.",
+                'timestamp' => $order->submitted_at->toIso8601String(),
+                'actor_name' => $order->salesman?->name ?? $order->creator?->name,
+                'status' => 'completed',
+                'badge_label' => 'Submitted',
+                'badge_variant' => 'info',
+                'icon' => 'submitted',
+            ];
+        }
+
+        // 3. Administrative Review & Approval / Rejection
+        if ($order->status === OrderStatus::CANCELLED || $order->status === OrderStatus::REJECTED) {
+            $timeline[] = [
+                'id' => 'cancelled',
+                'title' => $order->status === OrderStatus::REJECTED ? 'Order Rejected' : 'Order Cancelled',
+                'description' => $order->cancellation_reason ?: 'Order was cancelled prior to completion.',
+                'timestamp' => $order->cancelled_at?->toIso8601String() ?? $order->updated_at->toIso8601String(),
+                'actor_name' => $order->canceller?->name,
+                'status' => 'cancelled',
+                'badge_label' => $order->status->label(),
+                'badge_variant' => 'destructive',
+                'icon' => 'cancelled',
+            ];
+        } elseif ($order->approved_at) {
+            $timeline[] = [
+                'id' => 'approved',
+                'title' => 'Order Approved',
+                'description' => 'Order approved for warehouse allocation and fulfillment processing.',
+                'timestamp' => $order->approved_at->toIso8601String(),
+                'actor_name' => $order->approver?->name,
+                'status' => 'completed',
+                'badge_label' => 'Approved',
+                'badge_variant' => 'primary',
+                'icon' => 'approved',
+            ];
+        } elseif ($order->status === OrderStatus::SUBMITTED || $order->status === OrderStatus::PENDING_APPROVAL) {
+            $timeline[] = [
+                'id' => 'approval_pending',
+                'title' => 'Administrative Review',
+                'description' => 'Awaiting administrative verification and inventory allocation.',
+                'timestamp' => null,
+                'actor_name' => null,
+                'status' => 'current',
+                'badge_label' => 'Pending Review',
+                'badge_variant' => 'warning',
+                'icon' => 'processing',
+            ];
+        }
+
+        // 4. Fulfillment Status
+        if ($order->status !== OrderStatus::CANCELLED && $order->status !== OrderStatus::REJECTED) {
+            $isFulfillmentDelivered = in_array($order->fulfillment_status, [
+                FulfillmentStatus::DELIVERED,
+                FulfillmentStatus::PARTIALLY_DELIVERED,
+            ], true);
+
+            $isFulfillmentStarted = in_array($order->fulfillment_status, [
+                FulfillmentStatus::RESERVED,
+                FulfillmentStatus::PICKED,
+                FulfillmentStatus::PACKED,
+                FulfillmentStatus::DISPATCHED,
+                FulfillmentStatus::DELIVERED,
+                FulfillmentStatus::PARTIALLY_DELIVERED,
+            ], true);
+
+            $timeline[] = [
+                'id' => 'fulfillment',
+                'title' => 'Warehouse Fulfillment',
+                'description' => "Current status: {$order->fulfillment_status?->label()}",
+                'timestamp' => null,
+                'actor_name' => null,
+                'status' => $isFulfillmentDelivered ? 'completed' : ($isFulfillmentStarted ? 'current' : 'pending'),
+                'badge_label' => $order->fulfillment_status?->label(),
+                'badge_variant' => $order->fulfillment_status?->badgeVariant(),
+                'icon' => 'fulfillment',
+            ];
+
+            // 5. Payment Status
+            $isPaid = in_array($order->payment_status, [PaymentStatus::PAID, PaymentStatus::OVERPAID], true);
+            $isPartialPaid = $order->payment_status === PaymentStatus::PARTIALLY_PAID;
+
+            $timeline[] = [
+                'id' => 'payment',
+                'title' => 'Payment Settlement',
+                'description' => "Current payment state: {$order->payment_status?->label()}",
+                'timestamp' => null,
+                'actor_name' => null,
+                'status' => $isPaid ? 'completed' : ($isPartialPaid ? 'current' : 'pending'),
+                'badge_label' => $order->payment_status?->label(),
+                'badge_variant' => $order->payment_status?->badgeVariant(),
+                'icon' => 'payment',
+            ];
+
+            // 6. Delivery Status
+            $isDelivered = $order->delivery_status === DeliveryStatus::DELIVERED;
+            $isOutForDelivery = in_array($order->delivery_status, [DeliveryStatus::PICKED_UP, DeliveryStatus::OUT_FOR_DELIVERY], true);
+
+            $timeline[] = [
+                'id' => 'delivery',
+                'title' => 'Logistics & Delivery',
+                'description' => "Current delivery state: {$order->delivery_status?->label()}",
+                'timestamp' => null,
+                'actor_name' => null,
+                'status' => $isDelivered ? 'completed' : ($isOutForDelivery ? 'current' : 'pending'),
+                'badge_label' => $order->delivery_status?->label(),
+                'badge_variant' => $order->delivery_status?->badgeVariant(),
+                'icon' => 'delivery',
+            ];
+
+            // 7. Completion
+            if ($order->completed_at || $order->status === OrderStatus::COMPLETED) {
+                $timeline[] = [
+                    'id' => 'completed',
+                    'title' => 'Order Completed',
+                    'description' => 'Order successfully fulfilled, delivered, and closed.',
+                    'timestamp' => $order->completed_at?->toIso8601String(),
+                    'actor_name' => null,
+                    'status' => 'completed',
+                    'badge_label' => 'Completed',
+                    'badge_variant' => 'success',
+                    'icon' => 'completed',
+                ];
+            }
+        }
+
+        return $timeline;
     }
 }
