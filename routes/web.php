@@ -116,6 +116,11 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/products/{product}/edit', [\App\Http\Controllers\Product\ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])->name('products.update');
         Route::patch('/products/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.status');
+
+        // Product Image Management
+        Route::post('/products/{product}/images', [\App\Http\Controllers\Product\ProductImageController::class, 'store'])->name('products.images.store');
+        Route::patch('/products/{product}/images/{image}/primary', [\App\Http\Controllers\Product\ProductImageController::class, 'setPrimary'])->name('products.images.primary');
+        Route::delete('/products/{product}/images/{image}', [\App\Http\Controllers\Product\ProductImageController::class, 'destroy'])->name('products.images.destroy');
     });
 });
 

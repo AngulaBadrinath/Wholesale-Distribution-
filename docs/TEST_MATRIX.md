@@ -324,6 +324,32 @@
 - [x] **Physical Deletion Prohibited:** `ProductPolicy::delete()` returns `false` to preserve historical referential integrity (`PROD-CRUD-027`).
 - [x] **Authoritative Audit Logging:** Structured audit events (`PRODUCT_CREATED`, `PRODUCT_UPDATED`, `PRODUCT_PRICING_UPDATED`, `PRODUCT_ACTIVATED`, `PRODUCT_DEACTIVATED`) logged with actor and product context (`PROD-CRUD-028`).
 
+### 1.5.2 Product Image Upload & Storage (`PRODUCT` / `FEAT-PROD-002`)
+- [x] **Super Admin Image Management:** Super Admin can upload, set primary, and delete product images (`PROD-IMG-001`).
+- [x] **Admin Image Management:** Admin can upload, set primary, and delete product images (`PROD-IMG-002`).
+- [x] **Salesman View Only:** Salesman can view product images but cannot upload or delete (403 Forbidden) (`PROD-IMG-003`).
+- [x] **Warehouse Manager View Only:** Warehouse Manager can view product images but cannot mutate (403 Forbidden) (`PROD-IMG-004`).
+- [x] **Unauthorized Roles & Guests Denial:** Accountant, Delivery Partner, and unauthenticated guests are rejected (`PROD-IMG-005`).
+- [x] **Valid Formats Upload:** Valid JPEG, PNG, and WebP images upload successfully (`PROD-IMG-006`).
+- [x] **Max File Size Limit:** Image larger than 5MB rejected with 422 (`PROD-IMG-007`).
+- [x] **SVG Strict Prohibition:** SVG files strictly prohibited and rejected (`PROD-IMG-008`).
+- [x] **Magic-Byte Spoofing Protection:** Malicious script / executable renamed to `.jpg` rejected by server magic-byte inspection (`PROD-IMG-009`).
+- [x] **Corrupt Binary Rejection:** Corrupt or truncated binary rejected safely (`PROD-IMG-010`).
+- [x] **Secure Object Key Generation:** Object key strictly follows `products/{product_id}/{uuid}.{ext}` without user path segments (`PROD-IMG-011`).
+- [x] **No URL Persistence in DB:** Database stores only stable `object_key`, never presigned URLs (`PROD-IMG-012`).
+- [x] **Dynamic Temporary Presigned URLs:** Temporary presigned URLs generated on-demand for authorized consumers (`PROD-IMG-013`).
+- [x] **Client Filename Path Isolation:** Original client filename preserved as display metadata but excluded from storage path (`PROD-IMG-014`).
+- [x] **Cross-Product IDOR Primary Set Denial:** Setting primary on image belonging to another product rejected with 404 (`PROD-IMG-015`).
+- [x] **Cross-Product IDOR Delete Denial:** Deleting image belonging to another product rejected with 404 (`PROD-IMG-016`).
+- [x] **Tampered Image ID 404 Protection:** Nonexistent image ID returns 404 Not Found (`PROD-IMG-017`).
+- [x] **Auto-Primary First Image:** First uploaded image automatically designated as primary (`PROD-IMG-018`).
+- [x] **Subsequent Upload Non-Primary:** Subsequent uploads default to non-primary (`PROD-IMG-019`).
+- [x] **Set Primary Switch:** Setting primary unsets previous primary atomically (`PROD-IMG-020`).
+- [x] **Delete Primary Auto-Promotion:** Deleting primary image promotes the next available image in gallery (`PROD-IMG-021`).
+- [x] **Compensating S3 Deletion on DB Failure:** DB transaction failure triggers compensating S3 delete to prevent orphaned storage (`PROD-IMG-022`).
+- [x] **Audit Logging without Secrets:** Structured audit logs emitted (`PRODUCT_IMAGE_UPLOADED`, `PRODUCT_IMAGE_SET_PRIMARY`, `PRODUCT_IMAGE_DELETED`) without credentials or presigned URLs (`PROD-IMG-023`).
+- [x] **RULE-DOC-001 Invariant:** Product images are never exposed on formal invoices (`PROD-IMG-024`).
+
 ### 1.6 Pricing Engine (`PRICING`)
 - [ ] **Happy Path:** Salesman selects actual selling price within allowed bounds (`min_price <= price <= mrp`).
 - [ ] **Validation:** Selling price below minimum allowed price rejected with 422 unless override authorized.

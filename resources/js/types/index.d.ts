@@ -192,6 +192,18 @@ export interface Category {
     status: string;
 }
 
+export interface ProductImage {
+    id: number;
+    product_id: number;
+    original_filename: string;
+    mime_type: string;
+    size_bytes: number;
+    is_primary: boolean;
+    sort_order: number;
+    url?: string | null;
+    created_at?: string;
+}
+
 export interface Product {
     id: number;
     sku: string;
@@ -209,6 +221,8 @@ export interface Product {
     default_selling_price: number;
     mrp: number;
     tax_profile_id: number | null;
+    primary_image_url?: string | null;
+    images?: ProductImage[];
     created_at?: string;
     updated_at?: string;
 }

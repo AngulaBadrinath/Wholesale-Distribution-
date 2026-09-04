@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **17.2%** (22 / 128 tickets) | FEAT-PROD-001 verified complete; 386 automated tests passing (2,652 assertions) |
+| **Overall Code Completion** | **18.0%** (23 / 128 tickets) | FEAT-PROD-002 verified complete; 410 automated tests passing (2,728 assertions) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 02 — Master Data Management & Configuration** | Status: `IN_PROGRESS` (SYS-001, SYS-002, CUS-001..004, SLM-001..002, PROD-001 complete) |
+| **Current Phase** | **Phase 02 — Master Data Management & Configuration** | Status: `IN_PROGRESS` (SYS-001, SYS-002, CUS-001..004, SLM-001..002, PROD-001..002 complete) |
 | **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00 & Phase 01 complete/deferred) |
-| **Current Active Ticket** | **FEAT-PROD-001** (Complete) | Ready to begin `FEAT-PROD-002: Product Image Upload & Storage` |
+| **Current Active Ticket** | **FEAT-PROD-002** (Complete) | Ready to begin `FEAT-PROD-003: Product Lifecycle Controls (ACTIVE, INACTIVE)` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001`, `FEAT-DLV-001`) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **22** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`).
-- Current progress: **17.2%** (22 / 128).
+- Completed tickets: **23** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`).
+- Current progress: **18.0%** (23 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (22):**
+- **Completed Tickets (23):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -55,11 +55,13 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   20. `FEAT-SLM-001`: Salesman Account Management & Lifecycle (`ACTIVE`, `INVITED`, `SUSPENDED`, `DISABLED`)
   21. `FEAT-SLM-002`: Salesman Scoped Customer Access Enforcement
   22. `FEAT-PROD-001`: Product Master CRUD (SKU, Cost, Default Selling, Minimum Price, MRP)
+  23. `FEAT-PROD-002`: Product Image Upload & Storage (Private S3)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Order and Delivery domain models in Phases 05 and 08).
 - **Upcoming Tickets (Phase 02 — Master Data Management & Configuration):**
-  1. `FEAT-PROD-002`: Product Image Upload & Storage (Private S3)
+  1. `FEAT-PROD-003`: Product Lifecycle Controls (`ACTIVE`, `INACTIVE`)
+  2. `FEAT-CAT-001`: Category Management
 
 ---
 
@@ -123,7 +125,7 @@ The following items are recognized as future enterprise enhancements and are int
 - **Local Development Environment:** Fully bootstrapped and operational. Docker Compose running `postgres:18-alpine` (port 5433) and `redis:7-alpine` (port 6380).
 - **Staging Environment:** Not configured (`DEPLOY-001` scheduled for Phase 11).
 - **Production AWS Environment:** Architecture-ready (`DEPLOY-002` scheduled for Phase 11).
-- **Automated Test Runner:** PHPUnit harness operational (358 tests passing, 2,502 assertions). TypeScript static check operational (`npm run type-check`).
+- **Automated Test Runner:** PHPUnit harness operational (410 tests passing, 2,728 assertions). TypeScript static check operational (`npm run type-check`).
 - **CI/CD Pipelines:** GitHub Actions CI workflow implemented in `.github/workflows/ci.yml`.
 
 ---
@@ -131,4 +133,4 @@ The following items are recognized as future enterprise enhancements and are int
 ## 8. Next Recommended Action
  
 1. Activate next ticket in sequence from Document 05 / BUILD_PHASES.md:
-   - **`FEAT-PROD-001: Product Master CRUD (SKU, cost, default selling, minimum price, MRP)`** (Phase 02 / Epic 06: Product & Category Management).
+   - **`FEAT-PROD-003: Product Lifecycle Controls (ACTIVE, INACTIVE)`** (Phase 02 / Epic 06: Product & Category Management).

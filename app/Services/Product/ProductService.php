@@ -19,7 +19,8 @@ use Illuminate\Validation\ValidationException;
 class ProductService
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected ProductImageService $productImageService
     ) {}
 
     /**
@@ -30,7 +31,7 @@ class ProductService
      */
     public function list(array $filters = [], int $perPage = 15, ?User $actor = null): LengthAwarePaginator
     {
-        $query = Product::query()->with('category:id,name,code');
+        $query = Product::query()->with(['category:id,name,code', 'primaryImage']);
 
         // 1. Search filter across SKU, name, description
         if (! empty($filters['search'])) {
@@ -79,7 +80,7 @@ class ProductService
     public function findById(int $id, ?User $actor = null): array
     {
         /** @var Product $product */
-        $product = Product::with('category:id,name,code')->findOrFail($id);
+        $product = Product::with(['category:id,name,code', 'images'])->findOrFail($id);
 
         return $this->formatProduct($product, $actor);
     }
@@ -91,7 +92,7 @@ class ProductService
      */
     public function formatProduct(Product $product, ?User $actor = null): array
     {
-        $product->loadMissing('category:id,name,code');
+        $product->loadMissing(['category:id,name,code', 'primaryImage', 'images']);
 
         $isAdmin = $actor && in_array($actor->role, [UserRole::SUPER_ADMIN, UserRole::ADMIN], true);
 
@@ -116,6 +117,10 @@ class ProductService
             'mrp' => (float) $product->mrp,
             'can_order' => $product->canOrder(),
             'tax_profile_id' => $product->tax_profile_id,
+            'primary_image_url' => $product->primaryImage ? $this->productImageService->getTemporaryUrl($product->primaryImage) : null,
+            'images' => $product->relationLoaded('images')
+                ? $product->images->map(fn ($img) => $this->productImageService->formatImage($img))->values()->all()
+                : [],
             'created_at' => $product->created_at?->toIso8601String(),
             'updated_at' => $product->updated_at?->toIso8601String(),
         ];

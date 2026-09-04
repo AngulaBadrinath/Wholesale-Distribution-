@@ -279,6 +279,7 @@ export default function ProductIndex({
                         <table className="w-full text-left text-sm">
                             <thead className="bg-muted/40 border-b border-border text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
                                 <tr>
+                                    <th className="w-12 px-3 py-3 text-center">Image</th>
                                     <th className="px-4 py-3">
                                         <button
                                             onClick={() => handleSort('sku')}
@@ -319,7 +320,7 @@ export default function ProductIndex({
                             <tbody className="divide-y divide-border">
                                 {products.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={isPrivileged ? 9 : 8} className="px-4 py-12 text-center text-muted-foreground">
+                                        <td colSpan={isPrivileged ? 10 : 9} className="px-4 py-12 text-center text-muted-foreground">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <Boxes className="h-8 w-8 text-muted-foreground/50" />
                                                 <p className="font-medium text-foreground text-sm">No products found</p>
@@ -340,6 +341,20 @@ export default function ProductIndex({
                                 ) : (
                                     products.data.map((product) => (
                                         <tr key={product.id} className="hover:bg-muted/30 transition-colors">
+                                            <td className="px-3 py-3 text-center">
+                                                {product.primary_image_url ? (
+                                                    <img
+                                                        src={product.primary_image_url}
+                                                        alt={product.name}
+                                                        className="h-10 w-10 object-cover rounded-md border border-border/80 bg-muted shrink-0 mx-auto"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-md border border-dashed border-border/80 bg-muted/40 flex items-center justify-center text-muted-foreground/60 mx-auto">
+                                                        <Package className="h-4 w-4" />
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-3.5">
                                                 <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                                                     {product.sku}
@@ -430,14 +445,28 @@ export default function ProductIndex({
                         products.data.map((product) => (
                             <Card key={product.id} className="border-border shadow-xs hover:border-primary/40 transition-colors">
                                 <CardContent className="p-4 space-y-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                                                {product.sku}
-                                            </span>
-                                            <h3 className="font-medium text-foreground text-sm mt-1.5">
-                                                {product.name}
-                                            </h3>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            {product.primary_image_url ? (
+                                                <img
+                                                    src={product.primary_image_url}
+                                                    alt={product.name}
+                                                    className="h-12 w-12 object-cover rounded-md border border-border/80 bg-muted shrink-0"
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="h-12 w-12 rounded-md border border-dashed border-border/80 bg-muted/40 flex items-center justify-center text-muted-foreground/60 shrink-0">
+                                                    <Package className="h-5 w-5" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                                                    {product.sku}
+                                                </span>
+                                                <h3 className="font-medium text-foreground text-sm mt-1">
+                                                    {product.name}
+                                                </h3>
+                                            </div>
                                         </div>
                                         <div>{getStatusBadge(product.status)}</div>
                                     </div>

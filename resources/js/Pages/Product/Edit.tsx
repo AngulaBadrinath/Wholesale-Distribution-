@@ -1,11 +1,12 @@
-import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState, useRef } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Category, Product, ProductStatusOption } from '@/types';
+import { Category, Product, ProductImage, ProductStatusOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -15,6 +16,12 @@ import {
     Tag,
     Lock,
     Save,
+    Upload,
+    Trash2,
+    Star,
+    ImageIcon,
+    X,
+    FileCheck,
 } from 'lucide-react';
 
 interface ProductEditProps {
@@ -45,6 +52,125 @@ export default function ProductEdit({
         default_selling_price: product.default_selling_price ? product.default_selling_price.toString() : '',
         mrp: product.mrp ? product.mrp.toString() : '',
     });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [filePreview, setFilePreview] = useState<string | null>(null);
+    const [uploadIsPrimary, setUploadIsPrimary] = useState(false);
+    const [uploadSortOrder, setUploadSortOrder] = useState('0');
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
+
+    const [deleteTargetImage, setDeleteTargetImage] = useState<ProductImage | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSettingPrimary, setIsSettingPrimary] = useState<number | null>(null);
+
+    const images: ProductImage[] = product.images || [];
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        setUploadErrorMessage(null);
+
+        if (!file) {
+            setSelectedFile(null);
+            setFilePreview(null);
+            return;
+        }
+
+        // Client-side quick check
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            setUploadErrorMessage('Only JPEG, PNG, and WebP image files are allowed. SVG and other file types are prohibited.');
+            setSelectedFile(null);
+            setFilePreview(null);
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadErrorMessage('File size exceeds the 5MB maximum limit.');
+            setSelectedFile(null);
+            setFilePreview(null);
+            return;
+        }
+
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFilePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleUploadSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedFile) return;
+
+        setIsUploading(true);
+        setUploadErrorMessage(null);
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        if (uploadIsPrimary) {
+            formData.append('is_primary', '1');
+        }
+        formData.append('sort_order', uploadSortOrder);
+
+        router.post(`/products/${product.id}/images`, formData, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsUploading(false);
+                setSelectedFile(null);
+                setFilePreview(null);
+                setUploadIsPrimary(false);
+                setUploadSortOrder('0');
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            },
+            onError: (errs) => {
+                setIsUploading(false);
+                const firstErr = Object.values(errs)[0];
+                setUploadErrorMessage(firstErr || 'Failed to upload image. Please try again.');
+            },
+        });
+    };
+
+    const handleSetPrimary = (image: ProductImage) => {
+        if (image.is_primary) return;
+
+        setIsSettingPrimary(image.id);
+        router.patch(
+            `/products/${product.id}/images/${image.id}/primary`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setIsSettingPrimary(null),
+            }
+        );
+    };
+
+    const handleDeleteImage = () => {
+        if (!deleteTargetImage) return;
+
+        setIsDeleting(true);
+        router.delete(`/products/${product.id}/images/${deleteTargetImage.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleting(false);
+                setDeleteTargetImage(null);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1048576).toFixed(2)} MB`;
+    };
 
     const standardUnits = ['PCS', 'BOX', 'CASE', 'KG', 'LTR', 'PACK', 'DOZEN', 'SET', 'MTR', 'BAG'];
 
@@ -393,6 +519,199 @@ export default function ProductEdit({
                         </CardContent>
                     </Card>
 
+                    {/* Product Images Management Card */}
+                    <Card className="border-border shadow-xs">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <ImageIcon className="h-4 w-4 text-primary" />
+                                Product Images & Assets (Private S3 Storage)
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Upload and manage product catalog images. The first uploaded image is automatically designated as the primary image. Allowed: JPEG, PNG, WebP (Max 5MB). SVG is prohibited.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Upload Section */}
+                            <div className="p-4 rounded-lg border border-dashed border-border/80 bg-muted/20 space-y-4">
+                                <div className="text-xs font-semibold text-foreground flex items-center gap-2">
+                                    <Upload className="h-4 w-4 text-primary" />
+                                    Upload New Product Image
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                                    {/* File Picker & Dropzone */}
+                                    <div className="md:col-span-8 space-y-2">
+                                        <input
+                                            ref={fileInputRef}
+                                            id="product_image_input"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={handleFileChange}
+                                            className="block w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                                        />
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Supported: JPEG, PNG, WebP · Max File Size: 5MB. Magic bytes verified server-side.
+                                        </p>
+
+                                        {uploadErrorMessage && (
+                                            <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 p-2 rounded-md">
+                                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                                <span>{uploadErrorMessage}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Preview & Options */}
+                                    <div className="md:col-span-4 space-y-3">
+                                        {filePreview && (
+                                            <div className="flex items-center gap-3 p-2 rounded-md border border-border bg-background">
+                                                <img
+                                                    src={filePreview}
+                                                    alt="Preview"
+                                                    className="h-14 w-14 object-cover rounded-md border border-border shrink-0"
+                                                />
+                                                <div className="overflow-hidden text-xs">
+                                                    <p className="font-medium truncate text-foreground text-[11px]">
+                                                        {selectedFile?.name}
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        {selectedFile ? formatBytes(selectedFile.size) : ''}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                id="upload_is_primary"
+                                                type="checkbox"
+                                                checked={uploadIsPrimary}
+                                                onChange={(e) => setUploadIsPrimary(e.target.checked)}
+                                                className="rounded border-input text-primary focus:ring-primary h-4 w-4"
+                                            />
+                                            <label htmlFor="upload_is_primary" className="text-xs text-foreground cursor-pointer">
+                                                Set as primary image
+                                            </label>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            onClick={handleUploadSubmit}
+                                            disabled={!selectedFile || isUploading}
+                                            size="sm"
+                                            className="w-full text-xs shadow-xs gap-1.5"
+                                        >
+                                            <Upload className="h-3.5 w-3.5" />
+                                            {isUploading ? 'Uploading to Private S3...' : 'Upload Image Asset'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Current Images List / Grid */}
+                            <div className="space-y-3">
+                                <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                    <span>Attached Catalog Images ({images.length})</span>
+                                    <span className="text-[11px] font-mono text-muted-foreground">
+                                        {images.filter((i) => i.is_primary).length > 0 ? '1 Primary Active' : 'No Primary Image'}
+                                    </span>
+                                </div>
+
+                                {images.length === 0 ? (
+                                    <div className="p-8 text-center rounded-md border border-border/80 bg-muted/10">
+                                        <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                                        <p className="text-xs font-medium text-foreground">No images attached</p>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                                            Upload an image above to set the hero catalog thumbnail.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {images.map((img) => (
+                                            <div
+                                                key={img.id}
+                                                className={`relative rounded-lg border p-3 flex flex-col justify-between gap-3 transition-colors ${
+                                                    img.is_primary
+                                                        ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
+                                                        : 'bg-card border-border hover:border-border/80'
+                                                }`}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    {img.url ? (
+                                                        <img
+                                                            src={img.url}
+                                                            alt={img.original_filename}
+                                                            className="h-16 w-16 object-cover rounded-md border border-border/80 bg-muted shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                                                            <ImageIcon className="h-6 w-6" />
+                                                        </div>
+                                                    )}
+
+                                                    <div className="overflow-hidden space-y-1 text-xs">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            {img.is_primary ? (
+                                                                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40 text-[10px] font-mono gap-1">
+                                                                    <Star className="h-2.5 w-2.5 fill-current" />
+                                                                    Primary
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
+                                                                    Gallery
+                                                                </Badge>
+                                                            )}
+                                                            <span className="text-[10px] font-mono text-muted-foreground">
+                                                                {img.mime_type.replace('image/', '').toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="font-mono text-[11px] truncate text-foreground" title={img.original_filename}>
+                                                            {img.original_filename}
+                                                        </p>
+                                                        <p className="text-[10px] font-mono text-muted-foreground">
+                                                            {formatBytes(img.size_bytes)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2 border-t border-border/60 gap-2">
+                                                    {!img.is_primary ? (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleSetPrimary(img)}
+                                                            disabled={isSettingPrimary === img.id}
+                                                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
+                                                        >
+                                                            <Star className="h-3 w-3" />
+                                                            {isSettingPrimary === img.id ? 'Setting...' : 'Set Primary'}
+                                                        </Button>
+                                                    ) : (
+                                                        <span className="text-[11px] font-mono text-primary flex items-center gap-1">
+                                                            <CheckCircle2 className="h-3 w-3" /> Hero Image
+                                                        </span>
+                                                    )}
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setDeleteTargetImage(img)}
+                                                        className="h-7 px-2 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 ml-auto"
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Form Actions */}
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <Link href={`/products/${product.id}`}>
@@ -406,6 +725,86 @@ export default function ProductEdit({
                         </Button>
                     </div>
                 </form>
+
+                {/* Delete Confirmation Modal */}
+                {deleteTargetImage && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Confirm Delete Image"
+                    >
+                        <div className="w-full max-w-md bg-card border border-border rounded-lg shadow-lg overflow-hidden animate-in fade-in-50 zoom-in-95">
+                            <div className="px-6 py-4 border-b border-border">
+                                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    Delete Product Image
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    This asset will be permanently removed from private cloud storage.
+                                </p>
+                            </div>
+
+                            <div className="p-6 space-y-4 text-xs">
+                                <div className="flex items-center gap-3 p-3 rounded-md bg-muted/40 border border-border">
+                                    {deleteTargetImage.url ? (
+                                        <img
+                                            src={deleteTargetImage.url}
+                                            alt={deleteTargetImage.original_filename}
+                                            className="h-12 w-12 object-cover rounded-md border border-border shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                                            <ImageIcon className="h-5 w-5" />
+                                        </div>
+                                    )}
+                                    <div className="overflow-hidden">
+                                        <p className="font-mono font-medium text-foreground truncate">
+                                            {deleteTargetImage.original_filename}
+                                        </p>
+                                        <p className="text-muted-foreground font-mono text-[11px]">
+                                            {formatBytes(deleteTargetImage.size_bytes)} · {deleteTargetImage.mime_type}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {deleteTargetImage.is_primary && images.length > 1 && (
+                                    <div className="p-3 rounded-md bg-amber-950/20 border border-amber-800/40 text-amber-300 text-[11px] flex items-start gap-2">
+                                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <span>
+                                            <strong>Primary Image Notice:</strong> Deleting the primary image will automatically promote the next available image in the gallery to primary.
+                                        </span>
+                                    </div>
+                                )}
+
+                                <p className="text-muted-foreground">
+                                    Are you sure you want to delete this image? This operation cannot be undone.
+                                </p>
+
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setDeleteTargetImage(null)}
+                                        disabled={isDeleting}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        onClick={handleDeleteImage}
+                                        disabled={isDeleting}
+                                        className="shadow-xs gap-1.5"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Label } from '@/Components/ui/label';
-import { PageProps, Product, ProductStatusOption } from '@/types';
+import { PageProps, Product, ProductImage, ProductStatusOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -23,6 +23,12 @@ import {
     FileText,
     TrendingUp,
     ShieldAlert,
+    ImageIcon,
+    ZoomIn,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    Star,
 } from 'lucide-react';
 
 interface ProductShowProps {
@@ -42,6 +48,13 @@ export default function ProductShow({
 }: ProductShowProps) {
     const { auth } = usePage<PageProps>().props;
     const [statusModalOpen, setStatusModalOpen] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    const images: ProductImage[] = product.images || [];
+    const primaryIndex = images.findIndex((img) => img.is_primary);
+    const [selectedIndex, setSelectedIndex] = useState(primaryIndex >= 0 ? primaryIndex : 0);
+
+    const activeImage: ProductImage | undefined = images[selectedIndex];
 
     const isPrivileged = auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
 
@@ -49,6 +62,25 @@ export default function ProductShow({
         status: product.status,
         reason: '',
     });
+
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            if (!lightboxOpen) return;
+            if (e.key === 'Escape') {
+                setLightboxOpen(false);
+            } else if (e.key === 'ArrowRight' && images.length > 1) {
+                setSelectedIndex((prev) => (prev + 1) % images.length);
+            } else if (e.key === 'ArrowLeft' && images.length > 1) {
+                setSelectedIndex((prev) => (prev - 1 + images.length) % images.length);
+            }
+        },
+        [lightboxOpen, images.length]
+    );
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleKeyDown]);
 
     const formatCurrency = (amount: number | null | undefined) => {
         if (amount === null || amount === undefined) {
@@ -60,6 +92,12 @@ export default function ProductShow({
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(amount);
+    };
+
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1048576).toFixed(2)} MB`;
     };
 
     const formatDate = (dateString?: string) => {
@@ -144,7 +182,7 @@ export default function ProductShow({
                                 <Link href={`/products/${product.id}/edit`}>
                                     <Button size="sm" className="h-8 text-xs gap-1.5 shadow-xs">
                                         <Edit className="h-3.5 w-3.5" />
-                                        Edit Product
+                                        Edit Product & Images
                                     </Button>
                                 </Link>
                             </>
@@ -152,71 +190,152 @@ export default function ProductShow({
                     </div>
                 </div>
 
-                {/* Hero Product Card */}
+                {/* Hero Product & Gallery Card */}
                 <div className="rounded-lg border border-border bg-card p-6 shadow-xs">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
-                                    {product.sku}
-                                </span>
-                                {getStatusBadge(product.status)}
-                                <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                                    Unit: {product.unit}
-                                </span>
-                                {product.category ? (
-                                    <Badge variant="outline" className="text-xs font-mono">
-                                        Category: {product.category.name} ({product.category.code})
-                                    </Badge>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        {/* Left: Image Gallery (4 cols) */}
+                        <div className="lg:col-span-4 space-y-3">
+                            <div className="relative group rounded-lg border border-border overflow-hidden bg-muted/30 aspect-square flex items-center justify-center">
+                                {activeImage?.url ? (
+                                    <>
+                                        <img
+                                            src={activeImage.url}
+                                            alt={product.name}
+                                            className="w-full h-full object-contain p-2 transition-transform duration-200 group-hover:scale-105"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setLightboxOpen(true)}
+                                            className="absolute bottom-3 right-3 bg-black/70 hover:bg-black text-white p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs shadow-md"
+                                            title="Click to zoom / view lightbox"
+                                        >
+                                            <ZoomIn className="h-4 w-4" />
+                                            <span>Zoom</span>
+                                        </button>
+                                        {activeImage.is_primary && (
+                                            <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-mono px-2 py-0.5 rounded-sm font-semibold flex items-center gap-1 shadow-sm">
+                                                <Star className="h-3 w-3 fill-current" />
+                                                Primary Image
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
-                                    <span className="text-xs text-muted-foreground italic font-mono">
-                                        Uncategorized
-                                    </span>
+                                    <div className="flex flex-col items-center justify-center text-muted-foreground/60 p-6 text-center">
+                                        <Package className="h-16 w-16 mb-2 stroke-1" />
+                                        <span className="text-xs font-mono font-medium text-muted-foreground">No Product Image</span>
+                                        {can.update && (
+                                            <Link href={`/products/${product.id}/edit`} className="mt-2">
+                                                <span className="text-[11px] text-primary hover:underline">Upload in Edit view &rarr;</span>
+                                            </Link>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                                {product.name}
-                            </h1>
+                            {/* Thumbnail strip if multiple images */}
+                            {images.length > 1 && (
+                                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                    {images.map((img, idx) => (
+                                        <button
+                                            key={img.id}
+                                            type="button"
+                                            onClick={() => setSelectedIndex(idx)}
+                                            className={`relative h-14 w-14 shrink-0 rounded-md border-2 overflow-hidden transition-all ${
+                                                selectedIndex === idx
+                                                    ? 'border-primary ring-2 ring-primary/20 scale-105'
+                                                    : 'border-border/80 opacity-70 hover:opacity-100'
+                                            }`}
+                                        >
+                                            {img.url ? (
+                                                <img src={img.url} alt={img.original_filename} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                            {img.is_primary && (
+                                                <div className="absolute top-0 right-0 bg-primary h-2.5 w-2.5 rounded-bl-xs" title="Primary" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
-                            {product.description ? (
-                                <p className="text-sm text-muted-foreground max-w-3xl leading-relaxed">
-                                    {product.description}
-                                </p>
-                            ) : (
-                                <p className="text-xs text-muted-foreground italic">
-                                    No description or technical specifications provided.
-                                </p>
+                            {activeImage && (
+                                <div className="text-[11px] font-mono text-muted-foreground/80 flex items-center justify-between px-1">
+                                    <span className="truncate max-w-[180px]" title={activeImage.original_filename}>
+                                        {activeImage.original_filename}
+                                    </span>
+                                    <span>{formatBytes(activeImage.size_bytes)} · {activeImage.mime_type.replace('image/', '').toUpperCase()}</span>
+                                </div>
                             )}
                         </div>
 
-                        {/* Order Eligibility Callout */}
-                        <div className="p-4 rounded-md border border-border/80 bg-muted/20 shrink-0 min-w-[240px]">
-                            <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
-                                Order Readiness Contract
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {product.status === 'ACTIVE' ? (
-                                    <>
-                                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                        <span className="text-xs font-semibold text-emerald-400 font-mono">
-                                            Eligible for Selection
+                        {/* Right: Product Metadata & Info (8 cols) */}
+                        <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
+                                        {product.sku}
+                                    </span>
+                                    {getStatusBadge(product.status)}
+                                    <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                        Unit: {product.unit}
+                                    </span>
+                                    {product.category ? (
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                            Category: {product.category.name} ({product.category.code})
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground italic font-mono">
+                                            Uncategorized
                                         </span>
-                                    </>
+                                    )}
+                                </div>
+
+                                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                                    {product.name}
+                                </h1>
+
+                                {product.description ? (
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {product.description}
+                                    </p>
                                 ) : (
-                                    <>
-                                        <AlertCircle className="h-4 w-4 text-amber-400" />
-                                        <span className="text-xs font-semibold text-amber-400 font-mono">
-                                            Ordering Disabled
-                                        </span>
-                                    </>
+                                    <p className="text-xs text-muted-foreground italic">
+                                        No description or technical specifications provided.
+                                    </p>
                                 )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">
-                                {product.status === 'ACTIVE'
-                                    ? 'Product may participate in new orders.'
-                                    : 'Product will fail ensureCanOrder() validation.'}
-                            </p>
+
+                            {/* Order Eligibility Callout */}
+                            <div className="p-4 rounded-md border border-border/80 bg-muted/20">
+                                <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                                    Order Readiness Contract
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {product.status === 'ACTIVE' ? (
+                                        <>
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                            <span className="text-xs font-semibold text-emerald-400 font-mono">
+                                                Eligible for Selection
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <AlertCircle className="h-4 w-4 text-amber-400" />
+                                            <span className="text-xs font-semibold text-amber-400 font-mono">
+                                                Ordering Disabled
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-1">
+                                    {product.status === 'ACTIVE'
+                                        ? 'Product may participate in new orders.'
+                                        : 'Product will fail ensureCanOrder() validation.'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -470,6 +589,96 @@ export default function ProductShow({
                                 </Button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Image Lightbox Dialog */}
+            {lightboxOpen && activeImage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in-50"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Product Image Lightbox"
+                >
+                    <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center">
+                        {/* Lightbox Controls */}
+                        <div className="w-full flex items-center justify-between pb-3 text-white">
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs text-white/80">
+                                    {selectedIndex + 1} of {images.length}
+                                </span>
+                                <span className="text-white/40">·</span>
+                                <span className="text-xs font-mono text-white/90 truncate max-w-xs">
+                                    {activeImage.original_filename}
+                                </span>
+                                {activeImage.is_primary && (
+                                    <Badge variant="outline" className="bg-primary/30 text-primary-foreground border-primary/50 text-[10px] font-mono">
+                                        Primary
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setLightboxOpen(false)}
+                                className="text-white/80 hover:text-white hover:bg-white/10 h-8 w-8 p-0 rounded-full"
+                                title="Close (Esc)"
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </div>
+
+                        {/* Full Size Image */}
+                        <div className="relative w-full flex items-center justify-center bg-black/40 rounded-lg overflow-hidden max-h-[75vh]">
+                            {images.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedIndex((prev) => (prev - 1 + images.length) % images.length)}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                                    title="Previous Image (Left Arrow)"
+                                >
+                                    <ChevronLeft className="h-6 w-6" />
+                                </button>
+                            )}
+
+                            <img
+                                src={activeImage.url || ''}
+                                alt={activeImage.original_filename}
+                                className="max-h-[72vh] max-w-full object-contain select-none"
+                            />
+
+                            {images.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedIndex((prev) => (prev + 1) % images.length)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                                    title="Next Image (Right Arrow)"
+                                >
+                                    <ChevronRight className="h-6 w-6" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Lightbox thumbnail row */}
+                        {images.length > 1 && (
+                            <div className="flex items-center gap-2 pt-3 overflow-x-auto max-w-full">
+                                {images.map((img, idx) => (
+                                    <button
+                                        key={img.id}
+                                        type="button"
+                                        onClick={() => setSelectedIndex(idx)}
+                                        className={`relative h-12 w-12 shrink-0 rounded-md border overflow-hidden transition-all ${
+                                            selectedIndex === idx
+                                                ? 'border-primary ring-2 ring-primary/40 scale-105'
+                                                : 'border-white/20 opacity-50 hover:opacity-100'
+                                        }`}
+                                    >
+                                        <img src={img.url || ''} alt={img.original_filename} className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
