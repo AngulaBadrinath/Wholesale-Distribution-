@@ -71,7 +71,7 @@
 ### Customer Management
 - [x] `FEAT-CUS-001`: Customer CRUD Operations
 - [x] `FEAT-CUS-002`: Customer Assignment & Scoping to Salesmen
-- [ ] `FEAT-CUS-003`: Customer Profile, Outstanding Balance & Credit Limit View
+- [x] `FEAT-CUS-003`: Customer Profile, Outstanding Balance & Credit Limit View
 - [ ] `FEAT-CUS-004`: Customer Lifecycle Controls (`ACTIVE`, `ON_HOLD`, `INACTIVE`)
 
 ### Salesman Management

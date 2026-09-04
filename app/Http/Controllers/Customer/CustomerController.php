@@ -106,7 +106,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Display the specified customer.
+     * Display the specified customer profile.
      */
     public function show(Request $request, Customer $customer): Response
     {
@@ -116,48 +116,10 @@ class CustomerController extends Controller
             abort(403, 'You are not authorized to access this customer record.');
         }
 
-        $customer->loadMissing('salesman:id,name,email,role,status');
+        $profile = $this->customerService->getProfile($customer, $user);
 
         return Inertia::render('Customer/Show', [
-            'customer' => [
-                'id' => $customer->id,
-                'code' => $customer->code,
-                'name' => $customer->name,
-                'contact_name' => $customer->contact_name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-                'billing_address_line1' => $customer->billing_address_line1,
-                'billing_address_line2' => $customer->billing_address_line2,
-                'billing_city' => $customer->billing_city,
-                'billing_state' => $customer->billing_state,
-                'billing_postal_code' => $customer->billing_postal_code,
-                'billing_country' => $customer->billing_country,
-                'formatted_billing_address' => $customer->formattedBillingAddress(),
-                'shipping_address_line1' => $customer->shipping_address_line1,
-                'shipping_address_line2' => $customer->shipping_address_line2,
-                'shipping_city' => $customer->shipping_city,
-                'shipping_state' => $customer->shipping_state,
-                'shipping_postal_code' => $customer->shipping_postal_code,
-                'shipping_country' => $customer->shipping_country,
-                'formatted_shipping_address' => $customer->formattedShippingAddress(),
-                'tax_id' => $customer->tax_id,
-                'credit_limit' => (float) $customer->credit_limit,
-                'payment_terms' => $customer->payment_terms instanceof PaymentTerms ? $customer->payment_terms->value : (string) $customer->payment_terms,
-                'payment_terms_label' => $customer->payment_terms instanceof PaymentTerms ? $customer->payment_terms->label() : (string) $customer->payment_terms,
-                'status' => $customer->status instanceof CustomerStatus ? $customer->status->value : (string) $customer->status,
-                'status_label' => $customer->status instanceof CustomerStatus ? $customer->status->label() : (string) $customer->status,
-                'can_order' => $customer->canPlaceOrders(),
-                'notes' => $customer->notes,
-                'salesman_id' => $customer->salesman_id,
-                'salesman' => $customer->salesman ? [
-                    'id' => $customer->salesman->id,
-                    'name' => $customer->salesman->name,
-                    'email' => $customer->salesman->email,
-                    'status' => $customer->salesman->status instanceof AccountStatus ? $customer->salesman->status->value : (string) $customer->salesman->status,
-                ] : null,
-                'created_at' => $customer->created_at?->toIso8601String(),
-                'updated_at' => $customer->updated_at?->toIso8601String(),
-            ],
+            'customer' => $profile,
             'statuses' => collect(CustomerStatus::cases())->map(fn (CustomerStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),

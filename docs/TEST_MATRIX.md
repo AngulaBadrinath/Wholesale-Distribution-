@@ -182,6 +182,33 @@
 - [x] **Frontend Payload Tampering Rejection:** Malicious types/strings in assignment payloads rejected with 422 (`CUS-SLM-029`).
 - [x] **No-Op Reassignment Optimization:** Redundant assignment of same salesman produces no unnecessary database writes or duplicate audit events (`CUS-SLM-030`).
 
+### 1.3.2 Customer Profile, Outstanding Balance & Credit Limit View (`CUSTOMER` / `FEAT-CUS-003`)
+- [x] **Super Admin Profile Access:** Super Admin can access any customer profile with full action capabilities (`CUS-PROFILE-001`).
+- [x] **Admin Profile Access:** Admin can access any customer profile with edit and assign capabilities (`CUS-PROFILE-002`).
+- [x] **Accountant Read-Only Profile:** Accountant can view customer profile and commercial terms read-only (`CUS-PROFILE-003`).
+- [x] **Salesman Assigned Portfolio Access:** Salesman can access their assigned customer's profile (`CUS-PROFILE-004`).
+- [x] **Salesman IDOR Cross-Account Denial:** Salesman attempting to view another salesman's customer rejected with 403 Forbidden (`CUS-PROFILE-005`).
+- [x] **Salesman IDOR Unassigned Denial:** Salesman attempting to view unassigned customer rejected with 403 Forbidden (`CUS-PROFILE-006`).
+- [x] **Unauthenticated Guest Redirection:** Unauthenticated guest redirected to login (`CUS-PROFILE-007`).
+- [x] **Unauthorized Role Access Denial:** Roles without `customer.view` (`WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`CUS-PROFILE-008`).
+- [x] **Inactive Account Interception:** Inactive/suspended accounts intercepted and redirected to login (`CUS-PROFILE-009`).
+- [x] **Authoritative Identity Rendering:** Profile renders customer code, name, contact name, email, phone, and notes (`CUS-PROFILE-010`).
+- [x] **Complete Address Formatting:** Multi-line billing and shipping destinations formatted correctly (`CUS-PROFILE-011`).
+- [x] **Commercial Credit & Terms Presentation:** Credit limit and payment terms with human labels rendered accurately (`CUS-PROFILE-012`).
+- [x] **Lifecycle Status & Order Eligibility:** `ACTIVE` enables order eligibility; `ON_HOLD` / `INACTIVE` indicates restricted status (`CUS-PROFILE-013`).
+- [x] **Eager-Loaded Sales Representative:** Sales representative details eagerly loaded without N+1 queries (`CUS-PROFILE-014`).
+- [x] **Safe Unassigned Handling:** Unassigned customer renders `salesman: null` safely without errors (`CUS-PROFILE-015`).
+- [x] **Deferred Financial Contract Reporting:** Financial summary explicitly reports `status: DEFERRED` and `is_authoritative: false` (`CUS-PROFILE-016`).
+- [x] **Zero Synthetic Outstanding Balance:** Outstanding balance is `null` (not fabricated as authoritative `$0.00`) (`CUS-PROFILE-017`).
+- [x] **Zero Synthetic Available Credit:** Available credit is `null` (not fabricated as authoritative credit limit) (`CUS-PROFILE-018`).
+- [x] **Zero Synthetic Aging Breakdown:** Aging bucket values are `null` (not fabricated as authoritative zero balances) (`CUS-PROFILE-019`).
+- [x] **No Placeholder Transaction Tables:** Database schema verified to contain zero placeholder `orders` or `payments` tables (`CUS-PROFILE-020`).
+- [x] **Informational Reconciliation Notice:** Explanatory notice detailing future live transaction reconciliation returned (`CUS-PROFILE-022`).
+- [x] **Secrets & Auth Data Leak Protection:** Zero passwords, MFA tokens, or session secrets present in profile payload (`CUS-PROFILE-023`).
+- [x] **Tax ID Presentation:** Tax ID rendered in authorized profile context without leakage to logs (`CUS-PROFILE-024`).
+- [x] **Nonexistent Resource Tampering Protection:** Nonexistent customer ID requests return 404 Not Found (`CUS-PROFILE-025`).
+- [x] **Optimized Single-Query Profile Retrieval:** Profile loading runs efficiently within strict query count thresholds (`CUS-PROFILE-027`).
+
 ### 1.4 Salesman Management (`SALESMAN`)
 - [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
 - [ ] **Validation:** Duplicate email rejected.

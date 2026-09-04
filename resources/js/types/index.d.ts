@@ -95,6 +95,25 @@ export interface EligibleSalesman {
     role?: string;
 }
 
+export interface CustomerAgingSummary {
+    current: number | null;
+    days_1_30: number | null;
+    days_31_60: number | null;
+    days_61_90: number | null;
+    days_90_plus: number | null;
+}
+
+export interface CustomerFinancialSummary {
+    status: 'DEFERRED' | 'AVAILABLE';
+    is_authoritative: boolean;
+    credit_limit: number;
+    outstanding_balance: number | null;
+    available_credit: number | null;
+    credit_utilization_pct: number | null;
+    aging: CustomerAgingSummary;
+    source_notice: string;
+}
+
 export interface Customer {
     id: number;
     code: string;
@@ -124,8 +143,10 @@ export interface Customer {
     payment_terms_label?: string;
     status: CustomerStatus;
     status_label?: string;
+    status_badge_variant?: string;
     can_order?: boolean;
     notes: string | null;
+    financial_summary?: CustomerFinancialSummary;
     created_at?: string;
     updated_at?: string;
 }

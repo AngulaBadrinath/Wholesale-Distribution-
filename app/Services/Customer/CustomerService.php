@@ -5,6 +5,7 @@ namespace App\Services\Customer;
 use App\DTOs\Customer\CustomerData;
 use App\Enums\AccountStatus;
 use App\Enums\CustomerStatus;
+use App\Enums\PaymentTerms;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Models\Customer;
@@ -71,6 +72,81 @@ class CustomerService
     public function findById(int $id): Customer
     {
         return Customer::with('salesman:id,name,email,role,status')->findOrFail($id);
+    }
+
+    /**
+     * Retrieve authoritative customer profile data with structured commercial and deferred financial state.
+     * Eager-loads salesman relation without N+1 overhead.
+     *
+     * Invariant on Financial Values (RULE-ACC-001 / RULE-DOM-001):
+     * Transactional domains (Orders, Payments, Invoices, Receivables) do not exist yet in Phase 02.
+     * Financial summary values (outstanding balance, available credit, aging) are explicitly modeled
+     * as a DEFERRED presentation contract (null amounts, is_authoritative = false) with zero fabricated numbers.
+     *
+     * @return array<string, mixed>
+     */
+    public function getProfile(Customer $customer, ?User $actor = null): array
+    {
+        $customer->loadMissing('salesman:id,name,email,role,status');
+
+        $creditLimit = (float) $customer->credit_limit;
+
+        return [
+            'id' => $customer->id,
+            'code' => $customer->code,
+            'name' => $customer->name,
+            'contact_name' => $customer->contact_name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'salesman_id' => $customer->salesman_id,
+            'salesman' => $customer->salesman ? [
+                'id' => $customer->salesman->id,
+                'name' => $customer->salesman->name,
+                'email' => $customer->salesman->email,
+                'status' => $customer->salesman->status instanceof AccountStatus ? $customer->salesman->status->value : (string) $customer->salesman->status,
+            ] : null,
+            'billing_address_line1' => $customer->billing_address_line1,
+            'billing_address_line2' => $customer->billing_address_line2,
+            'billing_city' => $customer->billing_city,
+            'billing_state' => $customer->billing_state,
+            'billing_postal_code' => $customer->billing_postal_code,
+            'billing_country' => $customer->billing_country,
+            'formatted_billing_address' => $customer->formattedBillingAddress(),
+            'shipping_address_line1' => $customer->shipping_address_line1,
+            'shipping_address_line2' => $customer->shipping_address_line2,
+            'shipping_city' => $customer->shipping_city,
+            'shipping_state' => $customer->shipping_state,
+            'shipping_postal_code' => $customer->shipping_postal_code,
+            'shipping_country' => $customer->shipping_country,
+            'formatted_shipping_address' => $customer->formattedShippingAddress(),
+            'tax_id' => $customer->tax_id,
+            'credit_limit' => $creditLimit,
+            'payment_terms' => $customer->payment_terms instanceof PaymentTerms ? $customer->payment_terms->value : (string) $customer->payment_terms,
+            'payment_terms_label' => $customer->payment_terms instanceof PaymentTerms ? $customer->payment_terms->label() : (string) $customer->payment_terms,
+            'status' => $customer->status instanceof CustomerStatus ? $customer->status->value : (string) $customer->status,
+            'status_label' => $customer->status instanceof CustomerStatus ? $customer->status->label() : (string) $customer->status,
+            'status_badge_variant' => $customer->status instanceof CustomerStatus ? $customer->status->badgeVariant() : 'secondary',
+            'can_order' => $customer->canPlaceOrders(),
+            'notes' => $customer->notes,
+            'financial_summary' => [
+                'status' => 'DEFERRED',
+                'is_authoritative' => false,
+                'credit_limit' => $creditLimit,
+                'outstanding_balance' => null,
+                'available_credit' => null,
+                'credit_utilization_pct' => null,
+                'aging' => [
+                    'current' => null,
+                    'days_1_30' => null,
+                    'days_31_60' => null,
+                    'days_61_90' => null,
+                    'days_90_plus' => null,
+                ],
+                'source_notice' => 'Financial balances and aging will be calculated from authoritative transaction data once Orders, Payments, and Receivables are implemented.',
+            ],
+            'created_at' => $customer->created_at?->toIso8601String(),
+            'updated_at' => $customer->updated_at?->toIso8601String(),
+        ];
     }
 
     /**
