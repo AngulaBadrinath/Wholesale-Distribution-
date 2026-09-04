@@ -102,7 +102,7 @@
 ### Salesman Ordering
 - [x] `FEAT-ORD-001`: Salesman Order Creation Flow (Customer select, catalogue browse, add to cart)
 - [x] `FEAT-ORD-002`: Draft Order Persistence & Resumption
-- [ ] `FEAT-ORD-003`: Order Line Quantity Stepper & Validation Controls
+- [x] `FEAT-ORD-003`: Order Line Quantity Stepper & Validation Controls
 - [ ] `FEAT-ORD-004`: Order Review, Line Tax Breakdown & Financial Summary
 - [ ] `FEAT-ORD-005`: Order Submission Idempotency Enforcement
 - [ ] `FEAT-ORD-006`: Salesman Order History & Multi-State Timeline

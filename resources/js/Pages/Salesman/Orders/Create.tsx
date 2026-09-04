@@ -214,13 +214,10 @@ export default function CreateOrder({
     };
 
     const handleUpdateQuantityInReview = (productId: number, quantity: number) => {
-        if (quantity <= 0) {
-            handleRemoveFromCart(productId);
-            return;
-        }
+        const safeQuantity = Math.max(1, Math.min(999999, Math.floor(quantity)));
         setCart((prev) =>
             prev.map((item) =>
-                item.product.id === productId ? { ...item, quantity: Math.min(999999, quantity) } : item
+                item.product.id === productId ? { ...item, quantity: safeQuantity } : item
             )
         );
         setHasUnsavedChanges(true);

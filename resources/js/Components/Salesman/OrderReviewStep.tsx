@@ -10,11 +10,10 @@ import {
     ArrowLeft,
     CheckCircle2,
     Trash2,
-    Plus,
-    Minus,
     AlertTriangle,
     ShieldCheck,
 } from 'lucide-react';
+import { QuantityStepper } from '@/Components/Salesman/QuantityStepper';
 
 interface OrderReviewStepProps {
     customer: CustomerSummary;
@@ -177,27 +176,15 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
                                                 ${parseFloat(line.unit_price).toFixed(2)}
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                                <div className="inline-flex items-center border rounded bg-background">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onUpdateQuantity(line.product.id, line.quantity - 1)}
-                                                        className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        <Minus className="h-3 w-3" />
-                                                    </button>
-                                                    <span className="w-8 text-center font-mono font-bold">
-                                                        {line.quantity}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onUpdateQuantity(line.product.id, line.quantity + 1)}
-                                                        className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        <Plus className="h-3 w-3" />
-                                                    </button>
-                                                </div>
+                                                <QuantityStepper
+                                                    value={line.quantity}
+                                                    min={1}
+                                                    max={999999}
+                                                    onChange={(qty) => onUpdateQuantity(line.product.id, qty)}
+                                                    disabled={isSubmitting}
+                                                    size="sm"
+                                                    ariaLabel={`quantity for ${line.product.name}`}
+                                                />
                                             </td>
                                             <td className="py-3 px-4 text-right font-mono">
                                                 <div>${line.tax}</div>

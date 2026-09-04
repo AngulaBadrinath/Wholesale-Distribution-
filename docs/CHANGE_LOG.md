@@ -199,6 +199,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ORD-002`.
 
+### CHANGE-006: FEAT-ORD-003 Order Line Quantity Stepper & Validation Controls
+- **Change ID:** `CHANGE-006`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement a unified, accessible, and robust quantity stepper component (`QuantityStepper.tsx`) across all three Order Builder surfaces: Product Catalogue Cards (`ProductOrderCard.tsx`), Quick Cart Drawer (`CartDrawer.tsx`), and Order Review & Confirmation Table (`OrderReviewStep.tsx`). Enforce positive integer domain bounds ($1 \le \text{quantity} \le 999,999$) with boundary disable states (`[-]` disabled at 1, `[+]` disabled at 999,999), intermediate typing buffer, Enter/blur normalization, $\ge 44\text{px}$ touch targets, and full ARIA semantics. Decouple quantity decrement from line removal (preserves explicit deletion via trash/remove controls). Integrate with 2-second debounced draft autosave and server-side FormRequest and Service layer validation.
+- **Reason:** Provide seamless, ergonomic, and error-resistant quantity modification for salesmen across desktop, tablet, and mobile devices without risking invalid quantities or premature row deletions.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Order Workflow), §25.1 (Salesman Ordering), §25.3 (Line Quantity Validation).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §8.2 (Concurrency & Idempotency).
+- **Affected Security:** Zero client trust; server-side FormRequest (`CreateOrderRequest`, `SaveOrderDraftRequest`) and `OrderService` enforce strict positive integer validation ($1 \le \text{quantity} \le 999,999$).
+- **Affected Frontend:** `QuantityStepper.tsx`, `ProductOrderCard.tsx`, `CartDrawer.tsx`, `OrderReviewStep.tsx`, `Create.tsx`.
+- **Affected Tickets:** `FEAT-ORD-003` completed.
+- **Inventory Impact:** Zero inventory reservation or decrement; stock allocated downstream.
+- **Order Impact:** Mutable line item quantity in draft and ephemeral cart; transitions to immutable snapshot on final order submission.
+- **Payment Impact:** None.
+- **Tax Impact:** Live UI preview recalculated; authoritative line taxes and totals computed via `TaxCalculationService`.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None (schema already supports integer quantities).
+- **Testing Impact:** Added 10 comprehensive feature tests (`OrderQuantityValidationTest.php`). Full suite at 600 tests (3,539 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-003`.
+
 ---
 
 ## 3. Template for Future Change Requests

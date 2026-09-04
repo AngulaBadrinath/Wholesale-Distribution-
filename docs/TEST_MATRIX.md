@@ -453,6 +453,19 @@
 - [x] **Audit Event Tracing:** Emits `ORDER_DRAFT_SAVED`, `ORDER_DRAFT_DISCARDED`, and `ORDER_CREATED` with `was_draft = true` without credentials or sensitive data (`ORD-DRAFT-015`).
 - [x] **Regression Protection (FEAT-ORD-001):** Direct order creation from FEAT-ORD-001 continues operating flawlessly without regressions (`ORD-DRAFT-016`).
 
+### 1.8.2 Order Line Quantity Stepper & Validation Controls (`QUANTITY STEPPER` / `FEAT-ORD-003`)
+- [x] **Minimum Boundary Acceptance (Qty = 1):** Positive integer quantity of 1 accepted at minimum boundary (`ORD-QTY-001`).
+- [x] **Maximum Boundary Acceptance (Qty = 999,999):** Positive integer quantity of 999,999 accepted at maximum boundary (`ORD-QTY-002`).
+- [x] **Zero Quantity Rejection:** Quantity of 0 rejected with 422 Unprocessable Entity (`ORD-QTY-003`).
+- [x] **Negative Quantity Rejection:** Negative quantities rejected with 422 Unprocessable Entity (`ORD-QTY-004`).
+- [x] **Fractional / Decimal Rejection:** Fractional and decimal quantities rejected with 422 Unprocessable Entity (`ORD-QTY-005`).
+- [x] **Oversized Quantity Rejection (>999,999):** Quantities exceeding 999,999 rejected with 422 Unprocessable Entity (`ORD-QTY-006`).
+- [x] **Non-Numeric Quantity Rejection:** String / non-numeric input rejected with 422 Unprocessable Entity (`ORD-QTY-007`).
+- [x] **Draft Quantity Update & Version Increment:** Updating draft item quantity recalculates line tax, taxable amount, and preview totals accurately, incrementing `version` by 1 (`ORD-QTY-008`).
+- [x] **Draft Update Validation Guard:** Updating draft with invalid quantity rejected with 422 (`ORD-QTY-009`).
+- [x] **Resumed Draft Submission Recalculation:** Resumed draft with modified quantities commits with exact authoritative totals and sequence number (`ORD-QTY-010`).
+- [x] **Unified Frontend Stepper (`QuantityStepper.tsx`):** Reusable segmented control with boundary disable states (`[-]` disabled at 1, `[+]` disabled at 999,999), direct numeric input buffer, Enter/blur normalization, $\ge 44\text{px}$ touch targets, and full ARIA semantics integrated across catalog card, cart drawer, and review table (`ORD-QTY-011`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

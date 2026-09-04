@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
-import { Package, Plus, Minus, Check, AlertCircle } from 'lucide-react';
+import { Package, Plus, Check, AlertCircle } from 'lucide-react';
+import { QuantityStepper } from '@/Components/Salesman/QuantityStepper';
 
 interface ProductOrderCardProps {
     product: CatalogProduct;
@@ -33,10 +34,9 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
     }, [cartItem]);
 
     const handleQuantityChange = (newQty: number) => {
-        const clampedQty = Math.max(1, Math.min(999999, Math.floor(newQty || 1)));
-        setQuantity(clampedQty);
+        setQuantity(newQty);
         if (cartItem) {
-            onUpdateCart(product, clampedQty, unitPrice);
+            onUpdateCart(product, newQty, unitPrice);
         }
     };
 
@@ -179,32 +179,14 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                                 <label className="text-[10px] font-medium text-muted-foreground block mb-1">
                                     Quantity
                                 </label>
-                                <div className="flex items-center border rounded-md bg-background">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleQuantityChange(quantity - 1)}
-                                        className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-l transition-colors"
-                                        aria-label="Decrease quantity"
-                                    >
-                                        <Minus className="h-3.5 w-3.5" />
-                                    </button>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={999999}
-                                        value={quantity}
-                                        onChange={(e) => handleQuantityChange(parseInt(e.target.value, 10))}
-                                        className="h-8 border-0 text-center font-mono text-xs focus-visible:ring-0 p-0"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleQuantityChange(quantity + 1)}
-                                        className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r transition-colors"
-                                        aria-label="Increase quantity"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
+                                <QuantityStepper
+                                    value={quantity}
+                                    min={1}
+                                    max={999999}
+                                    onChange={handleQuantityChange}
+                                    ariaLabel={`quantity for ${product.name}`}
+                                    className="w-full justify-between"
+                                />
                             </div>
 
                             {/* Unit Price Customizer */}

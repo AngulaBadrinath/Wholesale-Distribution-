@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { CartLineItem } from '@/types/order';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
-import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
+import { QuantityStepper } from '@/Components/Salesman/QuantityStepper';
 
 interface CartDrawerProps {
     open: boolean;
@@ -86,26 +87,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2">
-                                            {/* Quantity Control */}
-                                            <div className="flex items-center border rounded bg-background">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
-                                                    className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <Minus className="h-3 w-3" />
-                                                </button>
-                                                <span className="w-8 text-center font-mono font-bold">
-                                                    {item.quantity}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
-                                                    className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <Plus className="h-3 w-3" />
-                                                </button>
-                                            </div>
+                                             {/* Quantity Control */}
+                                             <QuantityStepper
+                                                 value={item.quantity}
+                                                 min={1}
+                                                 max={999999}
+                                                 onChange={(qty) => onUpdateQuantity(item.product.id, qty)}
+                                                 size="sm"
+                                                 ariaLabel={`quantity for ${item.product.name}`}
+                                             />
 
                                             <div className="flex items-center gap-3">
                                                 <span className="font-mono font-bold text-sm text-foreground">
