@@ -237,6 +237,36 @@ export interface ProductImage {
     created_at?: string;
 }
 
+export type TaxProfileStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface TaxProfile {
+    id: number;
+    name: string;
+    code: string;
+    rate: string;
+    description: string | null;
+    status: TaxProfileStatus;
+    status_label?: string;
+    status_badge_variant?: string;
+    products_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface TaxProfileSelectOption {
+    id: number;
+    code: string;
+    name: string;
+    rate: string;
+    status: string;
+}
+
+export interface TaxProfileStatusOption {
+    value: TaxProfileStatus;
+    label: string;
+    badgeVariant?: string;
+}
+
 export interface Product {
     id: number;
     sku: string;
@@ -254,6 +284,7 @@ export interface Product {
     default_selling_price: number | string;
     mrp: number | string;
     tax_profile_id: number | null;
+    tax_profile?: TaxProfile | null;
     primary_image_url?: string | null;
     images?: ProductImage[];
     created_at?: string;

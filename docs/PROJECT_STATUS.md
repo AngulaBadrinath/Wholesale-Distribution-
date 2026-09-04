@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **21.1%** (27 / 128 tickets) | FEAT-PRICE-002 verified complete; 521 automated tests passing (3,127 assertions) |
+| **Overall Code Completion** | **21.9%** (28 / 128 tickets) | FEAT-TAX-001 verified complete; 551 automated tests passing (3,247 assertions) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 02 — Master Data Management & Configuration / Commerce** | Status: `IN_PROGRESS` (SYS-001..002, CUS-001..004, SLM-001..002, PROD-001..003, CAT-001, PRICE-001, PRICE-002 complete) |
-| **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00 & Phase 01 complete/deferred) |
-| **Current Active Ticket** | **FEAT-PRICE-002** (Complete) | Ready to begin `FEAT-TAX-001: Product-Specific Tax Profile Engine & Order-Line Snapshot` |
+| **Current Phase** | **Phase 02 — Master Data Management & Configuration / Commerce** | Status: `COMPLETED` (SYS-001..002, CUS-001..004, SLM-001..002, PROD-001..003, CAT-001, PRICE-001..002, TAX-001 complete) |
+| **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00, Phase 01, Phase 02 complete) |
+| **Current Active Ticket** | **FEAT-TAX-001** (Complete) | Ready to begin `FEAT-ORD-001: Salesman Order Creation Flow` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001`, `FEAT-DLV-001`) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **27** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`).
-- Current progress: **21.1%** (27 / 128).
+- Completed tickets: **28** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`).
+- Current progress: **21.9%** (28 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (27):**
+- **Completed Tickets (28):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -60,11 +60,12 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   25. `FEAT-CAT-001`: Product Category Management & Hierarchy
   26. `FEAT-PRICE-001`: Price Boundary Constraint Enforcement
   27. `FEAT-PRICE-002`: Authorized Price Override Engine with Auditing
+  28. `FEAT-TAX-001`: Product-Specific Tax Profile Engine & Order-Line Snapshot
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Order and Delivery domain models in Phases 05 and 08).
-- **Upcoming Tickets (Phase 02 — Commerce: Pricing & Product-Specific Tax):**
-  1. `FEAT-TAX-001`: Product-Specific Tax Profile Engine & Order-Line Snapshot
+- **Upcoming Tickets (Phase 03 — Ordering Workflows):**
+  1. `FEAT-ORD-001`: Salesman Order Creation Flow (Customer select, catalogue browse, add to cart)
 
 ---
 

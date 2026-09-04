@@ -60,6 +60,16 @@ class Product extends Model
     }
 
     /**
+     * Get the tax profile that this product belongs to.
+     *
+     * @return BelongsTo<TaxProfile, $this>
+     */
+    public function taxProfile(): BelongsTo
+    {
+        return $this->belongsTo(TaxProfile::class, 'tax_profile_id');
+    }
+
+    /**
      * Get all images attached to this product.
      *
      * @return HasMany<ProductImage, $this>

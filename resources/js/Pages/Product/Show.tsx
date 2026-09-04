@@ -296,6 +296,15 @@ export default function ProductShow({
                                             Uncategorized
                                         </span>
                                     )}
+                                    {product.tax_profile ? (
+                                        <Badge variant="outline" className="text-xs font-mono bg-primary/10 text-primary border-primary/20">
+                                            Tax: {product.tax_profile.name} [{product.tax_profile.code}] ({parseFloat(product.tax_profile.rate).toFixed(4)}%)
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground italic font-mono">
+                                            No Tax Profile (Tax-Free)
+                                        </span>
+                                    )}
                                 </div>
 
                                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -464,10 +473,16 @@ export default function ProductShow({
                                 <span className="font-mono text-foreground">{product.unit}</span>
                             </div>
                             <div className="flex justify-between py-1.5 border-b border-border/60">
-                                <span className="text-muted-foreground">Future Tax Profile Hook:</span>
-                                <span className="font-mono text-muted-foreground">
-                                    {product.tax_profile_id ? `#${product.tax_profile_id}` : 'None (V1 Hook)'}
-                                </span>
+                                <span className="text-muted-foreground">Assigned Tax Profile:</span>
+                                {product.tax_profile ? (
+                                    <span className="font-mono text-foreground font-medium">
+                                        {product.tax_profile.name} ({parseFloat(product.tax_profile.rate).toFixed(4)}%)
+                                    </span>
+                                ) : (
+                                    <span className="font-mono text-muted-foreground italic">
+                                        None (Tax-Free / Direct)
+                                    </span>
+                                )}
                             </div>
                             <div className="flex justify-between py-1.5 border-b border-border/60">
                                 <span className="text-muted-foreground">Created At:</span>

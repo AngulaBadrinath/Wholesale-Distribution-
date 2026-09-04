@@ -14,6 +14,7 @@ import {
     KeyRound,
     Package,
     FolderTree,
+    Receipt,
     Shield
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasCustomerView = auth?.user?.permissions?.includes('customer.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasUserView = auth?.user?.permissions?.includes('user.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasProductView = auth?.user?.permissions?.includes('product.view') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
+    const hasTaxManage = auth?.user?.permissions?.includes('product.tax.update') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -102,6 +104,15 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                                 <span>Product Categories</span>
                                             </Link>
                                         </>
+                                    )}
+                                    {hasTaxManage && (
+                                        <Link
+                                            href="/tax-profiles"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Receipt className="h-4 w-4 text-primary" />
+                                            <span>Tax Profiles</span>
+                                        </Link>
                                     )}
                                     {hasCustomerView && (
                                         <Link

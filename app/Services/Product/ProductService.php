@@ -33,7 +33,7 @@ class ProductService
      */
     public function list(array $filters = [], int $perPage = 15, ?User $actor = null): LengthAwarePaginator
     {
-        $query = Product::query()->with(['category:id,name,code', 'primaryImage']);
+        $query = Product::query()->with(['category:id,name,code', 'primaryImage', 'taxProfile']);
 
         // 1. Search filter across SKU, name, description
         if (! empty($filters['search'])) {
@@ -90,7 +90,7 @@ class ProductService
     public function findById(int $id, ?User $actor = null): array
     {
         /** @var Product $product */
-        $product = Product::with(['category:id,name,code', 'images'])->findOrFail($id);
+        $product = Product::with(['category:id,name,code', 'images', 'taxProfile'])->findOrFail($id);
 
         return $this->formatProduct($product, $actor);
     }
@@ -127,6 +127,14 @@ class ProductService
             'mrp' => (float) $product->mrp,
             'can_order' => $product->canOrder(),
             'tax_profile_id' => $product->tax_profile_id,
+            'tax_profile' => $product->taxProfile ? [
+                'id' => $product->taxProfile->id,
+                'name' => $product->taxProfile->name,
+                'code' => $product->taxProfile->code,
+                'rate' => (string) $product->taxProfile->rate,
+                'formatted_rate' => rtrim(rtrim((string) $product->taxProfile->rate, '0'), '.').'%',
+                'status' => $product->taxProfile->status instanceof \App\Enums\TaxProfileStatus ? $product->taxProfile->status->value : (string) $product->taxProfile->status,
+            ] : null,
             'primary_image_url' => $product->primaryImage ? $this->productImageService->getTemporaryUrl($product->primaryImage) : null,
             'images' => $product->relationLoaded('images')
                 ? $product->images->map(fn ($img) => $this->productImageService->formatImage($img))->values()->all()
@@ -134,6 +142,28 @@ class ProductService
             'created_at' => $product->created_at?->toIso8601String(),
             'updated_at' => $product->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Retrieve active tax profiles for selection dropdowns.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getActiveTaxProfiles(): array
+    {
+        return \App\Models\TaxProfile::query()
+            ->active()
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'code', 'rate'])
+            ->map(fn (\App\Models\TaxProfile $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'code' => $p->code,
+                'rate' => (string) $p->rate,
+                'formatted_rate' => rtrim(rtrim((string) $p->rate, '0'), '.').'%',
+            ])
+            ->values()
+            ->toArray();
     }
 
     /**
@@ -213,6 +243,16 @@ class ProductService
                 if (! $category || ! $category->isActive()) {
                     throw ValidationException::withMessages([
                         'category_id' => 'The selected category is inactive and cannot be assigned to new products.',
+                    ]);
+                }
+            }
+
+            // Validate active tax profile assignment
+            if ($data->tax_profile_id !== null) {
+                $taxProfile = \App\Models\TaxProfile::find($data->tax_profile_id);
+                if (! $taxProfile || ! $taxProfile->isActive()) {
+                    throw ValidationException::withMessages([
+                        'tax_profile_id' => 'The selected tax profile is inactive or invalid.',
                     ]);
                 }
             }
@@ -298,6 +338,22 @@ class ProductService
                 }
             }
 
+            // Validate active tax profile if tax profile is being changed
+            $taxProfileChanged = ($data->tax_profile_id !== $lockedProduct->tax_profile_id);
+            if ($taxProfileChanged) {
+                // If tax profile assignment changed, verify actor possesses PRODUCT_TAX_UPDATE
+                $this->ensureActorIsActiveAndAuthorized($actor, Permission::PRODUCT_TAX_UPDATE);
+
+                if ($data->tax_profile_id !== null) {
+                    $taxProfile = \App\Models\TaxProfile::find($data->tax_profile_id);
+                    if (! $taxProfile || ! $taxProfile->isActive()) {
+                        throw ValidationException::withMessages([
+                            'tax_profile_id' => 'The selected tax profile is inactive and cannot be assigned.',
+                        ]);
+                    }
+                }
+            }
+
             $previousPrices = [
                 'cost_price' => PriceBoundaryService::normalize((string) $lockedProduct->cost_price, 'cost_price'),
                 'minimum_allowed_price' => PriceBoundaryService::normalize((string) $lockedProduct->minimum_allowed_price, 'minimum_allowed_price'),
@@ -371,6 +427,22 @@ class ProductService
                     'sku' => $lockedProduct->sku,
                     'previous_prices' => $previousPrices,
                     'new_prices' => $newPrices,
+                    'ip_address' => $ip,
+                    'timestamp' => now()->toIso8601String(),
+                ]);
+            }
+
+            if ($taxProfileChanged) {
+                Log::info('Product tax profile assignment updated', [
+                    'event' => 'audit.product_event',
+                    'action' => 'PRODUCT_TAX_PROFILE_CHANGED',
+                    'actor_id' => $actor->id,
+                    'actor_email' => $actor->email,
+                    'actor_role' => $actor->role?->value,
+                    'product_id' => $lockedProduct->id,
+                    'sku' => $lockedProduct->sku,
+                    'previous_tax_profile_id' => $original['tax_profile_id'] ?? null,
+                    'new_tax_profile_id' => $data->tax_profile_id,
                     'ip_address' => $ip,
                     'timestamp' => now()->toIso8601String(),
                 ]);

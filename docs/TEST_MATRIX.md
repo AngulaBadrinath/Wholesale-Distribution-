@@ -408,11 +408,18 @@
 - [x] **Security (Override):** Price override requires `pricing.override` permission and mandatory documented reason (`FEAT-PRICE-002`).
 - [ ] **Database / Snapshot:** Order item permanently stores actual transaction price; product master edits do not alter historical orders (`EDGE-007`).
 
-### 1.7 Product-Specific Tax (`TAX`)
-- [ ] **Happy Path:** Line-item tax calculated correctly using assigned product tax profile rate (`RULE-TAX-001`).
-- [ ] **Validation:** Zero-tax (exempt) and standard-rate products mixed in one order calculate correct aggregated tax.
-- [ ] **Database / Snapshot:** Historical line records `tax_profile_id`, `tax_rate`, and `tax_amount`. Updating tax rate on product profile does not retroactively change existing orders (`EDGE-008`, `EDGE-023`).
-- [ ] **Rounding Test:** Banker's rounding (`ROUND_HALF_UP`) verified to 2 decimal places per line item.
+### 1.7 Product-Specific Tax (`TAX` / `FEAT-TAX-001`)
+- [x] **Authoritative Calculation:** Line-item tax calculated authoritatively using assigned product tax profile rate (`RULE-TAX-001`, `TaxCalculationServiceTest::test_standard_tax_calculation`).
+- [x] **Exact BCMath & Zero Floats:** Calculations use exact BCMath decimal strings with zero floating-point arithmetic (`TaxCalculationServiceTest::test_precision_and_no_float_corruption`).
+- [x] **ROUND_HALF_UP Determinism:** Deterministic line-level `ROUND_HALF_UP` rounding tested for half-cent boundaries (`1.234 -> 1.23`, `1.235 -> 1.24`, `1.236 -> 1.24`, `0.005 -> 0.01`, `0.004 -> 0.00`) (`TaxCalculationServiceTest::test_deterministic_round_half_up_boundaries`).
+- [x] **Header Aggregation Invariant:** Header tax total is strictly $\sum \text{line\_tax\_amount}$ (sum of rounded line taxes), never round of sums (`TaxCalculationServiceTest::test_order_header_tax_aggregation_sums_rounded_line_taxes`).
+- [x] **Zero-Rate vs Tax-Exempt Identity:** Zero-rate and tax-exempt profiles calculate zero tax while preserving semantic profile identity (`TaxCalculationServiceTest::test_zero_tax_and_exempt_profiles`).
+- [x] **Immutable Tax Snapshot Contract:** `TaxSnapshotData` captures immutable decimal strings at calculation time; subsequent profile edits or deactivations do not mutate snapshot values (`TaxCalculationServiceTest::test_tax_snapshot_dto_immutability`).
+- [x] **Tax Profile Lifecycle & Active Assignment:** Active profiles assignable to products; inactive profiles rejected for new assignments while existing assignments are non-destructively preserved (`ProductTaxIntegrationTest::test_admin_can_assign_active_tax_profile_to_product`, `test_creating_product_with_inactive_tax_profile_is_rejected`).
+- [x] **Deletion Guard & ON DELETE RESTRICT:** Profile referenced by products cannot be deleted; database FK constraint and service guard enforce protection (`TaxProfileManagementTest::test_deleting_tax_profile_referenced_by_product_is_blocked`).
+- [x] **RBAC Protection:** Tax profile management and product tax assignment strictly guarded by `Permission::PRODUCT_TAX_UPDATE` (`TaxProfileManagementTest::test_unauthorized_roles_cannot_manage_tax_profiles`).
+- [x] **Structured Audit Logging:** Emits `TAX_PROFILE_CREATED`, `TAX_PROFILE_UPDATED`, `TAX_PROFILE_STATUS_CHANGED`, `TAX_PROFILE_DELETED`, and `PRODUCT_TAX_PROFILE_CHANGED` without secrets (`TaxProfileManagementTest::test_tax_profile_lifecycle_emits_audit_events`, `ProductTaxIntegrationTest::test_admin_can_update_product_tax_profile`).
+- [x] **Future Order Persistence Note:** Order-level persistence deferred to Phase 03/05 Order engine; contract DTOs `TaxSnapshotData` and `TaxCalculationResult` verified ready.
 
 ### 1.8 Order Creation & Submission (`ORDER`)
 - [ ] **Happy Path:** Salesman selects customer, adds items, sets quantities, reviews totals, and submits order (`FEAT-ORD-001`).

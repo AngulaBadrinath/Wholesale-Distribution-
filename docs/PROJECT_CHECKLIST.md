@@ -93,7 +93,7 @@
 - [x] `FEAT-PRICE-002`: Authorized Price Override Engine with Auditing
 
 ### Product-Specific Tax
-- [ ] `FEAT-TAX-001`: Product-Specific Tax Profile Engine & Order-Line Snapshot
+- [x] `FEAT-TAX-001`: Product-Specific Tax Profile Engine & Order-Line Snapshot
 
 ---
 

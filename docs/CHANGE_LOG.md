@@ -124,6 +124,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-PRICE-002`.
 
+### CHANGE-004: Product-Specific Tax Profile Engine & Order-Line Snapshot Contract
+- **Change ID:** `CHANGE-004`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Establish the product-specific tax profile domain engine (`tax_profiles` table, `TaxProfile` model, `TaxProfileStatus` enum), authoritative calculation engine (`TaxCalculationService`) using exact decimal BCMath arithmetic with deterministic `ROUND_HALF_UP` rounding, header tax sum of rounded line taxes invariant, transaction snapshot contract DTOs (`TaxSnapshotData`, `TaxCalculationResult`), Product Master integration (`products.tax_profile_id` FK with `ON DELETE RESTRICT`), active-only assignment guards, non-destructive deactivation, RBAC protection via `Permission::PRODUCT_TAX_UPDATE`, structured audit logging, and responsive frontend UI (Tax Profile Index/Create/Edit and Product Create/Edit/Show selectors).
+- **Reason:** Provide product-specific tax configuration with zero float financial authority, protect historical transaction integrity, ensure invoice line-tax reconcilability without half-cent rounding errors, and prepare the commerce spine for future Phase 03/05 Order workflows.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P1` (Commerce Spine Prerequisite)
+- **Affected PRD Requirements:** PRD §11.1, §11.2, §11.3, §11.4, §11.5.
+- **Affected Architecture:** Technical Architecture §20, §23.
+- **Affected Security:** Permission `product.tax.update` enforced on Tax Profile CRUD and Product tax profile assignments; unauthorized roles rejected with 403.
+- **Affected Frontend:** Created Tax Profile Index/Create/Edit pages (`resources/js/Pages/TaxProfile/*`), updated Product Create/Edit/Show pages with tax profile selectors and displays, and updated sidebar navigation.
+- **Affected Tickets:** `FEAT-TAX-001`.
+- **Inventory Impact:** None.
+- **Order Impact:** Reusable calculation engine (`TaxCalculationService`) and immutable snapshot contract (`TaxSnapshotData`) established for Phase 03/05 Order creation.
+- **Payment Impact:** None.
+- **Tax Impact:** Comprehensive product-specific tax engine with line-level `ROUND_HALF_UP` rounding and header sum of rounded line taxes established.
+- **Accounting Impact:** Guarantees future invoices and tax journals reconcile exactly with line-level tax amounts without rounding discrepancies.
+- **Data Migration Impact:** Created `tax_profiles` table (`2026_09_05_000006_create_tax_profiles_table.php`) and added foreign key `fk_products_tax_profile_id` on `products.tax_profile_id` (`2026_09_05_000007_add_foreign_key_to_products_tax_profile_id.php`).
+- **Testing Impact:** Added `TaxCalculationServiceTest` (18 unit tests), `TaxProfileManagementTest` (7 feature tests), and `ProductTaxIntegrationTest` (5 feature tests). Total suite at 551 tests passing (3,247 assertions).
+- **Deployment Impact:** Verified BCMath extension availability.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-TAX-001`.
+
 ---
 
 ## 3. Template for Future Change Requests

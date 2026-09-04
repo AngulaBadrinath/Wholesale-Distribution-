@@ -51,6 +51,7 @@ class UpdateProductRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'tax_profile_id' => ['nullable', 'integer', 'exists:tax_profiles,id'],
             'unit' => ['required', 'string', 'max:30'],
             'status' => ['required', 'string', Rule::in(ProductStatus::values())],
             'cost_price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0', 'max:99999999.99'],

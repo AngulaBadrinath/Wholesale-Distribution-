@@ -137,5 +137,16 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::match(['put', 'patch'], '/categories/{category}/status', [\App\Http\Controllers\Category\CategoryController::class, 'updateStatus'])->whereNumber('category')->name('categories.status');
         Route::delete('/categories/{category}', [\App\Http\Controllers\Category\CategoryController::class, 'destroy'])->whereNumber('category')->name('categories.destroy');
     });
+
+    // Tax Profile Management
+    Route::middleware('permission:product.tax.update')->group(function () {
+        Route::get('/tax-profiles', [\App\Http\Controllers\Tax\TaxProfileController::class, 'index'])->name('tax-profiles.index');
+        Route::get('/tax-profiles/create', [\App\Http\Controllers\Tax\TaxProfileController::class, 'create'])->name('tax-profiles.create');
+        Route::get('/tax-profiles-create', [\App\Http\Controllers\Tax\TaxProfileController::class, 'create']);
+        Route::post('/tax-profiles', [\App\Http\Controllers\Tax\TaxProfileController::class, 'store'])->name('tax-profiles.store');
+        Route::get('/tax-profiles/{tax_profile}/edit', [\App\Http\Controllers\Tax\TaxProfileController::class, 'edit'])->whereNumber('tax_profile')->name('tax-profiles.edit');
+        Route::put('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'update'])->whereNumber('tax_profile')->name('tax-profiles.update');
+        Route::delete('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'destroy'])->whereNumber('tax_profile')->name('tax-profiles.destroy');
+    });
 });
 

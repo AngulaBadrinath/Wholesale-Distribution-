@@ -50,6 +50,11 @@ class StoreProductRequest extends FormRequest
                 'integer',
                 Rule::exists('categories', 'id')->where('status', 'ACTIVE'),
             ],
+            'tax_profile_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('tax_profiles', 'id')->where('status', 'ACTIVE'),
+            ],
             'unit' => ['required', 'string', 'max:30'],
             'status' => ['required', 'string', Rule::in(ProductStatus::values())],
             'cost_price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0', 'max:99999999.99'],
@@ -76,6 +81,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'category_id.exists' => 'The selected category is invalid or inactive.',
+            'tax_profile_id.exists' => 'The selected tax profile is invalid or inactive.',
             'default_selling_price.gte' => 'Default selling price cannot be less than the minimum allowed price.',
             'default_selling_price.lte' => 'Default selling price cannot exceed the MRP / list price.',
             'mrp.gte' => 'MRP / list price cannot be less than the default selling price.',

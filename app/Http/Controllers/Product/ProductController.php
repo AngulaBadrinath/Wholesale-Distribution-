@@ -70,6 +70,7 @@ class ProductController extends Controller
         return Inertia::render('Product/Create', [
             'suggestedSku' => $this->productService->generateNextSku(),
             'categories' => $this->productService->getActiveCategories(),
+            'taxProfiles' => $this->productService->getActiveTaxProfiles(),
             'statuses' => collect(ProductStatus::cases())->map(fn (ProductStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),
@@ -143,6 +144,7 @@ class ProductController extends Controller
         return Inertia::render('Product/Edit', [
             'product' => $formatted,
             'categories' => $this->productService->getActiveCategories(),
+            'taxProfiles' => $this->productService->getActiveTaxProfiles(),
             'statuses' => collect(ProductStatus::cases())->map(fn (ProductStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),

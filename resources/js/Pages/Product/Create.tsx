@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Category, ProductStatusOption } from '@/types';
+import { Category, ProductStatusOption, TaxProfileSelectOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -16,17 +16,20 @@ import {
     Layers,
     Tag,
     Lock,
+    Receipt,
 } from 'lucide-react';
 
 interface ProductCreateProps {
     suggestedSku: string;
     categories: Category[];
+    taxProfiles: TaxProfileSelectOption[];
     statuses: ProductStatusOption[];
 }
 
 export default function ProductCreate({
     suggestedSku,
     categories,
+    taxProfiles,
     statuses,
 }: ProductCreateProps) {
     const { data, setData, post, processing, errors } = useForm({
@@ -34,6 +37,7 @@ export default function ProductCreate({
         name: '',
         description: '',
         category_id: '',
+        tax_profile_id: '',
         unit: 'PCS',
         status: 'ACTIVE',
         cost_price: '',
@@ -226,6 +230,35 @@ export default function ProductCreate({
                                         <p className="text-destructive text-xs mt-1">{errors.category_id}</p>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Tax Profile */}
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="tax_profile_id" className="text-xs font-medium">
+                                        Tax Profile & Calculation Rule
+                                    </Label>
+                                    <span className="text-[10px] font-mono text-muted-foreground">Optional / Product-Specific</span>
+                                </div>
+                                <select
+                                    id="tax_profile_id"
+                                    value={data.tax_profile_id}
+                                    onChange={(e) => setData('tax_profile_id', e.target.value)}
+                                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-xs"
+                                >
+                                    <option value="">-- No Tax Profile (Tax-Free / Direct) --</option>
+                                    {taxProfiles.map((tp) => (
+                                        <option key={tp.id} value={tp.id.toString()}>
+                                            {tp.name} [{tp.code}] — {parseFloat(tp.rate).toFixed(4)}%
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-muted-foreground mt-1">
+                                    Authoritative tax profile applied to line totals during order calculations.
+                                </p>
+                                {errors.tax_profile_id && (
+                                    <p className="text-destructive text-xs mt-1">{errors.tax_profile_id}</p>
+                                )}
                             </div>
 
                             {/* Description */}

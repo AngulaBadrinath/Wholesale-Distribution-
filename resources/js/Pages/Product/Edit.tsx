@@ -6,7 +6,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Category, Product, ProductImage, ProductStatus, ProductStatusOption } from '@/types';
+import { Category, Product, ProductImage, ProductStatus, ProductStatusOption, TaxProfileSelectOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -22,11 +22,13 @@ import {
     ImageIcon,
     X,
     FileCheck,
+    Receipt,
 } from 'lucide-react';
 
 interface ProductEditProps {
     product: Product;
     categories: Category[];
+    taxProfiles: TaxProfileSelectOption[];
     statuses: ProductStatusOption[];
     can: {
         updatePrice: boolean;
@@ -39,6 +41,7 @@ interface ProductEditFormData {
     name: string;
     description: string;
     category_id: string;
+    tax_profile_id: string;
     unit: string;
     status: ProductStatus;
     cost_price: string;
@@ -50,6 +53,7 @@ interface ProductEditFormData {
 export default function ProductEdit({
     product,
     categories,
+    taxProfiles,
     statuses,
     can,
 }: ProductEditProps) {
@@ -58,6 +62,7 @@ export default function ProductEdit({
         name: product.name || '',
         description: product.description || '',
         category_id: product.category_id ? product.category_id.toString() : '',
+        tax_profile_id: product.tax_profile_id ? product.tax_profile_id.toString() : '',
         unit: product.unit || 'PCS',
         status: product.status || 'ACTIVE',
         cost_price: product.cost_price !== null && product.cost_price !== undefined ? product.cost_price.toString() : '',
@@ -361,6 +366,42 @@ export default function ProductEdit({
                                         <p className="text-destructive text-xs mt-1">{errors.category_id}</p>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Tax Profile */}
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="tax_profile_id" className="text-xs font-medium">
+                                        Tax Profile & Calculation Rule
+                                    </Label>
+                                    {!can.updateTax ? (
+                                        <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 border border-amber-800/60 px-2 py-0.5 rounded flex items-center gap-1">
+                                            <Lock className="h-3 w-3" /> Requires product.tax.update
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] font-mono text-muted-foreground">Product-Specific (V1)</span>
+                                    )}
+                                </div>
+                                <select
+                                    id="tax_profile_id"
+                                    value={data.tax_profile_id}
+                                    disabled={!can.updateTax}
+                                    onChange={(e) => setData('tax_profile_id', e.target.value)}
+                                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-xs disabled:opacity-60"
+                                >
+                                    <option value="">-- No Tax Profile (Tax-Free / Direct) --</option>
+                                    {taxProfiles.map((tp) => (
+                                        <option key={tp.id} value={tp.id.toString()}>
+                                            {tp.name} [{tp.code}] — {parseFloat(tp.rate).toFixed(4)}%
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-muted-foreground mt-1">
+                                    Assigning a profile dictates line-level tax calculation (ROUND_HALF_UP). Deactivated profiles cannot be newly selected.
+                                </p>
+                                {errors.tax_profile_id && (
+                                    <p className="text-destructive text-xs mt-1">{errors.tax_profile_id}</p>
+                                )}
                             </div>
 
                             {/* Description */}
