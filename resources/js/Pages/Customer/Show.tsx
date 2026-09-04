@@ -342,6 +342,27 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                     </div>
                                 </div>
 
+                                <div className="p-2.5 rounded-md bg-muted/60 border border-border text-[11px] text-muted-foreground flex items-center gap-2">
+                                    <Info className="h-4 w-4 text-primary shrink-0" />
+                                    <span>
+                                        {data.status === 'ACTIVE' && (
+                                            <>
+                                                <strong className="text-foreground">Active Status:</strong> Customer is authorized to place new wholesale orders and participate in standard commercial operations.
+                                            </>
+                                        )}
+                                        {data.status === 'ON_HOLD' && (
+                                            <>
+                                                <strong className="text-foreground">On Hold Status:</strong> Customer is temporarily restricted from placing new orders pending credit, compliance, or management review.
+                                            </>
+                                        )}
+                                        {data.status === 'INACTIVE' && (
+                                            <>
+                                                <strong className="text-foreground">Inactive Status:</strong> Customer account is deactivated. New order placement is strictly prohibited. Historical transactions remain preserved.
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+
                                 <div className="flex items-center gap-2 pt-1">
                                     <Button type="submit" size="sm" disabled={processing} className="h-8 text-xs">
                                         {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}

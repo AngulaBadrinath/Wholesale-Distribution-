@@ -402,7 +402,7 @@ class CustomerService
     }
 
     /**
-     * Transition customer lifecycle status.
+     * Transition customer lifecycle status with row locking and structured audit logging.
      *
      * @throws AuthorizationException
      */
@@ -424,18 +424,17 @@ class CustomerService
 
             $previousStatus = $lockedCustomer->status;
 
+            // No-op check: if identical target status, return without duplicate database writes or audits
             if ($previousStatus === $newStatus) {
                 return $lockedCustomer;
             }
 
+            $action = $this->classifyStatusTransitionAction($previousStatus, $newStatus);
+
             $lockedCustomer->status = $newStatus;
             $lockedCustomer->save();
 
-            $action = $newStatus === CustomerStatus::INACTIVE
-                ? 'CUSTOMER_DEACTIVATED'
-                : 'CUSTOMER_STATUS_CHANGED';
-
-            Log::info("Customer status transitioned to {$newStatus->value}", [
+            Log::info("Customer status transitioned: {$action}", [
                 'event' => 'audit.customer_event',
                 'action' => $action,
                 'actor_id' => $actor->id,
@@ -452,6 +451,18 @@ class CustomerService
 
             return $lockedCustomer;
         });
+    }
+
+    /**
+     * Classify the lifecycle transition audit action based on target status.
+     */
+    protected function classifyStatusTransitionAction(CustomerStatus $previous, CustomerStatus $new): string
+    {
+        return match ($new) {
+            CustomerStatus::ACTIVE => 'CUSTOMER_ACTIVATED',
+            CustomerStatus::ON_HOLD => 'CUSTOMER_PLACED_ON_HOLD',
+            CustomerStatus::INACTIVE => 'CUSTOMER_DEACTIVATED',
+        };
     }
 
     /**

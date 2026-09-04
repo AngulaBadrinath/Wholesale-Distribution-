@@ -161,6 +161,29 @@ class Customer extends Model
     }
 
     /**
+     * Authoritatively verify that the customer is eligible to place new orders.
+     * Throws ValidationException with specific operational context if ineligible.
+     * Future Phase 05 Order domain will consume this validation contract.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function ensureCanPlaceOrders(): void
+    {
+        if (! $this->canPlaceOrders()) {
+            $statusLabel = $this->status instanceof CustomerStatus ? $this->status->label() : (string) $this->status;
+            $message = match ($this->status) {
+                CustomerStatus::ON_HOLD => 'Customer account is currently on hold and cannot participate in new sales orders.',
+                CustomerStatus::INACTIVE => 'Customer account is deactivated. New order creation is prohibited.',
+                default => "Customer account status ({$statusLabel}) is not eligible for order placement.",
+            };
+
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'customer_id' => $message,
+            ]);
+        }
+    }
+
+    /**
      * Return formatted multi-line billing address.
      */
     public function formattedBillingAddress(): string

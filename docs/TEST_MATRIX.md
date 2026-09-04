@@ -209,6 +209,36 @@
 - [x] **Nonexistent Resource Tampering Protection:** Nonexistent customer ID requests return 404 Not Found (`CUS-PROFILE-025`).
 - [x] **Optimized Single-Query Profile Retrieval:** Profile loading runs efficiently within strict query count thresholds (`CUS-PROFILE-027`).
 
+### 1.3.3 Customer Lifecycle Controls (`CUSTOMER` / `FEAT-CUS-004`)
+- [x] **Enum Order Eligibility Baseline:** `ACTIVE` returns true for `canPlaceOrders()`; `ON_HOLD` and `INACTIVE` return false (`CUS-LIFE-001`).
+- [x] **Model Order Readiness Contract - Active:** `Customer::ensureCanPlaceOrders()` completes normally for active customer (`CUS-LIFE-002`).
+- [x] **Model Order Readiness Contract - On Hold:** `Customer::ensureCanPlaceOrders()` throws `ValidationException` with operational explanation for on-hold customer (`CUS-LIFE-003`).
+- [x] **Model Order Readiness Contract - Inactive:** `Customer::ensureCanPlaceOrders()` throws `ValidationException` with reactivation instructions for inactive customer (`CUS-LIFE-004`).
+- [x] **Authorized Transition to On Hold:** Super Admin / Admin transitions customer from `ACTIVE` to `ON_HOLD` with reason (`CUS-LIFE-005`).
+- [x] **Authorized Transition to Inactive:** Super Admin / Admin transitions customer from `ACTIVE` to `INACTIVE` with reason (`CUS-LIFE-006`).
+- [x] **Authorized Reactivation to Active:** Super Admin / Admin reactivates customer from `INACTIVE` / `ON_HOLD` to `ACTIVE` (`CUS-LIFE-007`).
+- [x] **Transition from On Hold to Inactive:** Direct transition from `ON_HOLD` to `INACTIVE` succeeds with appropriate deactivation audit log (`CUS-LIFE-008`).
+- [x] **Transition from Inactive to On Hold:** Direct transition from `INACTIVE` to `ON_HOLD` succeeds with appropriate hold audit log (`CUS-LIFE-009`).
+- [x] **Unauthorized Role Denial - Salesman:** Salesman cannot update customer lifecycle status (403 Forbidden) (`CUS-LIFE-010`).
+- [x] **Unauthorized Role Denial - Accountant:** Accountant cannot update customer lifecycle status (403 Forbidden) (`CUS-LIFE-011`).
+- [x] **Unauthorized Role Denial - Warehouse & Delivery:** Warehouse Manager and Delivery Partner rejected with 403 Forbidden (`CUS-LIFE-012`).
+- [x] **Unauthenticated Guest Redirection:** Unauthenticated status update requests redirect to login (`CUS-LIFE-013`).
+- [x] **Inactive / Suspended Actor Protection:** Suspended administrator rejected from mutating status (`CUS-LIFE-014`).
+- [x] **No-Op Status Transition Optimization:** Submitting identical status produces zero database writes and zero duplicate audit logs (`CUS-LIFE-015`).
+- [x] **Invalid Status Payload Rejection:** Malformed status string rejected with 422 Unprocessable Entity (`CUS-LIFE-016`).
+- [x] **Reason Field Validation:** Optional reason field capped at 500 characters; oversized strings rejected with 422 (`CUS-LIFE-017`).
+- [x] **Audit Classification - CUSTOMER_ACTIVATED:** Reactivation produces `CUSTOMER_ACTIVATED` audit log (`CUS-LIFE-018`).
+- [x] **Audit Classification - CUSTOMER_PLACED_ON_HOLD:** Placing customer on hold produces `CUSTOMER_PLACED_ON_HOLD` audit log (`CUS-LIFE-019`).
+- [x] **Audit Classification - CUSTOMER_DEACTIVATED:** Deactivating customer produces `CUSTOMER_DEACTIVATED` audit log (`CUS-LIFE-020`).
+- [x] **Audit Security & Privacy:** Zero passwords, MFA secrets, or session tokens in audit log metadata (`CUS-LIFE-021`).
+- [x] **Salesman Portfolio Preservation on Deactivation:** Customer deactivation preserves assigned `salesman_id` link without detachment (`CUS-LIFE-022`).
+- [x] **Salesman Portfolio Preservation on Hold:** Placing customer on hold preserves assigned `salesman_id` link (`CUS-LIFE-023`).
+- [x] **Salesman Read Visibility of Inactive Customer:** Salesman can still view inactive customer in assigned portfolio read-only (`CUS-LIFE-024`).
+- [x] **IDOR & Cross-Customer Isolation:** Nonexistent customer ID returns 404 Not Found (`CUS-LIFE-025`).
+- [x] **Generic Update Payload Status Bypass Protection:** Updating status via generic customer update endpoint behaves authoritatively (`CUS-LIFE-026`).
+- [x] **Directory Filter by Lifecycle State:** Customer index filtering by `status=active`, `status=on_hold`, and `status=inactive` operates accurately (`CUS-LIFE-027`).
+- [x] **Enum Metadata & Transition Validation:** `description()`, `allowedTransitions()`, and `canTransitionTo()` helpers return correct state matrix (`CUS-LIFE-028`).
+
 ### 1.4 Salesman Management (`SALESMAN`)
 - [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
 - [ ] **Validation:** Duplicate email rejected.

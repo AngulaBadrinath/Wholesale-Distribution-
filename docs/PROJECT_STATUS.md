@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **14.1%** (18 / 128 tickets) | FEAT-CUS-003 verified complete; 281 automated tests passing (1,999 assertions) |
+| **Overall Code Completion** | **14.8%** (19 / 128 tickets) | FEAT-CUS-004 verified complete; 309 automated tests passing (2,070 assertions) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 02 — Master Data Management & Configuration** | Status: `IN_PROGRESS` (SYS-001, SYS-002, CUS-001, CUS-002, CUS-003 complete) |
+| **Current Phase** | **Phase 02 — Master Data Management & Configuration** | Status: `IN_PROGRESS` (SYS-001, SYS-002, CUS-001, CUS-002, CUS-003, CUS-004 complete) |
 | **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00 & Phase 01 complete/deferred) |
-| **Current Active Ticket** | **FEAT-CUS-003** (Complete) | Ready to begin `FEAT-CUS-004: Customer Lifecycle Controls` |
+| **Current Active Ticket** | **FEAT-CUS-004** (Complete) | Ready to begin `FEAT-SLM-001: Salesman Account Management & Lifecycle` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001`, `FEAT-DLV-001`) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **18** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`).
-- Current progress: **14.1%** (18 / 128).
+- Completed tickets: **19** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`).
+- Current progress: **14.8%** (19 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (18):**
+- **Completed Tickets (19):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -51,11 +51,12 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   16. `FEAT-CUS-001`: Customer CRUD Operations
   17. `FEAT-CUS-002`: Customer Assignment & Scoping to Salesmen
   18. `FEAT-CUS-003`: Customer Profile, Outstanding Balance & Credit Limit View
+  19. `FEAT-CUS-004`: Customer Lifecycle Controls (`ACTIVE`, `ON_HOLD`, `INACTIVE`)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Order and Delivery domain models in Phases 05 and 08).
 - **Upcoming Tickets (Phase 02 — Master Data Management & Configuration):**
-  1. `FEAT-CUS-004`: Customer Lifecycle Controls (`ACTIVE`, `ON_HOLD`, `INACTIVE`)
+  1. `FEAT-SLM-001`: Salesman Account Management & Lifecycle
 
 ---
 
@@ -127,4 +128,4 @@ The following items are recognized as future enterprise enhancements and are int
 ## 8. Next Recommended Action
  
 1. Activate next ticket in sequence from Document 05 / BUILD_PHASES.md:
-   - **`FEAT-CUS-001: Customer CRUD`** (Phase 02 / Epic 04: Customer Management).
+   - **`FEAT-SLM-001: Salesman Account Management & Lifecycle`** (Phase 02 / Epic 05: Salesman Management).
