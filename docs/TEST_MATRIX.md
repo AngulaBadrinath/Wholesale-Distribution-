@@ -46,9 +46,13 @@
 - [x] **Security (Privacy & Secrets):** Raw database session IDs are never exposed in Inertia props/DOM; opaque HMAC tokens used (`AUTH-SESSION-018`).
 - [x] **Security (Audit):** Structured audit logs written for all session lifecycle events without passwords or hashes (`AUTH-SESSION-015`).
 - [x] **Security Hook:** Application service supports programmatic session revocation for account security events (`AUTH-SESSION-017`).
-- [ ] **Edge Case:** Password reset token expires, is one-time use, and revokes prior sessions (`FEAT-AUTH-003`).
+- [x] **Password Reset (Zero Enumeration):** Forgot-password returns identical generic success for known, unknown, and suspended accounts (`AUTH-PASSWORD-003`, `AUTH-PASSWORD-004`, `AUTH-PASSWORD-005`, `AUTH-PASSWORD-024`, `AUTH-PASSWORD-025`).
+- [x] **Password Reset (Rate Limiting):** Layered IP and email rate limiting protects recovery endpoints (`AUTH-PASSWORD-006`).
+- [x] **Password Reset (Token Security):** High-entropy cryptographically secure tokens are single-use and time-limited (60 min) (`AUTH-PASSWORD-008`..`011`, `AUTH-PASSWORD-023`).
+- [x] **Password Reset (Session Invalidation):** Successful password reset purges all active database sessions across all devices via `SessionRevocationService` (`AUTH-PASSWORD-016`, `AUTH-PASSWORD-017`).
+- [x] **Password Reset (Policy & Secrets):** Enforces 8+ char password policy; plaintext passwords and raw tokens never stored or logged (`AUTH-PASSWORD-012`..`015`, `AUTH-PASSWORD-018`..`020`).
 - [ ] **Privileged MFA:** Super Admin / Admin / Accountant prompted for TOTP code (`FEAT-AUTH-004`).
-- [x] **Responsive:** Login & Session management views verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`, `Sessions.tsx`).
+- [x] **Responsive:** Login, Session management, Forgot Password, and Reset Password views verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`, `Sessions.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx`).
 
 ### 1.2 Roles & Permissions (`RBAC`)
 - [ ] **Happy Path:** Authorized user accesses permitted route and performs allowed action.

@@ -52,7 +52,7 @@
 ### Authentication
 - [x] `FEAT-AUTH-001`: Centralized Multi-Portal Login & Throttling
 - [x] `FEAT-AUTH-002`: Logout & Session Revocation
-- [ ] `FEAT-AUTH-003`: Secure Password Reset Flow
+- [x] `FEAT-AUTH-003`: Secure Password Reset Flow
 - [ ] `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)
 
 ### Roles & Permissions

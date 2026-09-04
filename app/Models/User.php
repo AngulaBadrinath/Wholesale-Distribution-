@@ -71,4 +71,14 @@ class User extends Authenticatable
     {
         return $this->status === AccountStatus::INVITED;
     }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new \App\Notifications\Auth\ResetPasswordNotification($token));
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useState, FormEventHandler } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/Components/ui/card';
@@ -124,6 +124,12 @@ export default function Login({ status }: LoginProps) {
                                     >
                                         Password
                                     </label>
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-xs text-primary hover:underline focus:outline-none focus:ring-1 focus:ring-ring rounded-xs"
+                                    >
+                                        Forgot password?
+                                    </Link>
                                 </div>
                                 <div className="relative">
                                     <Input
