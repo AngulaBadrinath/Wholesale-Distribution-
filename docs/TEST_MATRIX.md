@@ -480,6 +480,25 @@
 - [x] **Client-Side Financial Preview Utilities (`financial.ts`):** Centralized financial calculation helpers (`formatCurrency`, `calculateLinePreview`, `calculateOrderPreview`) provide non-authoritative preview parity with zero binary-float authority (`ORD-REV-011`).
 - [x] **Responsive Review UI (`OrderReviewStep.tsx` & `OrderReviewLineCard.tsx`):** High-density 7-column B2B ERP table for Desktop/Tablet ($\ge 640\text{px}$) and dedicated touch cards with $\ge 44\text{px}$ targets for Mobile ($< 640\text{px}$, 320–430px) without horizontal scrolling (`ORD-REV-012`).
 
+### 1.8.4 Order Submission Idempotency Enforcement (`IDEMPOTENCY` / `FEAT-ORD-005`)
+- [x] **Direct Creation Exact Replay:** Submitting duplicate order request with identical idempotency key and payload returns existing order and redirects to show route without duplicate database records (`ORD-IDEMP-001`).
+- [x] **Direct Creation Changed Customer Conflict (409):** Replaying same idempotency key with different customer ID rejected with HTTP 409 Conflict without modifying existing order (`ORD-IDEMP-002`).
+- [x] **Direct Creation Changed Quantity Conflict (409):** Replaying same idempotency key with modified item quantity rejected with HTTP 409 Conflict (`ORD-IDEMP-003`).
+- [x] **Direct Creation Changed Unit Price Conflict (409):** Replaying same idempotency key with modified unit price rejected with HTTP 409 Conflict (`ORD-IDEMP-004`).
+- [x] **Direct Creation Changed Notes Conflict (409):** Replaying same idempotency key with modified notes rejected with HTTP 409 Conflict (`ORD-IDEMP-005`).
+- [x] **Concurrent Unique Constraint Collision Race Recovery:** Simultaneous race where request bypasses initial select and hits PostgreSQL `UNIQUE(idempotency_key)` constraint rolls back transaction, performs fresh committed read, verifies fingerprint, and returns winning order cleanly without 500 database error (`ORD-IDEMP-006`).
+- [x] **Concurrent Collision with Conflicting Payload:** Simultaneous race colliding on unique constraint with conflicting payload throws HTTP 409 Conflict after clean rollback (`ORD-IDEMP-007`).
+- [x] **Draft Double Submission Replay:** Rapid double submission of draft order returns already-submitted order safely without duplicate order numbers or duplicate items (`ORD-IDEMP-008`).
+- [x] **Draft Submit Key Collision with Existing Order:** Submitting draft with an idempotency key already belonging to another committed order returns HTTP 409 Conflict (`ORD-IDEMP-009`).
+- [x] **Cross-Salesman Key Theft / IDOR Protection (403):** Salesman attempting to replay or submit with an idempotency key belonging to another salesman is blocked with HTTP 403 Forbidden without leaking order details (`ORD-IDEMP-010`).
+- [x] **Missing Idempotency Key Validation (422):** Request without `idempotency_key` rejected with 422 Unprocessable Entity (`ORD-IDEMP-011`).
+- [x] **Oversized Idempotency Key Validation (422):** Idempotency key exceeding 64 characters rejected with 422 Unprocessable Entity (`ORD-IDEMP-012`).
+- [x] **Audit Log Uniqueness Contract:** Exactly one `ORDER_CREATED` audit event emitted on initial transaction commit; subsequent idempotent replays emit `ORDER_IDEMPOTENT_REPLAY` and zero duplicate `ORDER_CREATED` events (`ORD-IDEMP-013`).
+- [x] **Master Data Price Drift Invariant:** Replaying original order intent after catalog product default price update returns historical committed snapshot without recalculation or 409 mismatch (`ORD-IDEMP-014`).
+- [x] **Advisory Cache Lock Fallback:** Failure, timeout, or absence of Redis advisory cache lock gracefully falls back directly to PostgreSQL correctness authority (`ORD-IDEMP-015`).
+- [x] **Authoritative Constraint Collision Handler:** Direct `UniqueConstraintViolationException` (SQLSTATE `23505`) caught, rolled back, and recovered into winner order (`ORD-IDEMP-016`).
+- [x] **Sequential Order Number Stability:** Idempotent replays preserve existing `order_number` without advancing or consuming PostgreSQL `order_number_seq` (`ORD-IDEMP-017`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

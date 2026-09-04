@@ -104,7 +104,7 @@
 - [x] `FEAT-ORD-002`: Draft Order Persistence & Resumption
 - [x] `FEAT-ORD-003`: Order Line Quantity Stepper & Validation Controls
 - [x] `FEAT-ORD-004`: Order Review, Line Tax Breakdown & Financial Summary
-- [ ] `FEAT-ORD-005`: Order Submission Idempotency Enforcement
+- [x] `FEAT-ORD-005`: Order Submission Idempotency Enforcement
 - [ ] `FEAT-ORD-006`: Salesman Order History & Multi-State Timeline
 
 ### Admin Order Operations

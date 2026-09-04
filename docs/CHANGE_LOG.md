@@ -247,7 +247,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Deployment Impact:** None.
 - **Approved By:** Principal Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** `FEAT-ORD-004`.
+### CHANGE-008: FEAT-ORD-005 Order Submission Idempotency Enforcement
+- **Change ID:** `CHANGE-008`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Harden order submission across direct order placement (`POST /salesman/orders`) and draft submission (`POST /salesman/orders/drafts/{id}/submit`) with dual-layer concurrency protection: advisory non-blocking Redis/cache lock (`Cache::lock("order_submission:{$actor->id}:{$idempotencyKey}", 10)`) with graceful fallback, authoritative PostgreSQL `UNIQUE(idempotency_key)` constraint backstop, and a specialized race collision recovery handler. On unique constraint collision (SQLSTATE `23505`), ensure transaction rollback, perform fresh committed read of the winner order, verify actor ownership (403 Forbidden for cross-salesman access), evaluate canonical fingerprint match (`doesOrderMatchDto`), return existing order on exact match (200/302), and throw HTTP 409 Conflict on payload mismatch. Enforce draft submission lock-for-update synchronization, sequence order number generation strictly on winning commits, and structured audit log uniqueness (exactly ONE `ORDER_CREATED` event per logical order; `ORDER_IDEMPOTENT_REPLAY` and `ORDER_IDEMPOTENCY_CONFLICT` on replays and conflicts).
+- **Reason:** Guarantee absolute correctness and eliminate duplicate order placement, duplicate order numbering, duplicate `ORDER_CREATED` audit events, and 500 error crashes during concurrent submissions or rapid client retries under peak or degraded network conditions.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §25.1 (Salesman Ordering), §25.3 (Order Submission & Idempotency).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §8.2 (Concurrency & Idempotency Architecture), §18 (Database & Transaction Integrity).
+- **Affected Security:** Zero client trust (`RULE-SEC-002`); salesman scoping enforced; cross-salesman key reuse blocked with HTTP 403 without data leakage (`RULE-SEC-003`); IDOR prevention; PostgreSQL row locks (`SELECT FOR UPDATE`).
+- **Affected Frontend:** `Create.tsx` (stable idempotency key state, disabled submission button, localStorage cleanup on confirmed commit).
+- **Affected Tickets:** `FEAT-ORD-005` completed.
+- **Inventory Impact:** Zero duplicate reservations or allocations.
+- **Order Impact:** Single canonical order identity (`idempotency_key`), single sequence order number (`ORD-YYYY-XXXXXX`), exact replay returns existing order without mutation.
+- **Payment Impact:** None.
+- **Tax Impact:** None; line taxes snapshotted once upon winning transaction commit.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None (schema `orders.idempotency_key` is already `VARCHAR(64) UNIQUE NOT NULL`).
+- **Testing Impact:** Added 17 comprehensive feature tests in `OrderSubmissionIdempotencyTest.php`. Full test suite at 624 tests (3,705 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-005`.
 
 ---
 
