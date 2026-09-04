@@ -368,6 +368,34 @@
 - [x] **General Product Update Lifecycle Protection:** Updating status through general `PUT /products/{id}` endpoint enforces transition validation, locks row, and emits authoritative lifecycle audit events (`PROD-LIFE-016`).
 - [x] **RULE-DOC-001 Invariant:** Product images are never exposed on formal invoices (`PROD-IMG-024`).
 
+### 1.5.4 Product Category Management & Hierarchy (`CATEGORY` / `FEAT-CAT-001`)
+- [x] **Root Category Creation:** Active Administrator creates root category (`parent_id = null`) with explicit uppercase code (`CAT-MGT-001`).
+- [x] **Child Category Creation:** Active Administrator creates child category under valid parent taxonomy (`CAT-MGT-002`).
+- [x] **Sequential Code Auto-Generation:** Category code auto-generated in sequential `CAT-00001` pattern when omitted (`CAT-MGT-003`).
+- [x] **Duplicate Code Rejection:** Duplicate category code rejected by Form Request and PostgreSQL unique constraint (`CAT-MGT-004`).
+- [x] **Sibling Name Uniqueness:** Sibling categories sharing same parent enforce case-insensitive unique names; same name under different parent allowed (`CAT-MGT-005`).
+- [x] **Multilevel Hierarchy & Path Generation:** 3+ level hierarchy paths and ancestor chains resolved accurately server-side (`CAT-MGT-006`).
+- [x] **Self-Parenting Cycle Prevention:** Category cannot set itself as its own parent (`parent_id = id`) (`CAT-MGT-007`).
+- [x] **Descendant-Parent Cycle Prevention:** Category cannot set any existing descendant as parent, preventing taxonomic cycles (`CAT-MGT-008`).
+- [x] **Safe Subtree Reparenting:** Reparenting category moves entire subtree atomically while preserving child hierarchy (`CAT-MGT-009`).
+- [x] **Deterministic Sibling Sort Order:** Sibling ordering resolved deterministically by `sort_order ASC` then `name ASC` (`CAT-MGT-010`).
+- [x] **Category Lifecycle Transitions:** Category transitions between `ACTIVE` and `INACTIVE` with audit logging (`CAT-MGT-011`).
+- [x] **Lifecycle No-Op Suppression:** Redundant lifecycle update produces zero database writes and zero audit logs (`CAT-MGT-012`).
+- [x] **Product Assignment Guard - Creation:** Product creation with `INACTIVE` category rejected with 422 (`CAT-MGT-013`).
+- [x] **Product Assignment Guard - Update:** Changing product category to `INACTIVE` category rejected with 422 (`CAT-MGT-014`).
+- [x] **Existing Product Preservation on Category Deactivation:** Deactivating category preserves existing `products.category_id`, prices, status, and images without modification (`CAT-MGT-015`).
+- [x] **Unchanged Inactive Category Preservation:** Product update preserves existing inactive category assignment when category is unchanged (`CAT-MGT-016`).
+- [x] **Deletion Block with Attached Products:** Attempting to delete category with attached products rejected with 422 (`CAT-MGT-017`).
+- [x] **Deletion Block with Subcategories:** Attempting to delete category with child subcategories rejected with 422 (`CAT-MGT-018`).
+- [x] **Empty Leaf Category Deletion:** Empty leaf category permanently deleted with structured audit logging (`CAT-MGT-019`).
+- [x] **Super Admin & Admin Full CRUD Access:** Privileged administrators possess complete view, create, edit, update, status, and delete authority (`CAT-MGT-020`).
+- [x] **Salesman & Warehouse Manager Read-Only:** Read-only access to directory and detail views; mutation endpoints rejected with 403 Forbidden (`CAT-MGT-021`).
+- [x] **Accountant & Delivery Partner Denied:** Roles without `product.view` denied all category access with 403 Forbidden (`CAT-MGT-022`).
+- [x] **Unauthenticated Guest Redirection:** Unauthenticated requests redirect to login (`CAT-MGT-023`).
+- [x] **Inactive / Suspended Actor Protection:** Inactive administrative accounts blocked from category operations (`CAT-MGT-024`).
+- [x] **Directory Search:** Search by code, name, and description filters category records accurately (`CAT-MGT-025`).
+- [x] **Status & Root Filters:** Category status filter and root-only toggle apply accurately (`CAT-MGT-026`).
+
 ### 1.6 Pricing Engine (`PRICING`)
 - [ ] **Happy Path:** Salesman selects actual selling price within allowed bounds (`min_price <= price <= mrp`).
 - [ ] **Validation:** Selling price below minimum allowed price rejected with 422 unless override authorized.

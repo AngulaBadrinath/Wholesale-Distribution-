@@ -105,11 +105,20 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::middleware('permission:product.view')->group(function () {
         Route::get('/products', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
         Route::get('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->name('products.show');
+
+        // Category Viewing
+        Route::get('/categories', [\App\Http\Controllers\Category\CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/{category}', [\App\Http\Controllers\Category\CategoryController::class, 'show'])->whereNumber('category')->name('categories.show');
     });
 
     Route::middleware('permission:product.create')->group(function () {
         Route::get('/products-create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
+
+        // Category Creation
+        Route::get('/categories/create', [\App\Http\Controllers\Category\CategoryController::class, 'create'])->name('categories.create');
+        Route::get('/categories-create', [\App\Http\Controllers\Category\CategoryController::class, 'create']);
+        Route::post('/categories', [\App\Http\Controllers\Category\CategoryController::class, 'store'])->name('categories.store');
     });
 
     Route::middleware('permission:product.update')->group(function () {
@@ -121,6 +130,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::post('/products/{product}/images', [\App\Http\Controllers\Product\ProductImageController::class, 'store'])->name('products.images.store');
         Route::patch('/products/{product}/images/{image}/primary', [\App\Http\Controllers\Product\ProductImageController::class, 'setPrimary'])->name('products.images.primary');
         Route::delete('/products/{product}/images/{image}', [\App\Http\Controllers\Product\ProductImageController::class, 'destroy'])->name('products.images.destroy');
+
+        // Category Management & Lifecycle
+        Route::get('/categories/{category}/edit', [\App\Http\Controllers\Category\CategoryController::class, 'edit'])->whereNumber('category')->name('categories.edit');
+        Route::put('/categories/{category}', [\App\Http\Controllers\Category\CategoryController::class, 'update'])->whereNumber('category')->name('categories.update');
+        Route::match(['put', 'patch'], '/categories/{category}/status', [\App\Http\Controllers\Category\CategoryController::class, 'updateStatus'])->whereNumber('category')->name('categories.status');
+        Route::delete('/categories/{category}', [\App\Http\Controllers\Category\CategoryController::class, 'destroy'])->whereNumber('category')->name('categories.destroy');
     });
 });
 

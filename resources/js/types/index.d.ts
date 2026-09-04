@@ -182,15 +182,48 @@ export interface PaginatedResponse<T> {
     total: number;
 }
 
-export type ProductStatus = 'ACTIVE' | 'INACTIVE';
+export type CategoryStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Category {
     id: number;
     code: string;
     name: string;
-    description: string | null;
+    description?: string | null;
+    parent_id?: number | null;
+    parent?: {
+        id: number;
+        name: string;
+        code: string;
+    } | null;
+    sort_order: number;
+    status: CategoryStatus;
+    status_label?: string;
+    status_badge_variant?: string;
+    products_count?: number;
+    children_count?: number;
+    hierarchy_path?: string;
+    can_delete?: boolean;
+    children?: Category[];
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CategoryStatusOption {
+    value: CategoryStatus;
+    label: string;
+    badgeVariant?: string;
+}
+
+export interface CategorySelectOption {
+    id: number;
+    code: string;
+    name: string;
+    hierarchy_path: string;
+    depth: number;
     status: string;
 }
+
+export type ProductStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface ProductImage {
     id: number;

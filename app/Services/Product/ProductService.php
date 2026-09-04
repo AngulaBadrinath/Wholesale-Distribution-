@@ -62,15 +62,23 @@ class ProductService
     }
 
     /**
-     * Retrieve active categories for selection dropdowns.
+     * Retrieve active categories for selection dropdowns with hierarchy paths.
      *
      * @return array<int, array<string, mixed>>
      */
     public function getActiveCategories(): array
     {
         return \App\Models\Category::active()
+            ->orderBy('sort_order', 'asc')
             ->orderBy('name', 'asc')
-            ->get(['id', 'code', 'name'])
+            ->get()
+            ->map(fn (\App\Models\Category $c) => [
+                'id' => $c->id,
+                'code' => $c->code,
+                'name' => $c->name,
+                'hierarchy_path' => $c->getHierarchyPath(),
+            ])
+            ->values()
             ->toArray();
     }
 
@@ -220,6 +228,16 @@ class ProductService
                 $attributes['sku'] = strtoupper(trim((string) $attributes['sku']));
             }
 
+            // Validate active category assignment
+            if ($data->category_id !== null) {
+                $category = \App\Models\Category::find($data->category_id);
+                if (! $category || ! $category->isActive()) {
+                    throw ValidationException::withMessages([
+                        'category_id' => 'The selected category is inactive and cannot be assigned to new products.',
+                    ]);
+                }
+            }
+
             // Check SKU uniqueness defensively
             if (Product::where('sku', $attributes['sku'])->exists()) {
                 throw ValidationException::withMessages([
@@ -283,6 +301,16 @@ class ProductService
                 throw ValidationException::withMessages([
                     'sku' => 'The product SKU has already been taken.',
                 ]);
+            }
+
+            // Validate active category if category is being changed
+            if ($data->category_id !== null && $data->category_id !== $lockedProduct->category_id) {
+                $category = \App\Models\Category::find($data->category_id);
+                if (! $category || ! $category->isActive()) {
+                    throw ValidationException::withMessages([
+                        'category_id' => 'The selected category is inactive and cannot be assigned.',
+                    ]);
+                }
             }
 
             $previousPrices = [

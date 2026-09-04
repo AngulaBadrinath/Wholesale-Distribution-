@@ -13,6 +13,7 @@ import {
     Users,
     KeyRound,
     Package,
+    FolderTree,
     Shield
 } from 'lucide-react';
 
@@ -85,13 +86,22 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                 </div>
                                 <nav className="space-y-1 mb-6">
                                     {hasProductView && (
-                                        <Link
-                                            href="/products"
-                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                        >
-                                            <Package className="h-4 w-4 text-primary" />
-                                            <span>Product Catalog</span>
-                                        </Link>
+                                        <>
+                                            <Link
+                                                href="/products"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Package className="h-4 w-4 text-primary" />
+                                                <span>Product Catalog</span>
+                                            </Link>
+                                            <Link
+                                                href="/categories"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <FolderTree className="h-4 w-4 text-primary" />
+                                                <span>Product Categories</span>
+                                            </Link>
+                                        </>
                                     )}
                                     {hasCustomerView && (
                                         <Link

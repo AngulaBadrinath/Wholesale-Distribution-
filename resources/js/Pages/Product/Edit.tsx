@@ -6,7 +6,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Category, Product, ProductImage, ProductStatusOption } from '@/types';
+import { Category, Product, ProductImage, ProductStatus, ProductStatusOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -34,13 +34,26 @@ interface ProductEditProps {
     };
 }
 
+interface ProductEditFormData {
+    sku: string;
+    name: string;
+    description: string;
+    category_id: string;
+    unit: string;
+    status: ProductStatus;
+    cost_price: string;
+    minimum_allowed_price: string;
+    default_selling_price: string;
+    mrp: string;
+}
+
 export default function ProductEdit({
     product,
     categories,
     statuses,
     can,
 }: ProductEditProps) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors } = useForm<ProductEditFormData>({
         sku: product.sku || '',
         name: product.name || '',
         description: product.description || '',
@@ -340,7 +353,7 @@ export default function ProductEdit({
                                         <option value="">-- Uncategorized / None --</option>
                                         {categories.map((c) => (
                                             <option key={c.id} value={c.id.toString()}>
-                                                {c.name} ({c.code})
+                                                {c.hierarchy_path || c.name} ({c.code})
                                             </option>
                                         ))}
                                     </select>

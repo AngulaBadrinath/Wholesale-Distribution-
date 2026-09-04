@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Label } from '@/Components/ui/label';
-import { PageProps, Product, ProductImage, ProductStatusOption } from '@/types';
+import { PageProps, Product, ProductImage, ProductStatus, ProductStatusOption } from '@/types';
 import {
     Package,
     ArrowLeft,
@@ -58,7 +58,10 @@ export default function ProductShow({
 
     const isPrivileged = auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
 
-    const statusForm = useForm({
+    const statusForm = useForm<{
+        status: ProductStatus;
+        reason: string;
+    }>({
         status: product.status,
         reason: '',
     });
@@ -540,7 +543,7 @@ export default function ProductShow({
                                 <select
                                     id="dialog_status"
                                     value={statusForm.data.status}
-                                    onChange={(e) => statusForm.setData('status', e.target.value as any)}
+                                    onChange={(e) => statusForm.setData('status', e.target.value as ProductStatus)}
                                     className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
                                     {statuses.map((s) => (

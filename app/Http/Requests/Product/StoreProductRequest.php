@@ -45,7 +45,11 @@ class StoreProductRequest extends FormRequest
             'sku' => ['nullable', 'string', 'max:50', 'unique:products,sku'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')->where('status', 'ACTIVE'),
+            ],
             'unit' => ['required', 'string', 'max:30'],
             'status' => ['required', 'string', Rule::in(ProductStatus::values())],
             'cost_price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
@@ -70,6 +74,7 @@ class StoreProductRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'category_id.exists' => 'The selected category is invalid or inactive.',
             'default_selling_price.gte' => 'Default selling price cannot be less than the minimum allowed price.',
             'default_selling_price.lte' => 'Default selling price cannot exceed the MRP / list price.',
             'mrp.gte' => 'MRP / list price cannot be less than the default selling price.',

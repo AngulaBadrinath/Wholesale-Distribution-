@@ -218,7 +218,7 @@ export default function ProductCreate({
                                         <option value="">-- Uncategorized / None --</option>
                                         {categories.map((c) => (
                                             <option key={c.id} value={c.id.toString()}>
-                                                {c.name} ({c.code})
+                                                {c.hierarchy_path || c.name} ({c.code})
                                             </option>
                                         ))}
                                     </select>
