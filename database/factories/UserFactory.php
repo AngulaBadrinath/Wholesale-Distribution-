@@ -110,6 +110,30 @@ class UserFactory extends Factory
     }
 
     /**
+     * Assign Salesman role.
+     */
+    public function salesman(): static
+    {
+        return $this->role(\App\Enums\UserRole::SALESMAN);
+    }
+
+    /**
+     * Assign Warehouse Manager role.
+     */
+    public function warehouseManager(): static
+    {
+        return $this->role(\App\Enums\UserRole::WAREHOUSE_MANAGER);
+    }
+
+    /**
+     * Assign Delivery Partner role.
+     */
+    public function deliveryPartner(): static
+    {
+        return $this->role(\App\Enums\UserRole::DELIVERY_PARTNER);
+    }
+
+    /**
      * Indicate that the user has configured and confirmed MFA.
      */
     public function withMfa(?string $secret = null): static

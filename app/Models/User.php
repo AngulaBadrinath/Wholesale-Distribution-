@@ -119,4 +119,66 @@ class User extends Authenticatable
     {
         return $this->role instanceof UserRole && $this->role->isPrivileged();
     }
+
+    /**
+     * Determine whether the user possesses a specific role.
+     */
+    public function hasRole(UserRole|string $role): bool
+    {
+        if ($this->role === null) {
+            return false;
+        }
+
+        $roleValue = $role instanceof UserRole ? $role->value : $role;
+
+        return $this->role->value === $roleValue;
+    }
+
+    /**
+     * Determine whether the user is a Super Administrator.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === UserRole::SUPER_ADMIN;
+    }
+
+    /**
+     * Determine whether the user is an Administrator.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::ADMIN;
+    }
+
+    /**
+     * Determine whether the user is an Accountant.
+     */
+    public function isAccountant(): bool
+    {
+        return $this->role === UserRole::ACCOUNTANT;
+    }
+
+    /**
+     * Determine whether the user is a Sales Representative.
+     */
+    public function isSalesman(): bool
+    {
+        return $this->role === UserRole::SALESMAN;
+    }
+
+    /**
+     * Determine whether the user is a Warehouse Manager.
+     */
+    public function isWarehouseManager(): bool
+    {
+        return $this->role === UserRole::WAREHOUSE_MANAGER;
+    }
+
+    /**
+     * Determine whether the user is a Delivery Partner.
+     */
+    public function isDeliveryPartner(): bool
+    {
+        return $this->role === UserRole::DELIVERY_PARTNER;
+    }
 }

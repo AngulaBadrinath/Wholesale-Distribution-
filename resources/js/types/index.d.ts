@@ -29,4 +29,21 @@ export interface SessionRecord {
     is_current: boolean;
 }
 
+export interface ManagedUser {
+    id: number;
+    name: string;
+    email: string;
+    role: string | null;
+    role_label?: string;
+    status: string;
+    created_at?: string;
+}
+
+export interface RoleOption {
+    value: string;
+    label: string;
+    description: string;
+    is_privileged: boolean;
+}
+
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & SharedProps;

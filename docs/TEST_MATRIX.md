@@ -56,13 +56,21 @@
 - [x] **MFA Step-Up & Session Security:** Password confirmation on security actions, role policy prevents mandatory disable, other sessions revoked (`AUTH-MFA-005`, `AUTH-MFA-024`..`025`, `AUTH-MFA-030`).
 - [x] **Responsive:** Login, Session management, Forgot Password, and Reset Password views verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`, `Sessions.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx`).
 
-### 1.2 Roles & Permissions (`RBAC`)
-- [ ] **Happy Path:** Authorized user accesses permitted route and performs allowed action.
-- [ ] **Security:** Default-deny rejects user lacking required permission (`403 Forbidden`).
-- [ ] **Security (IDOR):** Salesman attempting to query another salesman's customer returns `403 Forbidden` / `404 Not Found`.
-- [ ] **Security (IDOR):** Delivery Driver attempting to query unassigned delivery returns `403 Forbidden`.
-- [ ] **Security:** Tampering with hidden frontend role inputs is rejected by backend token validation.
-- [ ] **Audit:** Permission grants and role assignments write to `audit_logs` (`FEAT-AUD-001`).
+### 1.2 Roles & Primary Role Model (`RBAC` / `FEAT-RBAC-001`)
+- [x] **Canonical Role Model:** All 6 authoritative roles exist (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) and backed enum validation enforces type safety (`RBAC-ROLE-001`..`003`).
+- [x] **Privilege & MFA Integration:** Privileged roles (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`) correctly enforce mandatory MFA; standard roles optional (`RBAC-ROLE-004`..`010`).
+- [x] **Authorized Role Assignment:** Privileged actor assigns new role atomically inside database transaction with `lockForUpdate` row locking (`RBAC-ROLE-011`, `RBAC-ROLE-021`).
+- [x] **Zero Client Trust & Authorization:** Unauthorized roles and inactive actors rejected (`403 Forbidden`) (`RBAC-ROLE-012`, `RBAC-ROLE-032`).
+- [x] **Self-Role Modification Guard:** Actors cannot modify their own role; server-side enforcement prevents self-escalation or evasion (`RBAC-ROLE-013`).
+- [x] **Super Admin Protection:** Only active `SUPER_ADMIN` can grant `SUPER_ADMIN` or modify an existing `SUPER_ADMIN`; `ADMIN` rejected (`403 Forbidden`) (`RBAC-ROLE-027`, `RBAC-ROLE-028`, `RBAC-ROLE-029C`, `RBAC-ROLE-030`, `RBAC-ROLE-031`).
+- [x] **Last Super Admin Guard:** Last remaining Super Administrator cannot be demoted (`422 Unprocessable Entity` / `ValidationException`) (`RBAC-ROLE-029`, `RBAC-ROLE-029B`).
+- [x] **Target Session Invalidation:** Target user's active sessions immediately revoked on role transition via `SessionRevocationService`; actor session preserved (`RBAC-ROLE-018`, `RBAC-ROLE-019`).
+- [x] **Audit & Secrets:** Structured audit event `auth.security_event` logged with action `ROLE_ASSIGNED`, previous/new role, and zero credentials/tokens/secrets (`RBAC-ROLE-015`..`017`).
+- [x] **No-Op Safety:** Assigning identical role returns target without session revocation or audit logging (`RBAC-ROLE-033`).
+- [x] **Preservation of User Invariants:** Role change preserves password, account status, email, and confirmed MFA secrets (`RBAC-ROLE-034`).
+- [x] **IDOR & Route Protection:** Guessed user IDs and unauthorized route access rejected (`403 Forbidden`) (`RBAC-ROLE-020`, `RBAC-ROLE-035`).
+- [x] **Authentication Regressions:** Full regression passed for login, MFA challenge, password reset, and session revocation (`RBAC-ROLE-022`..`026`).
+- [x] **Responsive Role Management UI:** `resources/js/Pages/Security/Roles/Index.tsx` verified for desktop tables, mobile cards, accessible modal dialogs, search, filter, and touch targets >= 44px.
 
 ### 1.3 Customer Management (`CUSTOMER`)
 - [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
