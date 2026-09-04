@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **9.4%** (12 / 128 tickets) | FEAT-RBAC-001 verified complete; 137 automated tests passing (517 assertions) |
+| **Overall Code Completion** | **10.2%** (13 / 128 tickets) | FEAT-RBAC-002 verified complete; 170 automated tests passing (1,060 assertions) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 01 — Identity, Authentication & Access Control** | Status: `IN_PROGRESS` (AUTH 001..004 complete; RBAC-001 complete) |
+| **Current Phase** | **Phase 01 — Identity, Authentication & Access Control** | Status: `IN_PROGRESS` (AUTH 001..004 complete; RBAC-001..002 complete) |
 | **Current Milestone Gate** | **GATE A — Foundation** | Status: In progress (Phase 00 complete; Phase 01 in progress) |
-| **Current Active Ticket** | **FEAT-RBAC-001** (Complete) | Ready to begin `FEAT-RBAC-002: Server-Side Permission Registry` |
+| **Current Active Ticket** | **FEAT-RBAC-002** (Complete) | Ready to begin `FEAT-RBAC-003: Resource Scope Enforcement` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **0** | No technical or business blockers exist |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **12** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`).
-- Current progress: **9.38%** (~9.4%).
+- Completed tickets: **13** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`).
+- Current progress: **10.16%** (~10.2%).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (12):**
+- **Completed Tickets (13):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -45,11 +45,11 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   10. `FEAT-AUTH-003`: Secure Password Reset Flow
   11. `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)
   12. `FEAT-RBAC-001`: Role Model Definition
+  13. `FEAT-RBAC-002`: Server-Side Permission Registry
 - **In-Progress Tickets (0):** None.
 - **Blocked Tickets (0):** None.
 - **Upcoming Tickets (Phase 01 — Identity & Access):**
-  1. `FEAT-RBAC-002`: Server-Side Permission Registry
-  2. `FEAT-RBAC-003`: Resource Scope Enforcement
+  1. `FEAT-RBAC-003`: Resource Scope Enforcement
 
 ---
 
@@ -113,7 +113,7 @@ The following items are recognized as future enterprise enhancements and are int
 - **Local Development Environment:** Fully bootstrapped and operational. Docker Compose running `postgres:18-alpine` (port 5433) and `redis:7-alpine` (port 6380).
 - **Staging Environment:** Not configured (`DEPLOY-001` scheduled for Phase 11).
 - **Production AWS Environment:** Architecture-ready (`DEPLOY-002` scheduled for Phase 11).
-- **Automated Test Runner:** PHPUnit harness operational (6 tests passing, 28 assertions). TypeScript static check operational (`npm run type-check`).
+- **Automated Test Runner:** PHPUnit harness operational (170 tests passing, 1,060 assertions). TypeScript static check operational (`npm run type-check`).
 - **CI/CD Pipelines:** GitHub Actions CI workflow implemented in `.github/workflows/ci.yml`.
 
 ---
@@ -121,4 +121,4 @@ The following items are recognized as future enterprise enhancements and are int
 ## 8. Next Recommended Action
  
 1. Activate next ticket in sequence from Document 05:
-   - **`FEAT-RBAC-001: Role Model`** (Epic 02: Roles, Permissions & Access).
+   - **`FEAT-RBAC-003: Resource Scope Enforcement`** (Epic 02: Roles, Permissions & Access).

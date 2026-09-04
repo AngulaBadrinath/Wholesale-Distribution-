@@ -56,7 +56,9 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::delete('/security/mfa', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'disable'])->name('mfa.disable');
     Route::post('/security/mfa/recovery-codes', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('mfa.recovery-codes');
 
-    // Role management
-    Route::get('/security/roles', [\App\Http\Controllers\Security\RoleAssignmentController::class, 'index'])->name('roles.index');
-    Route::put('/security/users/{user}/role', [\App\Http\Controllers\Security\RoleAssignmentController::class, 'update'])->name('users.role.update');
+    // Role management (requires role.manage permission)
+    Route::middleware('permission:role.manage')->group(function () {
+        Route::get('/security/roles', [\App\Http\Controllers\Security\RoleAssignmentController::class, 'index'])->name('roles.index');
+        Route::put('/security/users/{user}/role', [\App\Http\Controllers\Security\RoleAssignmentController::class, 'update'])->name('users.role.update');
+    });
 });

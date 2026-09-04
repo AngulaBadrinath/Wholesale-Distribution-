@@ -181,4 +181,20 @@ class User extends Authenticatable
     {
         return $this->role === UserRole::DELIVERY_PARTNER;
     }
+
+    /**
+     * Determine whether the user possesses the specified permission.
+     */
+    public function hasPermission(\App\Enums\Permission|string $permission): bool
+    {
+        return app(\App\Services\Auth\PermissionService::class)->has($this, $permission);
+    }
+
+    /**
+     * Determine whether the user can perform an action protected by the specified permission.
+     */
+    public function canPermission(\App\Enums\Permission|string $permission): bool
+    {
+        return $this->hasPermission($permission);
+    }
 }

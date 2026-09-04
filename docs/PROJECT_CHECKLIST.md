@@ -57,7 +57,7 @@
 
 ### Roles & Permissions
 - [x] `FEAT-RBAC-001`: Role Model (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`)
-- [ ] `FEAT-RBAC-002`: Server-Side Permission Registry (`module.action` default-deny)
+- [x] `FEAT-RBAC-002`: Server-Side Permission Registry (`module.action` default-deny)
 - [ ] `FEAT-RBAC-003`: Resource Scope Enforcement (Salesman, Delivery Driver, Warehouse)
 
 ---

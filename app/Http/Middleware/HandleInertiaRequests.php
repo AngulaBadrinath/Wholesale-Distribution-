@@ -44,9 +44,11 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
+                    'role' => $request->user()->role?->value,
                     'status' => $request->user()->status instanceof AccountStatus
                         ? $request->user()->status->value
                         : (string) $request->user()->status,
+                    'permissions' => app(\App\Services\Auth\PermissionService::class)->getPermissionsForUser($request->user()),
                 ] : null,
             ],
             'flash' => [

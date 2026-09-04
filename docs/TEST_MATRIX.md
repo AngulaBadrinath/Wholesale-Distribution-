@@ -72,6 +72,20 @@
 - [x] **Authentication Regressions:** Full regression passed for login, MFA challenge, password reset, and session revocation (`RBAC-ROLE-022`..`026`).
 - [x] **Responsive Role Management UI:** `resources/js/Pages/Security/Roles/Index.tsx` verified for desktop tables, mobile cards, accessible modal dialogs, search, filter, and touch targets >= 44px.
 
+### 1.2.1 Server-Side Permission Registry (`RBAC` / `FEAT-RBAC-002`)
+- [x] **Canonical Permission Enum:** Exactly 47 canonical permissions defined in `App\Enums\Permission` using `module.action` format (`RBAC-PERM-001`, `RBAC-PERM-002`).
+- [x] **Unique & Metadata Rich:** All 47 permission string values unique; exhaustive metadata methods `label()`, `description()`, `module()`, `values()`, and `casesForModule()` verified (`RBAC-PERM-003`, `RBAC-PERM-004`).
+- [x] **Authoritative Role-to-Permission Mappings:** Strict in-memory static mapping verified: `SUPER_ADMIN` has all 47, `ADMIN` has exactly 39 (excludes `permission.manage`, `payment.reverse`, `accounting.post`, `accounting.reverse`, `order.adjust.reverse`), `ACCOUNTANT` has exactly 15, `SALESMAN` has exactly 9, `WAREHOUSE_MANAGER` has exactly 7, `DELIVERY_PARTNER` has exactly 3 (`RBAC-PERM-005`..`011`).
+- [x] **Default-Deny & Fail-Closed:** Null role, unmapped permissions, unknown permission strings, and malformed inputs return `false` or trigger `AuthorizationException` (`RBAC-PERM-012`..`014`, `RBAC-PERM-017`, `RBAC-PERM-030`).
+- [x] **Account Lifecycle Gating:** Inactive statuses (`INVITED`, `SUSPENDED`, `DISABLED`) have zero effective permissions regardless of assigned role (`RBAC-PERM-015`).
+- [x] **Permission Service & Helpers:** `PermissionService` provides authoritative evaluation (`has`, `hasAny`, `hasAll`, `authorize`, `getPermissionsForRole`, `getPermissionsForUser`); `User` model exposes delegating `hasPermission()` and `canPermission()` (`RBAC-PERM-016`, `RBAC-PERM-031`).
+- [x] **Laravel Gate Integration:** `Gate::before` hook seamlessly evaluates canonical permission strings through `PermissionService` while leaving non-canonical abilities untouched (`RBAC-PERM-020`, `RBAC-PERM-021`, `RBAC-PERM-033`).
+- [x] **Route Permission Middleware:** `EnsureUserHasPermission` middleware (`permission:module.action`) enforces authentication, active account state, and required permission; rejects unauthorized requests with 403 (`RBAC-PERM-018`, `RBAC-PERM-019`).
+- [x] **Role Management Route Protection:** `/security/roles` and `/security/users/{user}/role` guarded by `permission:role.manage`; grants access to `SUPER_ADMIN` and `ADMIN`, rejects other roles with 403.
+- [x] **Zero Database Overhead:** In-memory permission evaluation executes zero database queries (`RBAC-PERM-032`).
+- [x] **Capability Sharing & Zero Client Trust:** Inertia shares safe `permissions` array for authenticated active user for UI hints; frontend manipulation cannot bypass server-side authorization (`RBAC-PERM-028`, `RBAC-PERM-029`).
+- [x] **Authentication & Role Regressions:** Full regression passed for role transitions, session invalidation, login, MFA, and password reset (`RBAC-PERM-022`..`027`).
+
 ### 1.3 Customer Management (`CUSTOMER`)
 - [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
 - [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).

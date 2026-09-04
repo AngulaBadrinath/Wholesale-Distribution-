@@ -22,7 +22,7 @@ class RoleAssignmentController extends Controller
     {
         $actor = $request->user();
 
-        if (! $actor->isSuperAdmin() && ! $actor->isAdmin()) {
+        if (! $actor->canPermission(\App\Enums\Permission::ROLE_MANAGE)) {
             abort(403, 'You do not have permission to access role management.');
         }
 
