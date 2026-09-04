@@ -264,6 +264,34 @@
 - [x] **Non-Salesman IDOR Protection:** Attempting to manage non-salesman user via `/salesmen/{id}` returns 404 Not Found (`SLM-ACC-022`).
 - [x] **Enum Metadata & Transition Matrix:** `label()`, `description()`, `allowedTransitions()`, `canTransitionTo()` return correct state matrix (`SLM-ACC-023`).
 
+### 1.4.2 Salesman Scoped Customer Access Enforcement (`SALESMAN` / `FEAT-SLM-002`)
+- [x] **Scoped Portfolio Listing:** Salesman can list only customers assigned to their user identity (`SLM-SCOPE-001`).
+- [x] **Single Resource IDOR Prevention:** Direct URL access (`/customers/{id}`) to other salesmen's customers rejected with 403 Forbidden (`SLM-SCOPE-002`).
+- [x] **Unassigned Customer IDOR Prevention:** Direct URL access to unassigned customers rejected with 403 Forbidden (`SLM-SCOPE-003`).
+- [x] **Assigned ON_HOLD Customer Visibility:** Salesman can view profile and directory listing for their assigned customer on hold (`SLM-SCOPE-004`).
+- [x] **Assigned INACTIVE Customer Visibility:** Salesman can view profile and directory listing for their assigned inactive customer (`SLM-SCOPE-005`).
+- [x] **Other Salesman ON_HOLD Customer Denial:** Salesman attempting to view another salesman's customer on hold rejected with 403 Forbidden (`SLM-SCOPE-006`).
+- [x] **Other Salesman INACTIVE Customer Denial:** Salesman attempting to view another salesman's inactive customer rejected with 403 Forbidden (`SLM-SCOPE-007`).
+- [x] **Scoped Portfolio Directory Search:** Customer directory search is strictly scoped to assigned customers without cross-portfolio leakage (`SLM-SCOPE-008`).
+- [x] **Scoped Portfolio Status Filtering:** Status filtering (`?status=...`) operates exclusively over assigned customer portfolio (`SLM-SCOPE-009`).
+- [x] **Pagination & Total Count Isolation:** Pagination metadata and `total` reflect strictly the salesman's assigned portfolio size (`SLM-SCOPE-010`).
+- [x] **Query Parameter Tampering Immunity:** Salesman attempting to query `salesman_id=<other_id>` is safely ignored and scoped to self (`SLM-SCOPE-011`).
+- [x] **Unassigned Filter Tampering Immunity:** Salesman attempting to query `salesman_id=UNASSIGNED` is safely ignored and scoped to self (`SLM-SCOPE-012`).
+- [x] **Customer Create Form Denial:** Salesman accessing `/customers-create` rejected with 403 Forbidden (`SLM-SCOPE-013`).
+- [x] **Customer Store Mutation Denial:** Salesman sending `POST /customers` rejected with 403 Forbidden (`SLM-SCOPE-014`).
+- [x] **Customer Edit Form Denial:** Salesman accessing `/customers/{id}/edit` rejected with 403 Forbidden (`SLM-SCOPE-015`).
+- [x] **Customer Update Mutation Denial:** Salesman sending `PUT /customers/{id}` rejected with 403 Forbidden (`SLM-SCOPE-016`).
+- [x] **Customer Status Mutation Denial:** Salesman sending `PATCH /customers/{id}/status` rejected with 403 Forbidden (`SLM-SCOPE-017`).
+- [x] **Customer Assignment Mutation Denial:** Salesman sending `PATCH /customers/{id}/assign` rejected with 403 Forbidden (`SLM-SCOPE-018`).
+- [x] **Salesman Directory Prop Omission:** Inertia props `eligibleSalesmen` omitted / empty for Salesman role on index and show (`SLM-SCOPE-019`).
+- [x] **Immediate Reassignment Access Revocation:** Reassigning customer from Salesman A to B immediately revokes A's access (403) and grants B access (`SLM-SCOPE-020`).
+- [x] **Suspended Salesman Access Block:** Suspended salesman cannot access customer directory or customer profile (`SLM-SCOPE-021`).
+- [x] **Disabled Salesman Access Block:** Disabled salesman cannot access customer directory or customer profile (`SLM-SCOPE-022`).
+- [x] **Admin & Super Admin Unrestricted Access:** Admin and Super Admin retain full visibility and management across all customers (`SLM-SCOPE-023`).
+- [x] **Accountant Read-Only Directory & Profile:** Accountant retains unrestricted read-only visibility but cannot mutate or assign (`SLM-SCOPE-024`).
+- [x] **Nonexistent Customer 404 Protection:** Requesting nonexistent customer ID returns 404 Not Found (`SLM-SCOPE-025`).
+- [x] **Empty Portfolio Clean Handling:** Salesman with zero assigned customers receives clean paginator (`total: 0`, `data: []`) (`SLM-SCOPE-026`).
+
 ### 1.5 Product & Category Management (`PRODUCT` & `CAT`)
 - [ ] **Happy Path:** Admin creates product with SKU, cost, list price, default selling price, minimum price, and tax profile.
 - [ ] **Validation:** Duplicate SKU rejected; minimum price > MRP rejected.

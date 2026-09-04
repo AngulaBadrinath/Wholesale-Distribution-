@@ -76,7 +76,7 @@
 
 ### Salesman Management
 - [x] `FEAT-SLM-001`: Salesman Account Management & Lifecycle
-- [ ] `FEAT-SLM-002`: Salesman Scoped Customer Access Enforcement
+- [x] `FEAT-SLM-002`: Salesman Scoped Customer Access Enforcement
 
 ### Product & Category Management
 - [ ] `FEAT-PROD-001`: Product Master CRUD (SKU, cost, default selling, minimum price, MRP)
