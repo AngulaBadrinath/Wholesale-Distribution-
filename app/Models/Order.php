@@ -13,10 +13,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
     use HasFactory;
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            if (empty($order->draft_token)) {
+                $order->draft_token = (string) Str::uuid();
+            }
+            if (empty($order->version)) {
+                $order->version = 1;
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -26,6 +42,8 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'idempotency_key',
+        'draft_token',
+        'version',
         'customer_id',
         'salesman_id',
         'created_by',
@@ -73,7 +91,16 @@ class Order extends Model
         'created_by' => 'integer',
         'approved_by' => 'integer',
         'cancelled_by' => 'integer',
+        'version' => 'integer',
     ];
+
+    /**
+     * Determine if this order is in DRAFT state.
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === OrderStatus::DRAFT;
+    }
 
     /**
      * Get the customer associated with this order.

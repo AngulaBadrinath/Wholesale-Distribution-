@@ -437,6 +437,22 @@
 - [x] **Structured Audit Logging:** Emits `ORDER_CREATED` event on initial commit and suppresses duplicate audit on idempotent replay (`ORD-CREATE-023`).
 - [x] **Responsive UI & UX States:** Flagship 3-step Salesman Order Builder (`Create.tsx`, `Show.tsx`) supports Desktop (1024-1920px), Tablet (768-1023px), and Mobile (320-430px) with custom ephemeral cart and LocalStorage draft persistence.
 
+### 1.8.1 Draft Order Persistence & Resumption (`ORDER DRAFTS` / `FEAT-ORD-002`)
+- [x] **Draft Creation & Lifecycle State:** Salesman saves new draft order with `status = DRAFT`, nullable `order_number`, auto-generated UUID `draft_token`, and initial `version = 1` (`ORD-DRAFT-001`).
+- [x] **Draft Line Mutation & Synchronization:** Draft items, quantities, and prices update atomically; preview subtotal, taxes, and totals recalculate; `version` increments strictly by 1 (`ORD-DRAFT-002`).
+- [x] **Customer Reassignment on Draft:** Salesman can switch selected assigned customer on draft prior to final submission (`ORD-DRAFT-003`).
+- [x] **Optimistic Version Locking & Concurrency Conflict (409):** Stale updates with mismatched `expected_version` rejected with HTTP 409 Conflict to prevent overwrite races across tabs/devices (`ORD-DRAFT-004`).
+- [x] **Draft Scoping & IDOR Protection:** Salesman can only list, view, update, submit, and discard their own drafts; cross-salesman access blocked with 403 Forbidden (`ORD-DRAFT-005`..`007`).
+- [x] **Draft List Filtering & Pagination:** `GET /salesman/orders/drafts` filters by customer code/name, displays item counts, estimated totals, and sorts newest updated first (`ORD-DRAFT-008`).
+- [x] **Draft Resumption & Edit State:** `GET /salesman/orders/drafts/{order}/edit` populates Order Builder with draft data, customer info, item details, and product catalog (`ORD-DRAFT-009`).
+- [x] **Stale Master Data Warnings:** Inactive/on-hold customer and inactive product warnings displayed during resumption without destroying draft state (`ORD-DRAFT-010`).
+- [x] **Draft Discard Lifecycle:** Salesman can permanently delete draft and associated items; emits `ORDER_DRAFT_DISCARDED` audit log (`ORD-DRAFT-011`).
+- [x] **Submitted Order Protection:** Discard and draft update endpoints reject submitted orders with 404/403/redirect; submitted orders cannot be modified via draft API (`ORD-DRAFT-012`).
+- [x] **Draft Final Submission Transition:** Salesman submits draft order; authoritative price boundary validation, lock-for-update product re-reading, and exact line-tax recalculation occur atomically (`ORD-DRAFT-013`).
+- [x] **Formal Sequence Assignment on Submission:** Formal `ORD-YYYY-XXXXXX` sequence assigned only at final submission; status transitions `DRAFT -> SUBMITTED` (`ORD-DRAFT-014`).
+- [x] **Audit Event Tracing:** Emits `ORDER_DRAFT_SAVED`, `ORDER_DRAFT_DISCARDED`, and `ORDER_CREATED` with `was_draft = true` without credentials or sensitive data (`ORD-DRAFT-015`).
+- [x] **Regression Protection (FEAT-ORD-001):** Direct order creation from FEAT-ORD-001 continues operating flawlessly without regressions (`ORD-DRAFT-016`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

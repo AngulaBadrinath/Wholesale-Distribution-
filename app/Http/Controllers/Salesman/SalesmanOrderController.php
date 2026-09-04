@@ -5,17 +5,21 @@ namespace App\Http\Controllers\Salesman;
 use App\Enums\CustomerStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
+use App\Enums\ProductStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\CreateOrderRequest;
+use App\Http\Requests\Order\SaveOrderDraftRequest;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Auth\PermissionService;
 use App\Services\Order\OrderService;
+use App\Services\Product\ProductImageService;
 use App\Services\Product\ProductService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,7 +31,66 @@ class SalesmanOrderController extends Controller
         protected OrderService $orderService,
         protected ProductService $productService,
         protected PermissionService $permissionService,
+        protected ProductImageService $productImageService,
     ) {}
+
+    /**
+     * Display a paginated list of drafts belonging to the salesman.
+     */
+    public function drafts(Request $request): Response
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_CREATE);
+
+        $search = $request->query('search');
+
+        $query = Order::query()
+            ->where('status', OrderStatus::DRAFT)
+            ->when($actor->role === UserRole::SALESMAN, fn ($q) => $q->where('salesman_id', $actor->id))
+            ->with(['customer:id,code,name,contact_name,phone,status'])
+            ->withCount('items')
+            ->orderBy('updated_at', 'desc');
+
+        if ($search) {
+            $isPgsql = $query->getConnection()->getDriverName() === 'pgsql';
+            $like = $isPgsql ? 'ilike' : 'like';
+
+            $query->whereHas('customer', function ($custQ) use ($search, $like) {
+                $custQ->where('name', $like, "%{$search}%")
+                    ->orWhere('code', $like, "%{$search}%");
+            });
+        }
+
+        $drafts = $query->paginate(10)->withQueryString()->through(fn (Order $draft) => [
+            'id' => $draft->id,
+            'draft_token' => $draft->draft_token,
+            'version' => $draft->version,
+            'idempotency_key' => $draft->idempotency_key,
+            'customer' => [
+                'id' => $draft->customer->id,
+                'code' => $draft->customer->code,
+                'name' => $draft->customer->name,
+                'contact_name' => $draft->customer->contact_name,
+                'phone' => $draft->customer->phone,
+                'status' => $draft->customer->status instanceof CustomerStatus ? $draft->customer->status->value : (string) $draft->customer->status,
+                'status_label' => $draft->customer->status instanceof CustomerStatus ? $draft->customer->status->label() : (string) $draft->customer->status,
+            ],
+            'item_count' => $draft->items_count,
+            'subtotal' => (string) $draft->subtotal,
+            'tax_total' => (string) $draft->tax_total,
+            'grand_total' => (string) $draft->grand_total,
+            'notes' => $draft->notes,
+            'created_at' => $draft->created_at->toIso8601String(),
+            'updated_at' => $draft->updated_at->toIso8601String(),
+        ]);
+
+        return Inertia::render('Salesman/Orders/Drafts', [
+            'drafts' => $drafts,
+            'filters' => [
+                'search' => $search ?? '',
+            ],
+        ]);
+    }
 
     /**
      * Render the Salesman Order Builder workspace.
@@ -78,6 +141,7 @@ class SalesmanOrderController extends Controller
         return Inertia::render('Salesman/Orders/Create', [
             'customers' => $customers,
             'selectedCustomerId' => $selectedCustomerId,
+            'initialDraft' => null,
             'categories' => $categories,
             'products' => $products,
             'filters' => [
@@ -88,7 +152,180 @@ class SalesmanOrderController extends Controller
     }
 
     /**
-     * Submit and persist a new order atomically.
+     * Resume and edit an existing draft order in the Order Builder.
+     */
+    public function editDraft(Order $order, Request $request): Response
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_CREATE);
+
+        if (! $order->isDraft()) {
+            return redirect()
+                ->route('salesman.orders.show', $order->id)
+                ->with('error', 'This order has already been submitted and cannot be edited as a draft.');
+        }
+
+        if ($actor->role === UserRole::SALESMAN && $order->salesman_id !== $actor->id) {
+            throw new AuthorizationException('You are not authorized to view or edit drafts for other salesmen.');
+        }
+
+        $order->load(['customer', 'items.product.taxProfile', 'items.product.primaryImage']);
+
+        // Retrieve assigned customers for the salesman (including current customer if on_hold/inactive to display status)
+        $customers = Customer::forUser($actor)
+            ->orderBy('name', 'asc')
+            ->get()
+            ->map(fn (Customer $c) => [
+                'id' => $c->id,
+                'code' => $c->code,
+                'name' => $c->name,
+                'contact_name' => $c->contact_name,
+                'email' => $c->email,
+                'phone' => $c->phone,
+                'credit_limit' => (float) $c->credit_limit,
+                'payment_terms' => $c->payment_terms?->value,
+                'payment_terms_label' => $c->payment_terms?->label(),
+                'status' => $c->status instanceof CustomerStatus ? $c->status->value : (string) $c->status,
+                'status_label' => $c->status instanceof CustomerStatus ? $c->status->label() : (string) $c->status,
+                'billing_address' => $c->formatted_billing_address,
+                'shipping_address' => $c->formatted_shipping_address,
+            ]);
+
+        $categories = Category::active()
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'code']);
+
+        $filters = [
+            'search' => $request->query('search'),
+            'category_id' => $request->query('category_id'),
+            'status' => 'ACTIVE',
+        ];
+
+        $products = $this->productService->list($filters, 12, $actor);
+
+        $initialDraft = [
+            'id' => $order->id,
+            'draft_token' => $order->draft_token,
+            'version' => $order->version,
+            'idempotency_key' => $order->idempotency_key,
+            'customer_id' => $order->customer_id,
+            'notes' => $order->notes ?? '',
+            'subtotal' => (string) $order->subtotal,
+            'tax_total' => (string) $order->tax_total,
+            'grand_total' => (string) $order->grand_total,
+            'customer_status' => $order->customer->status instanceof CustomerStatus ? $order->customer->status->value : (string) $order->customer->status,
+            'customer_is_active' => $order->customer->status === CustomerStatus::ACTIVE,
+            'items' => $order->items->map(function (OrderItem $item) use ($actor) {
+                $product = $item->product;
+                $isProductActive = $product && $product->status === ProductStatus::ACTIVE;
+
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->ordered_quantity,
+                    'unit_price' => (string) $item->unit_price,
+                    'is_custom_price' => $product ? (float) $item->unit_price !== (float) $product->default_selling_price : false,
+                    'product' => $product ? [
+                        'id' => $product->id,
+                        'sku' => $product->sku,
+                        'name' => $product->name,
+                        'unit' => $product->unit,
+                        'status' => $product->status instanceof ProductStatus ? $product->status->value : (string) $product->status,
+                        'status_label' => $product->status instanceof ProductStatus ? $product->status->label() : (string) $product->status,
+                        'is_active' => $isProductActive,
+                        'default_selling_price' => (float) $product->default_selling_price,
+                        'minimum_allowed_price' => (float) $product->minimum_allowed_price,
+                        'mrp' => (float) $product->mrp,
+                        'category_id' => $product->category_id,
+                        'primary_image_url' => $product->primaryImage ? $this->productImageService->getTemporaryUrl($product->primaryImage) : null,
+                        'tax_profile' => $product->taxProfile ? [
+                            'id' => $product->taxProfile->id,
+                            'name' => $product->taxProfile->name,
+                            'code' => $product->taxProfile->code,
+                            'rate' => (float) $product->taxProfile->rate,
+                            'formatted_rate' => $product->taxProfile->formatted_rate,
+                            'is_exempt' => $product->taxProfile->is_exempt,
+                        ] : null,
+                    ] : null,
+                ];
+            }),
+        ];
+
+        return Inertia::render('Salesman/Orders/Create', [
+            'customers' => $customers,
+            'selectedCustomerId' => $order->customer_id,
+            'initialDraft' => $initialDraft,
+            'categories' => $categories,
+            'products' => $products,
+            'filters' => [
+                'search' => $request->query('search', ''),
+                'category_id' => $request->query('category_id', ''),
+            ],
+        ]);
+    }
+
+    /**
+     * Save an order draft (create new draft or update existing draft).
+     */
+    public function saveDraft(SaveOrderDraftRequest $request, ?Order $order = null): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $dto = $request->toDTO();
+
+        $draft = $this->orderService->saveDraft($actor, $dto, $order, $request->ip());
+
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Inertia') === null) {
+            return response()->json([
+                'success' => true,
+                'draft' => [
+                    'id' => $draft->id,
+                    'draft_token' => $draft->draft_token,
+                    'version' => $draft->version,
+                    'customer_id' => $draft->customer_id,
+                    'subtotal' => (string) $draft->subtotal,
+                    'tax_total' => (string) $draft->tax_total,
+                    'grand_total' => (string) $draft->grand_total,
+                ],
+                'message' => 'Draft order saved successfully.',
+            ]);
+        }
+
+        return redirect()
+            ->route('salesman.orders.drafts.edit', $draft->id)
+            ->with('success', 'Draft order saved successfully.');
+    }
+
+    /**
+     * Submit an existing draft order.
+     */
+    public function submitDraft(Request $request, Order $order): RedirectResponse
+    {
+        $actor = $request->user();
+        $idempotencyKey = $request->input('idempotency_key');
+
+        $submittedOrder = $this->orderService->submitDraft($actor, $order, $idempotencyKey, $request->ip());
+
+        return redirect()
+            ->route('salesman.orders.show', $submittedOrder->id)
+            ->with('success', "Order {$submittedOrder->order_number} has been submitted successfully.");
+    }
+
+    /**
+     * Discard / delete an unsubmitted draft order.
+     */
+    public function discardDraft(Order $order, Request $request): RedirectResponse
+    {
+        $actor = $request->user();
+        $this->orderService->discardDraft($actor, $order, $request->ip());
+
+        return redirect()
+            ->route('salesman.orders.drafts')
+            ->with('success', 'Draft order has been discarded.');
+    }
+
+    /**
+     * Submit and persist a new order atomically (direct submission).
      */
     public function store(CreateOrderRequest $request): RedirectResponse
     {
@@ -121,6 +358,7 @@ class SalesmanOrderController extends Controller
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'idempotency_key' => $order->idempotency_key,
+                'draft_token' => $order->draft_token,
                 'status' => $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status,
                 'status_label' => $order->status instanceof OrderStatus ? $order->status->label() : (string) $order->status,
                 'status_badge_variant' => $order->status instanceof OrderStatus ? $order->status->badgeVariant() : 'info',

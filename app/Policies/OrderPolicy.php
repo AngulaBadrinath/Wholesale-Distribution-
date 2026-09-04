@@ -40,7 +40,7 @@ class OrderPolicy
     }
 
     /**
-     * Determine whether the user can create new orders.
+     * Determine whether the user can create new orders or drafts.
      */
     public function create(User $user): bool
     {
@@ -48,10 +48,58 @@ class OrderPolicy
     }
 
     /**
+     * Determine whether the user can update a drafted order.
+     */
+    public function updateDraft(User $user, Order $order): bool
+    {
+        if (! $this->permissionService->has($user, Permission::ORDER_CREATE)) {
+            return false;
+        }
+
+        if (! $order->isDraft()) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            return $order->salesman_id === $user->id;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine whether the user can discard/delete a drafted order.
+     */
+    public function deleteDraft(User $user, Order $order): bool
+    {
+        if (! $this->permissionService->has($user, Permission::ORDER_CREATE)) {
+            return false;
+        }
+
+        if (! $order->isDraft()) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            return $order->salesman_id === $user->id;
+        }
+
+        return true;
+    }
+
+    /**
      * Determine whether the user can submit drafted orders.
      */
-    public function submit(User $user): bool
+    public function submit(User $user, ?Order $order = null): bool
     {
-        return $this->permissionService->has($user, Permission::ORDER_SUBMIT);
+        if (! $this->permissionService->has($user, Permission::ORDER_SUBMIT)) {
+            return false;
+        }
+
+        if ($order && $user->role === UserRole::SALESMAN) {
+            return $order->salesman_id === $user->id;
+        }
+
+        return true;
     }
 }

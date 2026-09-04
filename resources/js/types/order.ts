@@ -154,3 +154,48 @@ export interface OrderDetail {
     };
     items: OrderItemDetail[];
 }
+
+export interface OrderDraftSummary {
+    id: number;
+    draft_token: string;
+    version: number;
+    idempotency_key: string;
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        contact_name: string | null;
+        phone: string | null;
+        status: string;
+        status_label: string;
+    };
+    item_count: number;
+    subtotal: string;
+    tax_total: string;
+    grand_total: string;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface InitialDraftData {
+    id: number;
+    draft_token: string;
+    version: number;
+    idempotency_key: string;
+    customer_id: number;
+    notes: string;
+    subtotal: string;
+    tax_total: string;
+    grand_total: string;
+    customer_status: string;
+    customer_is_active: boolean;
+    items: Array<{
+        id: number;
+        product_id: number;
+        quantity: number;
+        unit_price: string;
+        is_custom_price: boolean;
+        product: CatalogProduct | null;
+    }>;
+}

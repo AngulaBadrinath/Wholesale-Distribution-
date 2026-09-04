@@ -174,6 +174,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ORD-001`.
 
+### CHANGE-005: FEAT-ORD-002 Draft Order Persistence & Resumption
+- **Change ID:** `CHANGE-005`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement persistent working order drafts using the single `orders` and `order_items` aggregate with `orders.status = DRAFT`, nullable `order_number`, auto-generated UUID `draft_token`, and optimistic version locking (`version`). Support draft creation, line item/quantity/price synchronization, customer selection, draft discard with item cleanup, draft listing (`GET /salesman/orders/drafts`) with search and pagination, draft resumption (`GET /salesman/orders/drafts/{order}/edit`) into the 3-step Order Builder, stale master data warning banners, and atomic draft submission (`DRAFT -> SUBMITTED`) with full re-validation of pricing boundaries, lock-for-update product re-reading, exact line-level tax recalculation (`ROUND_HALF_UP`), and sequential `ORD-YYYY-XXXXXX` assignment.
+- **Reason:** Allow salesmen to prepare, pause, resume, and modify incomplete orders across devices without consuming formal order numbers or triggering premature downstream workflows.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Order Workflow), §25.1 (Salesman Ordering), §25.4 (Draft Order Management).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.2 (Historical Snapshots), §8.2 (Concurrency & Optimistic Locking).
+- **Affected Security:** Strict salesman scoping, authenticated actor derivation, zero client trust for draft totals/taxes, IDOR protection across draft endpoints.
+- **Affected Frontend:** Drafts List (`Drafts.tsx`), Discard Confirmation Modal (`DiscardDraftModal.tsx`), Order Builder Draft Resumption & Autosave (`Create.tsx`), Sidebar Navigation (`AppLayout.tsx`).
+- **Affected Tickets:** `FEAT-ORD-002` completed.
+- **Inventory Impact:** Zero inventory reservation or decrement on draft save/update/discard; stock reserved only at downstream fulfillment.
+- **Order Impact:** Single aggregate `status = DRAFT`, mutable working items, transitions to `status = SUBMITTED` on submit with formal order number.
+- **Payment Impact:** Zero payment interaction on drafts.
+- **Tax Impact:** Draft tax totals are preview-only; recalculated authoritatively on final submission via `TaxCalculationService`.
+- **Accounting Impact:** Zero GL impact on drafts.
+- **Data Migration Impact:** Added migration `2026_09_05_000010_update_orders_table_for_drafts.php` making `order_number` nullable, adding `draft_token` UUID NOT NULL UNIQUE, `version` integer NOT NULL DEFAULT 1, and composite index `(salesman_id, status, updated_at)`.
+- **Testing Impact:** Added 15 comprehensive feature tests (`DraftOrderPersistenceTest.php`). Full suite at 590 tests (3,487 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-002`.
+
 ---
 
 ## 3. Template for Future Change Requests

@@ -22,6 +22,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -189,6 +190,8 @@ class OrderService
             // 11. Persist Order Header
             $order = Order::create([
                 'order_number' => $orderNumber,
+                'draft_token' => (string) Str::uuid(),
+                'version' => 1,
                 'idempotency_key' => $dto->idempotencyKey,
                 'customer_id' => $customer->id,
                 'salesman_id' => $salesmanId,
@@ -215,6 +218,7 @@ class OrderService
                 'action' => 'ORDER_CREATED',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
+                'draft_token' => $order->draft_token,
                 'customer_id' => $order->customer_id,
                 'salesman_id' => $order->salesman_id,
                 'created_by' => $order->created_by,
@@ -223,11 +227,440 @@ class OrderService
                 'tax_total' => $order->tax_total,
                 'grand_total' => $order->grand_total,
                 'idempotency_key' => $order->idempotency_key,
+                'was_draft' => false,
                 'ip_address' => $clientIp,
                 'timestamp' => Carbon::now()->toIso8601String(),
             ]);
 
             return $order->load(['items', 'customer', 'salesman']);
+        });
+    }
+
+    /**
+     * Save an order as a persistent working draft.
+     * Supports creating a new draft or updating an existing draft atomically with optimistic version locking.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     * @throws ConflictHttpException
+     */
+    public function saveDraft(User $actor, \App\DTOs\Order\SaveOrderDraftDTO $dto, ?Order $existingDraft = null, ?string $clientIp = null): Order
+    {
+        $this->permissionService->authorize($actor, Permission::ORDER_CREATE);
+
+        return DB::transaction(function () use ($actor, $dto, $existingDraft, $clientIp) {
+            // 1. Resolve and Scoped-Lock Customer
+            /** @var Customer|null $customer */
+            $customer = Customer::forUser($actor)
+                ->where('id', $dto->customerId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $customer) {
+                if ($actor->role === UserRole::SALESMAN) {
+                    throw ValidationException::withMessages([
+                        'customer_id' => 'The selected customer is not assigned to your salesman account.',
+                    ]);
+                }
+
+                throw ValidationException::withMessages([
+                    'customer_id' => 'The selected customer does not exist.',
+                ]);
+            }
+
+            // On draft creation, customer must be ACTIVE
+            if (! $existingDraft) {
+                $customer->ensureCanPlaceOrders();
+            }
+
+            // 2. Handle Existing Draft Locking & Optimistic Concurrency
+            if ($existingDraft) {
+                /** @var Order $existingDraft */
+                $existingDraft = Order::where('id', $existingDraft->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (! $existingDraft->isDraft()) {
+                    throw ValidationException::withMessages([
+                        'status' => 'This order has already been submitted and cannot be modified as a draft.',
+                    ]);
+                }
+
+                if ($actor->role === UserRole::SALESMAN && $existingDraft->salesman_id !== $actor->id) {
+                    throw new AuthorizationException('You are not authorized to update drafts for other salesmen.');
+                }
+
+                if ($dto->expectedVersion !== null && $existingDraft->version !== $dto->expectedVersion) {
+                    throw new ConflictHttpException('This draft has been modified in another session or window. Please reload to see latest changes.');
+                }
+            }
+
+            // 3. Process Preview Products and Taxes
+            $draftItemRows = [];
+            $lineTaxResults = [];
+
+            if (! empty($dto->items)) {
+                $productIds = array_values(array_unique(array_map(
+                    fn (\App\DTOs\Order\CreateOrderItemDTO $item) => $item->productId,
+                    $dto->items
+                )));
+                sort($productIds, SORT_NUMERIC);
+
+                $products = Product::with('taxProfile')
+                    ->whereIn('id', $productIds)
+                    ->orderBy('id', 'asc')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($products->count() !== count($productIds)) {
+                    throw ValidationException::withMessages([
+                        'items' => 'One or more selected products in the draft no longer exist in the catalog.',
+                    ]);
+                }
+
+                foreach ($dto->items as $itemDto) {
+                    /** @var Product $product */
+                    $product = $products->get($itemDto->productId);
+
+                    $rawPrice = $itemDto->unitPrice !== null && $itemDto->unitPrice !== ''
+                        ? $itemDto->unitPrice
+                        : (string) $product->default_selling_price;
+
+                    $validatedUnitPrice = $this->priceBoundaryService->validateOrderUnitPrice($product, $rawPrice);
+
+                    $taxResult = $this->taxCalculationService->calculateLineTax(
+                        productOrTaxProfile: $product->taxProfile,
+                        unitPrice: $validatedUnitPrice,
+                        quantity: $itemDto->quantity
+                    );
+
+                    $lineTaxResults[] = $taxResult;
+
+                    $draftItemRows[] = [
+                        'product_id' => $product->id,
+                        'product_name_snapshot' => $product->name,
+                        'sku_snapshot' => $product->sku,
+                        'unit_snapshot' => $product->unit,
+                        'ordered_quantity' => $itemDto->quantity,
+                        'cancelled_quantity' => 0,
+                        'reserved_quantity' => 0,
+                        'picked_quantity' => 0,
+                        'dispatched_quantity' => 0,
+                        'delivered_quantity' => 0,
+                        'returned_quantity' => 0,
+                        'unit_price' => $validatedUnitPrice,
+                        'is_price_overridden' => false,
+                        'price_override_reason' => null,
+                        'price_override_approved_by' => null,
+                        'tax_profile_id' => $product->tax_profile_id,
+                        'tax_profile_code_snapshot' => $product->taxProfile?->code,
+                        'tax_profile_name_snapshot' => $product->taxProfile?->name,
+                        'tax_rate_snapshot' => $taxResult->taxRate,
+                        'taxable_amount' => $taxResult->taxableAmount,
+                        'tax_amount' => $taxResult->taxAmount,
+                        'line_total' => $taxResult->lineTotal,
+                    ];
+                }
+
+                $totals = $this->taxCalculationService->calculateOrderTotals($lineTaxResults);
+            } else {
+                $totals = [
+                    'taxable_total' => '0.00',
+                    'tax_total' => '0.00',
+                    'grand_total' => '0.00',
+                ];
+            }
+
+            $salesmanId = $actor->role === UserRole::SALESMAN
+                ? $actor->id
+                : ($customer->salesman_id ?? $actor->id);
+
+            if ($existingDraft) {
+                // Synchronize existing draft items
+                $existingDraft->items()->delete();
+                $existingDraft->update([
+                    'customer_id' => $customer->id,
+                    'notes' => $dto->notes,
+                    'subtotal' => $totals['taxable_total'],
+                    'tax_total' => $totals['tax_total'],
+                    'grand_total' => $totals['grand_total'],
+                    'version' => $existingDraft->version + 1,
+                ]);
+
+                if (! empty($draftItemRows)) {
+                    $existingDraft->items()->createMany($draftItemRows);
+                }
+
+                $order = $existingDraft;
+            } else {
+                // Create new DRAFT order
+                $draftToken = (string) \Illuminate\Support\Str::uuid();
+                $idempotencyKey = $dto->idempotencyKey ?: (string) \Illuminate\Support\Str::uuid();
+
+                $order = Order::create([
+                    'order_number' => null, // Formal order number only issued upon submission
+                    'draft_token' => $draftToken,
+                    'idempotency_key' => $idempotencyKey,
+                    'version' => 1,
+                    'customer_id' => $customer->id,
+                    'salesman_id' => $salesmanId,
+                    'created_by' => $actor->id,
+                    'status' => OrderStatus::DRAFT,
+                    'fulfillment_status' => FulfillmentStatus::UNALLOCATED,
+                    'payment_status' => PaymentStatus::UNPAID,
+                    'delivery_status' => DeliveryStatus::PENDING_ASSIGNMENT,
+                    'adjustment_status' => AdjustmentStatus::NONE,
+                    'currency' => 'USD',
+                    'subtotal' => $totals['taxable_total'],
+                    'tax_total' => $totals['tax_total'],
+                    'adjustment_total' => '0.00',
+                    'grand_total' => $totals['grand_total'],
+                    'notes' => $dto->notes,
+                    'submitted_at' => null,
+                ]);
+
+                if (! empty($draftItemRows)) {
+                    $order->items()->createMany($draftItemRows);
+                }
+            }
+
+            // Emit Structured Audit Log for Draft Save
+            Log::info('commerce.order_event', [
+                'action' => 'ORDER_DRAFT_SAVED',
+                'order_id' => $order->id,
+                'draft_token' => $order->draft_token,
+                'customer_id' => $order->customer_id,
+                'salesman_id' => $order->salesman_id,
+                'created_by' => $order->created_by,
+                'item_count' => count($draftItemRows),
+                'subtotal' => $order->subtotal,
+                'tax_total' => $order->tax_total,
+                'grand_total' => $order->grand_total,
+                'version' => $order->version,
+                'ip_address' => $clientIp,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+
+            return $order->load(['items', 'customer', 'salesman']);
+        });
+    }
+
+    /**
+     * Submit an existing draft order, transitioning it to SUBMITTED.
+     * Re-validates customer lifecycle, active product catalogs, price boundaries,
+     * recalculates authoritative taxes, generates sequential order number, and commits atomically.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     * @throws ConflictHttpException
+     */
+    public function submitDraft(User $actor, Order $draft, ?string $submissionIdempotencyKey = null, ?string $clientIp = null): Order
+    {
+        $this->permissionService->authorize($actor, Permission::ORDER_SUBMIT);
+
+        return DB::transaction(function () use ($actor, $draft, $submissionIdempotencyKey, $clientIp) {
+            // 1. Lock Draft Order row
+            /** @var Order $lockedDraft */
+            $lockedDraft = Order::with('items')
+                ->where('id', $draft->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Check if already submitted (idempotent replay)
+            if ($lockedDraft->status === OrderStatus::SUBMITTED) {
+                if ($actor->role === UserRole::SALESMAN && $lockedDraft->salesman_id !== $actor->id) {
+                    throw new AuthorizationException('This order belongs to another salesman.');
+                }
+
+                return $lockedDraft->load(['items', 'customer', 'salesman']);
+            }
+
+            if (! $lockedDraft->isDraft()) {
+                throw new ConflictHttpException('This order is not in draft status and cannot be submitted.');
+            }
+
+            if ($actor->role === UserRole::SALESMAN && $lockedDraft->salesman_id !== $actor->id) {
+                throw new AuthorizationException('You are not authorized to submit drafts for other salesmen.');
+            }
+
+            if ($lockedDraft->items->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => 'A draft order must contain at least one product item before submission.',
+                ]);
+            }
+
+            // 2. Lock and Validate Customer
+            /** @var Customer|null $customer */
+            $customer = Customer::forUser($actor)
+                ->where('id', $lockedDraft->customer_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $customer) {
+                throw ValidationException::withMessages([
+                    'customer_id' => 'The selected customer does not exist or is not assigned to your account.',
+                ]);
+            }
+
+            $customer->ensureCanPlaceOrders();
+
+            // 3. Lock Products in ascending order
+            $productIds = $lockedDraft->items->pluck('product_id')->unique()->values()->all();
+            sort($productIds, SORT_NUMERIC);
+
+            $products = Product::with('taxProfile')
+                ->whereIn('id', $productIds)
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($products->count() !== count($productIds)) {
+                throw ValidationException::withMessages([
+                    'items' => 'One or more products in this draft no longer exist in the catalog.',
+                ]);
+            }
+
+            // 4. Validate Each Product, Price Boundaries, and Calculate Authoritative Line Taxes
+            $finalizedItemRows = [];
+            $lineTaxResults = [];
+
+            foreach ($lockedDraft->items as $draftItem) {
+                /** @var Product $product */
+                $product = $products->get($draftItem->product_id);
+
+                // Verify product is currently ACTIVE
+                $product->ensureCanOrder();
+
+                // Re-validate unit price against current price boundaries
+                $validatedUnitPrice = $this->priceBoundaryService->validateOrderUnitPrice(
+                    $product,
+                    (string) $draftItem->unit_price
+                );
+
+                // Recalculate line tax authoritatively
+                $taxResult = $this->taxCalculationService->calculateLineTax(
+                    productOrTaxProfile: $product->taxProfile,
+                    unitPrice: $validatedUnitPrice,
+                    quantity: $draftItem->ordered_quantity
+                );
+
+                $lineTaxResults[] = $taxResult;
+
+                $finalizedItemRows[] = [
+                    'product_id' => $product->id,
+                    'product_name_snapshot' => $product->name,
+                    'sku_snapshot' => $product->sku,
+                    'unit_snapshot' => $product->unit,
+                    'ordered_quantity' => $draftItem->ordered_quantity,
+                    'cancelled_quantity' => 0,
+                    'reserved_quantity' => 0,
+                    'picked_quantity' => 0,
+                    'dispatched_quantity' => 0,
+                    'delivered_quantity' => 0,
+                    'returned_quantity' => 0,
+                    'unit_price' => $validatedUnitPrice,
+                    'is_price_overridden' => false,
+                    'price_override_reason' => null,
+                    'price_override_approved_by' => null,
+                    'tax_profile_id' => $product->tax_profile_id,
+                    'tax_profile_code_snapshot' => $product->taxProfile?->code,
+                    'tax_profile_name_snapshot' => $product->taxProfile?->name,
+                    'tax_rate_snapshot' => $taxResult->taxRate,
+                    'taxable_amount' => $taxResult->taxableAmount,
+                    'tax_amount' => $taxResult->taxAmount,
+                    'line_total' => $taxResult->lineTotal,
+                ];
+            }
+
+            // 5. Authoritative Totals & Order Number
+            $totals = $this->taxCalculationService->calculateOrderTotals($lineTaxResults);
+            $orderNumber = $this->orderNumberGenerator->generate();
+
+            // 6. Transition Order Header to SUBMITTED
+            $lockedDraft->update([
+                'order_number' => $orderNumber,
+                'idempotency_key' => $submissionIdempotencyKey ?: $lockedDraft->idempotency_key,
+                'status' => OrderStatus::SUBMITTED,
+                'submitted_at' => Carbon::now(),
+                'subtotal' => $totals['taxable_total'],
+                'tax_total' => $totals['tax_total'],
+                'grand_total' => $totals['grand_total'],
+            ]);
+
+            // 7. Finalize Order Items with immutable snapshots
+            $lockedDraft->items()->delete();
+            $lockedDraft->items()->createMany($finalizedItemRows);
+
+            // 8. Emit ORDER_CREATED audit with was_draft = true
+            Log::info('commerce.order_event', [
+                'action' => 'ORDER_CREATED',
+                'order_id' => $lockedDraft->id,
+                'order_number' => $lockedDraft->order_number,
+                'draft_token' => $lockedDraft->draft_token,
+                'customer_id' => $lockedDraft->customer_id,
+                'salesman_id' => $lockedDraft->salesman_id,
+                'created_by' => $lockedDraft->created_by,
+                'item_count' => count($finalizedItemRows),
+                'subtotal' => $lockedDraft->subtotal,
+                'tax_total' => $lockedDraft->tax_total,
+                'grand_total' => $lockedDraft->grand_total,
+                'idempotency_key' => $lockedDraft->idempotency_key,
+                'was_draft' => true,
+                'ip_address' => $clientIp,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+
+            return $lockedDraft->load(['items', 'customer', 'salesman']);
+        });
+    }
+
+    /**
+     * Discard an unsubmitted draft order permanently.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function discardDraft(User $actor, Order $draft, ?string $clientIp = null): void
+    {
+        $this->permissionService->authorize($actor, Permission::ORDER_CREATE);
+
+        DB::transaction(function () use ($actor, $draft, $clientIp) {
+            /** @var Order $lockedDraft */
+            $lockedDraft = Order::where('id', $draft->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $lockedDraft->isDraft()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft orders can be discarded. Submitted orders cannot be deleted.',
+                ]);
+            }
+
+            if ($actor->role === UserRole::SALESMAN && $lockedDraft->salesman_id !== $actor->id) {
+                throw new AuthorizationException('You are not authorized to discard drafts for other salesmen.');
+            }
+
+            $orderId = $lockedDraft->id;
+            $draftToken = $lockedDraft->draft_token;
+            $customerId = $lockedDraft->customer_id;
+            $salesmanId = $lockedDraft->salesman_id;
+            $createdBy = $lockedDraft->created_by;
+
+            $lockedDraft->items()->delete();
+            $lockedDraft->delete();
+
+            Log::info('commerce.order_event', [
+                'action' => 'ORDER_DRAFT_DISCARDED',
+                'order_id' => $orderId,
+                'draft_token' => $draftToken,
+                'customer_id' => $customerId,
+                'salesman_id' => $salesmanId,
+                'created_by' => $createdBy,
+                'ip_address' => $clientIp,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
         });
     }
 
@@ -269,3 +702,4 @@ class OrderService
         return true;
     }
 }
+

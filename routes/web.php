@@ -149,10 +149,18 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::delete('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'destroy'])->whereNumber('tax_profile')->name('tax-profiles.destroy');
     });
 
-    // Salesman Ordering
+    // Salesman Ordering & Drafts
     Route::middleware('permission:order.create')->group(function () {
         Route::get('/salesman/orders/create', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'create'])->name('salesman.orders.create');
         Route::post('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'store'])->name('salesman.orders.store');
+
+        // Draft Management
+        Route::get('/salesman/orders/drafts', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'drafts'])->name('salesman.orders.drafts');
+        Route::post('/salesman/orders/drafts', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->name('salesman.orders.drafts.store');
+        Route::put('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->whereNumber('order')->name('salesman.orders.drafts.update');
+        Route::get('/salesman/orders/drafts/{order}/edit', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'editDraft'])->whereNumber('order')->name('salesman.orders.drafts.edit');
+        Route::post('/salesman/orders/drafts/{order}/submit', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'submitDraft'])->whereNumber('order')->name('salesman.orders.drafts.submit');
+        Route::delete('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'discardDraft'])->whereNumber('order')->name('salesman.orders.drafts.destroy');
     });
 
     Route::middleware('permission:order.view')->group(function () {
