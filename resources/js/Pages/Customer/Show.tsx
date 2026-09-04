@@ -3,7 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Customer, CustomerStatusOption, PageProps } from '@/types';
+import { Customer, CustomerStatusOption, EligibleSalesman, PageProps } from '@/types';
 import {
     Building2,
     MapPin,
@@ -20,6 +20,10 @@ import {
     Shield,
     Loader2,
     Check,
+    UserCheck,
+    UserX,
+    UserPlus,
+    Info,
 } from 'lucide-react';
 
 interface CustomerShowProps {
@@ -31,23 +35,44 @@ interface CustomerShowProps {
         status_badge?: 'success' | 'warning' | 'destructive' | 'secondary';
     };
     statuses: CustomerStatusOption[];
+    eligibleSalesmen?: EligibleSalesman[];
     can: {
         update: boolean;
+        assign?: boolean;
     };
 }
 
-export default function CustomerShow({ customer, statuses, can }: CustomerShowProps) {
+export default function CustomerShow({ customer, statuses, eligibleSalesmen = [], can }: CustomerShowProps) {
     const { flash } = usePage<PageProps>().props;
     const [statusModalOpen, setStatusModalOpen] = useState(false);
+    const [assignModalOpen, setAssignModalOpen] = useState(false);
 
     const { data, setData, patch, processing, errors } = useForm({
         status: customer.status,
+    });
+
+    const {
+        data: assignData,
+        setData: setAssignData,
+        patch: patchAssign,
+        processing: assignProcessing,
+        errors: assignErrors,
+    } = useForm({
+        salesman_id: customer.salesman_id ? String(customer.salesman_id) : '',
+        reason: '',
     });
 
     const handleStatusSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         patch(`/customers/${customer.id}/status`, {
             onSuccess: () => setStatusModalOpen(false),
+        });
+    };
+
+    const handleAssignSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        patchAssign(`/customers/${customer.id}/assign`, {
+            onSuccess: () => setAssignModalOpen(false),
         });
     };
 
@@ -136,25 +161,123 @@ export default function CustomerShow({ customer, statuses, can }: CustomerShowPr
                         </div>
                     </div>
 
-                    {can.update && (
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                    {(can.assign ?? can.update) && (
+                        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setStatusModalOpen(!statusModalOpen)}
+                                onClick={() => {
+                                    setAssignModalOpen(!assignModalOpen);
+                                    setStatusModalOpen(false);
+                                }}
                                 className="h-8 text-xs"
                             >
-                                Change Status
+                                <UserCheck className="h-3.5 w-3.5 mr-1.5" />
+                                {customer.salesman ? 'Reassign Rep' : 'Assign Rep'}
                             </Button>
-                            <Link href={`/customers/${customer.id}/edit`}>
-                                <Button size="sm" className="h-8 text-xs">
-                                    <Edit3 className="h-3.5 w-3.5 mr-1.5" />
-                                    Edit Account
+                            {can.update && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setStatusModalOpen(!statusModalOpen);
+                                        setAssignModalOpen(false);
+                                    }}
+                                    className="h-8 text-xs"
+                                >
+                                    Change Status
                                 </Button>
-                            </Link>
+                            )}
+                            {can.update && (
+                                <Link href={`/customers/${customer.id}/edit`}>
+                                    <Button size="sm" className="h-8 text-xs">
+                                        <Edit3 className="h-3.5 w-3.5 mr-1.5" />
+                                        Edit Account
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>
+
+                {/* Salesman Assignment Drawer/Card */}
+                {assignModalOpen && (can.assign ?? can.update) && (
+                    <Card className="border-primary/30 bg-primary/5">
+                        <CardHeader className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                                <UserCheck className="h-4 w-4 text-primary" />
+                                <CardTitle className="text-xs font-semibold">
+                                    {customer.salesman ? 'Reassign Sales Representative' : 'Assign Sales Representative'}
+                                </CardTitle>
+                            </div>
+                            <CardDescription className="text-xs">
+                                This changes the customer's current sales ownership. Historical transactions are not changed.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-4">
+                            <form onSubmit={handleAssignSubmit} className="space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label htmlFor="assign_salesman_id" className="text-xs font-medium text-foreground">
+                                            Select Active Sales Representative
+                                        </label>
+                                        <select
+                                            id="assign_salesman_id"
+                                            value={assignData.salesman_id}
+                                            onChange={(e) => setAssignData('salesman_id', e.target.value)}
+                                            disabled={assignProcessing}
+                                            className="w-full h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                                        >
+                                            <option value="">Unassigned (Remove Assignment)</option>
+                                            {eligibleSalesmen.map((slm) => (
+                                                <option key={slm.id} value={slm.id}>
+                                                    {slm.name} ({slm.email})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {assignErrors.salesman_id && (
+                                            <p className="text-xs text-destructive">{assignErrors.salesman_id}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label htmlFor="assign_reason" className="text-xs font-medium text-foreground">
+                                            Reason for Change (Optional)
+                                        </label>
+                                        <input
+                                            id="assign_reason"
+                                            type="text"
+                                            placeholder="e.g. Territory realignment, portfolio rebalancing"
+                                            value={assignData.reason}
+                                            onChange={(e) => setAssignData('reason', e.target.value)}
+                                            disabled={assignProcessing}
+                                            className="w-full h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                                        />
+                                        {assignErrors.reason && (
+                                            <p className="text-xs text-destructive">{assignErrors.reason}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Button type="submit" size="sm" disabled={assignProcessing} className="h-8 text-xs">
+                                        {assignProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+                                        Apply Assignment
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setAssignModalOpen(false)}
+                                        className="h-8 text-xs"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Status Switcher Drawer/Card */}
                 {statusModalOpen && can.update && (
@@ -336,6 +459,70 @@ export default function CustomerShow({ customer, statuses, can }: CustomerShowPr
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Sales Representative Card */}
+                <Card>
+                    <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-primary" />
+                            <div>
+                                <CardTitle className="text-sm font-semibold">Assigned Sales Representative</CardTitle>
+                                <CardDescription className="text-xs">
+                                    Commercial relationship manager and portfolio owner.
+                                </CardDescription>
+                            </div>
+                        </div>
+                        {(can.assign ?? can.update) && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setAssignModalOpen(true);
+                                    setStatusModalOpen(false);
+                                }}
+                                className="h-7 text-xs"
+                            >
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                {customer.salesman ? 'Reassign' : 'Assign Rep'}
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        {customer.salesman ? (
+                            <div className="flex items-start justify-between gap-4 text-xs">
+                                <div className="space-y-1">
+                                    <div className="font-semibold text-sm text-foreground">{customer.salesman.name}</div>
+                                    <div className="text-muted-foreground">{customer.salesman.email}</div>
+                                    <div className="text-[11px] text-muted-foreground font-mono">User ID: #{customer.salesman.id}</div>
+                                </div>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Active Sales Rep
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between text-xs py-2">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <UserX className="h-4 w-4 text-muted-foreground" />
+                                    <span>No sales representative is currently assigned to this account.</span>
+                                </div>
+                                {(can.assign ?? can.update) && (
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setAssignModalOpen(true);
+                                            setStatusModalOpen(false);
+                                        }}
+                                        className="h-7 text-xs"
+                                    >
+                                        Assign Sales Rep
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Additional Commercial Details & Notes */}
                 <Card>

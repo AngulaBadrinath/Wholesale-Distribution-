@@ -30,6 +30,7 @@ readonly class CustomerData
         public string $payment_terms,
         public CustomerStatus $status,
         public ?string $notes,
+        public ?int $salesman_id = null,
     ) {}
 
     /**
@@ -69,6 +70,7 @@ readonly class CustomerData
             payment_terms: (string) $paymentTerms,
             status: $status,
             notes: isset($data['notes']) && trim((string) $data['notes']) !== '' ? trim((string) $data['notes']) : null,
+            salesman_id: isset($data['salesman_id']) && $data['salesman_id'] !== '' && $data['salesman_id'] !== null ? (int) $data['salesman_id'] : null,
         );
     }
 
@@ -102,6 +104,7 @@ readonly class CustomerData
             'payment_terms' => $this->payment_terms,
             'status' => $this->status->value,
             'notes' => $this->notes,
+            'salesman_id' => $this->salesman_id,
         ];
     }
 }

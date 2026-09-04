@@ -87,6 +87,14 @@ export interface RoleOption {
 export type CustomerStatus = 'ACTIVE' | 'ON_HOLD' | 'INACTIVE';
 export type PaymentTerms = 'NET_30' | 'NET_15' | 'NET_60' | 'COD' | 'DUE_ON_RECEIPT';
 
+export interface EligibleSalesman {
+    id: number;
+    name: string;
+    email: string;
+    status: string;
+    role?: string;
+}
+
 export interface Customer {
     id: number;
     code: string;
@@ -94,6 +102,8 @@ export interface Customer {
     contact_name: string;
     email: string | null;
     phone: string;
+    salesman_id: number | null;
+    salesman?: EligibleSalesman | null;
     billing_address_line1: string;
     billing_address_line2: string | null;
     billing_city: string;

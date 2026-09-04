@@ -197,4 +197,22 @@ class User extends Authenticatable
     {
         return $this->hasPermission($permission);
     }
+
+    /**
+     * Get the customer accounts assigned to this salesman.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Customer, $this>
+     */
+    public function assignedCustomers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Customer::class, 'salesman_id');
+    }
+
+    /**
+     * Determine whether the user is eligible to be assigned as a customer's salesman.
+     */
+    public function canBeAssignedAsSalesman(): bool
+    {
+        return $this->role === UserRole::SALESMAN && $this->isActive();
+    }
 }

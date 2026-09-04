@@ -289,8 +289,10 @@ class CustomerCrudTest extends TestCase
      */
     public function test_cus_crud_012_authorized_user_can_view_customer_detail(): void
     {
-        $customer = Customer::create($this->validCustomerPayload());
         $salesman = $this->createUserWithRole(UserRole::SALESMAN);
+        $customer = Customer::create($this->validCustomerPayload([
+            'salesman_id' => $salesman->id,
+        ]));
 
         $response = $this->actingAs($salesman)->get(route('customers.show', $customer));
         $response->assertOk();

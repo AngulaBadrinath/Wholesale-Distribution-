@@ -40,6 +40,7 @@ class Customer extends Model
         'payment_terms',
         'status',
         'notes',
+        'salesman_id',
     ];
 
     /**
@@ -51,7 +52,18 @@ class Customer extends Model
         'status' => CustomerStatus::class,
         'payment_terms' => PaymentTerms::class,
         'credit_limit' => 'decimal:2',
+        'salesman_id' => 'integer',
     ];
+
+    /**
+     * Get the salesman assigned to this customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\User, $this>
+     */
+    public function salesman(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'salesman_id');
+    }
 
     /**
      * Scope query to active customers.
@@ -59,6 +71,37 @@ class Customer extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', CustomerStatus::ACTIVE);
+    }
+
+    /**
+     * Scope query to customers assigned to a specific salesman.
+     */
+    public function scopeAssignedTo(Builder $query, int|User $salesman): Builder
+    {
+        $salesmanId = $salesman instanceof User ? $salesman->id : $salesman;
+
+        return $query->where('salesman_id', $salesmanId);
+    }
+
+    /**
+     * Scope query to unassigned customers.
+     */
+    public function scopeUnassigned(Builder $query): Builder
+    {
+        return $query->whereNull('salesman_id');
+    }
+
+    /**
+     * Scope query based on the authenticated actor's resource scope.
+     * Salesmen can only access assigned customers; privileged roles have unrestricted access.
+     */
+    public function scopeForUser(Builder $query, ?User $user): Builder
+    {
+        if ($user && $user->role === \App\Enums\UserRole::SALESMAN) {
+            return $query->where('customers.salesman_id', $user->id);
+        }
+
+        return $query;
     }
 
     /**

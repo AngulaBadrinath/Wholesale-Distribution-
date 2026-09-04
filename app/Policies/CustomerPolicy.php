@@ -23,10 +23,19 @@ class CustomerPolicy
 
     /**
      * Determine whether the user can view the customer.
+     * Salesmen may only access customer records within their assigned portfolio.
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $this->permissionService->has($user, Permission::CUSTOMER_VIEW);
+        if (! $this->permissionService->has($user, Permission::CUSTOMER_VIEW)) {
+            return false;
+        }
+
+        if ($user->role === \App\Enums\UserRole::SALESMAN) {
+            return $customer->salesman_id === $user->id;
+        }
+
+        return true;
     }
 
     /**
@@ -41,6 +50,14 @@ class CustomerPolicy
      * Determine whether the user can update the customer.
      */
     public function update(User $user, Customer $customer): bool
+    {
+        return $this->permissionService->has($user, Permission::CUSTOMER_UPDATE);
+    }
+
+    /**
+     * Determine whether the user can assign or reassign the customer's sales representative.
+     */
+    public function assign(User $user, Customer $customer): bool
     {
         return $this->permissionService->has($user, Permission::CUSTOMER_UPDATE);
     }

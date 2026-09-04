@@ -150,6 +150,38 @@
 - [x] **Lifecycle Invariants & Order Capability:** `ACTIVE` allows order placement; `ON_HOLD` and `INACTIVE` restrict order entry (`CUS-CRUD-029`).
 - [x] **Adversarial & XSS Sanitization:** Script tags and HTML payloads safely stored and escaped without evaluation (`CUS-CRUD-030`).
 
+### 1.3.1 Customer Assignment & Scoping to Salesmen (`CUSTOMER` / `FEAT-CUS-002`)
+- [x] **Assigned Salesman Visibility:** Admin can view assigned salesman information on customer index and show views (`CUS-SLM-001`).
+- [x] **Active Eligible Salesman Assignment:** Admin assigns active eligible salesman to customer atomically (`CUS-SLM-002`).
+- [x] **Customer Reassignment:** Admin reassigns customer from Salesman A to Salesman B with audit trail (`CUS-SLM-003`).
+- [x] **Customer Unassignment:** Admin unassigns customer with explicit unassignment audit logging (`CUS-SLM-004`).
+- [x] **Unauthorized Role Denial:** Non-admin roles without `customer.update` (`ACCOUNTANT`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`CUS-SLM-005`).
+- [x] **Salesman Assignment Denial:** Salesmen cannot assign, reassign, or self-assign customers (`CUS-SLM-006`).
+- [x] **Nonexistent Salesman Rejection:** Nonexistent user ID rejected with 422 Unprocessable Entity (`CUS-SLM-007`).
+- [x] **Non-Salesman Target Rejection:** Assigning user with role other than `SALESMAN` (`ADMIN`, `SUPER_ADMIN`, `ACCOUNTANT`, etc.) rejected with 422 (`CUS-SLM-008`).
+- [x] **Inactive Salesman Rejection:** Inactive salesman accounts (`INVITED`, `SUSPENDED`, `DISABLED`) rejected with 422 (`CUS-SLM-009`).
+- [x] **Salesman Resource Scoping:** Salesmen only see and access customers in their own assigned portfolio (`CUS-SLM-010`).
+- [x] **IDOR Scope Protection:** Direct URL access (`/customers/{id}`) to other salesmen's customers rejected with 403 Forbidden (`CUS-SLM-011`).
+- [x] **Scoped Portfolio Search:** Customer search for Salesman role is strictly scoped to assigned customers (`CUS-SLM-012`).
+- [x] **Admin Salesman Filtering:** Admin can filter customer directory by specific assigned salesman ID (`CUS-SLM-013`).
+- [x] **Admin Unassigned Filtering:** Admin can filter customer directory for unassigned accounts (`CUS-SLM-014`).
+- [x] **Assignment Audit Logging:** `CUSTOMER_SALESMAN_ASSIGNED` structured audit log written with actor, customer, and salesman IDs (`CUS-SLM-015`).
+- [x] **Reassignment Audit Logging:** `CUSTOMER_SALESMAN_REASSIGNED` structured audit log written with previous and new salesman IDs (`CUS-SLM-016`).
+- [x] **Unassignment Audit Logging:** `CUSTOMER_SALESMAN_UNASSIGNED` structured audit log written with previous salesman ID (`CUS-SLM-017`).
+- [x] **Audit Secrets Protection:** Zero passwords, MFA tokens, or session secrets present in assignment audit logs (`CUS-SLM-018`).
+- [x] **Transactional Row Locking & Atomicity:** Assignment executes in `DB::transaction` with `lockForUpdate` row locking to prevent race conditions (`CUS-SLM-019`).
+- [x] **Customer Identity Stability:** Assignment changes preserve customer ID, code, name, addresses, and credit limit without mutation (`CUS-SLM-020`).
+- [x] **Suspended Salesman Access Block:** Suspended salesmen cannot log in or access their portfolio (`CUS-SLM-021`).
+- [x] **Create-Time Assignment Support:** Initial customer creation supports salesman assignment with full eligibility validation (`CUS-SLM-022`).
+- [x] **Update-Time Assignment Preservation:** Customer updates without changing salesman preserve existing assignment (`CUS-SLM-023`).
+- [x] **Salesman Deactivation Invariant:** Suspending a salesman preserves historical `customers.salesman_id` link without destructive nullification (`CUS-SLM-024`).
+- [x] **Adversarial Query Filter Immunity:** Salesman attempting to query `salesman_id=<other>` is safely ignored and scoped (`CUS-SLM-025`).
+- [x] **Centralized Eligibility on Creation:** Creation-time assignment enforces identical `UserRole::SALESMAN` + `AccountStatus::ACTIVE` eligibility rules (`CUS-SLM-026`).
+- [x] **Centralized Eligibility on Update:** Update-time assignment enforces identical eligibility rules (`CUS-SLM-027`).
+- [x] **Zero Client Trust (Actor Identity):** Server ignores request body actor IDs and authoritative server session actor is used exclusively (`CUS-SLM-028`).
+- [x] **Frontend Payload Tampering Rejection:** Malicious types/strings in assignment payloads rejected with 422 (`CUS-SLM-029`).
+- [x] **No-Op Reassignment Optimization:** Redundant assignment of same salesman produces no unnecessary database writes or duplicate audit events (`CUS-SLM-030`).
+
 ### 1.4 Salesman Management (`SALESMAN`)
 - [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
 - [ ] **Validation:** Duplicate email rejected.

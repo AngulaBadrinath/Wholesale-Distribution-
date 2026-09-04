@@ -81,5 +81,6 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/customers/{customer}/edit', [\App\Http\Controllers\Customer\CustomerController::class, 'edit'])->name('customers.edit');
         Route::put('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'update'])->name('customers.update');
         Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Customer\CustomerController::class, 'updateStatus'])->name('customers.status');
+        Route::patch('/customers/{customer}/assign', [\App\Http\Controllers\Customer\CustomerController::class, 'assignSalesman'])->name('customers.assign');
     });
 });

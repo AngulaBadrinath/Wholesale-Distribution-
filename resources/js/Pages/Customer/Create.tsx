@@ -4,7 +4,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { CustomerStatusOption, PaymentTermsOption } from '@/types';
+import { CustomerStatusOption, EligibleSalesman, PaymentTermsOption } from '@/types';
 import {
     Building2,
     MapPin,
@@ -16,15 +16,17 @@ import {
     Save,
     AlertCircle,
     Copy,
+    UserCheck,
 } from 'lucide-react';
 
 interface CustomerCreateProps {
     suggestedCode: string;
     statuses: CustomerStatusOption[];
     paymentTerms: PaymentTermsOption[];
+    eligibleSalesmen?: EligibleSalesman[];
 }
 
-export default function CustomerCreate({ suggestedCode, statuses, paymentTerms }: CustomerCreateProps) {
+export default function CustomerCreate({ suggestedCode, statuses, paymentTerms, eligibleSalesmen = [] }: CustomerCreateProps) {
     const [sameAsBilling, setSameAsBilling] = useState(true);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -33,6 +35,7 @@ export default function CustomerCreate({ suggestedCode, statuses, paymentTerms }
         contact_name: '',
         email: '',
         phone: '',
+        salesman_id: '',
         billing_address_line1: '',
         billing_address_line2: '',
         billing_city: '',
@@ -539,8 +542,32 @@ export default function CustomerCreate({ suggestedCode, statuses, paymentTerms }
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-1.5 sm:col-span-1">
+                                    <label htmlFor="salesman_id" className="text-xs font-medium text-foreground flex items-center gap-1">
+                                        <UserCheck className="h-3.5 w-3.5 text-primary" />
+                                        Sales Representative
+                                    </label>
+                                    <select
+                                        id="salesman_id"
+                                        value={data.salesman_id}
+                                        onChange={(e) => setData('salesman_id', e.target.value)}
+                                        disabled={processing}
+                                        className={`w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus:outline-none focus:ring-1 focus:ring-ring ${
+                                            errors.salesman_id ? 'border-destructive' : ''
+                                        }`}
+                                    >
+                                        <option value="">Unassigned (No Sales Rep)</option>
+                                        {eligibleSalesmen.map((slm) => (
+                                            <option key={slm.id} value={slm.id}>
+                                                {slm.name} ({slm.email})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.salesman_id && <p className="text-xs text-destructive">{errors.salesman_id}</p>}
+                                </div>
+
+                                <div className="space-y-1.5 sm:col-span-2">
                                     <label htmlFor="tax_id" className="text-xs font-medium text-foreground">
                                         Tax / Resale Registration ID (Optional)
                                     </label>
@@ -555,20 +582,20 @@ export default function CustomerCreate({ suggestedCode, statuses, paymentTerms }
                                     />
                                     {errors.tax_id && <p className="text-xs text-destructive">{errors.tax_id}</p>}
                                 </div>
+                            </div>
 
-                                <div className="space-y-1.5">
-                                    <label htmlFor="notes" className="text-xs font-medium text-foreground">
-                                        Internal Notes / Account Instructions
-                                    </label>
-                                    <Input
-                                        id="notes"
-                                        type="text"
-                                        value={data.notes}
-                                        onChange={(e) => setData('notes', e.target.value)}
-                                        placeholder="Special handling, delivery windows, or discount tier"
-                                        disabled={processing}
-                                    />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label htmlFor="notes" className="text-xs font-medium text-foreground">
+                                    Internal Notes / Account Instructions
+                                </label>
+                                <Input
+                                    id="notes"
+                                    type="text"
+                                    value={data.notes}
+                                    onChange={(e) => setData('notes', e.target.value)}
+                                    placeholder="Special handling, delivery windows, or discount tier"
+                                    disabled={processing}
+                                />
                             </div>
                         </CardContent>
                     </Card>

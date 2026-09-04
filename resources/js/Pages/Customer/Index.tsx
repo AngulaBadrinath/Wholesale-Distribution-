@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent } from '@/Components/ui/card';
-import { Customer, CustomerStatusOption, PaginatedResponse, PageProps } from '@/types';
+import { Customer, CustomerStatusOption, EligibleSalesman, PaginatedResponse, PageProps } from '@/types';
 import {
     Users,
     Search,
@@ -22,6 +22,8 @@ import {
     AlertCircle,
     Building2,
     SlidersHorizontal,
+    UserCheck,
+    UserX,
 } from 'lucide-react';
 
 interface CustomerIndexProps {
@@ -29,19 +31,24 @@ interface CustomerIndexProps {
     filters: {
         search: string;
         status: string;
+        salesman_id?: string;
         sort_by: string;
         sort_order: string;
     };
     statuses: CustomerStatusOption[];
+    eligibleSalesmen?: EligibleSalesman[];
 }
 
-export default function CustomerIndex({ customers, filters, statuses }: CustomerIndexProps) {
+export default function CustomerIndex({ customers, filters, statuses, eligibleSalesmen = [] }: CustomerIndexProps) {
     const { auth } = usePage<PageProps>().props;
     const [search, setSearch] = useState(filters.search || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'ALL');
+    const [selectedSalesman, setSelectedSalesman] = useState(filters.salesman_id || 'ALL');
 
     const canCreateCustomer = auth?.user?.permissions?.includes('customer.create') ||
         auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
+
+    const isPrivileged = auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN' || auth?.user?.role === 'ACCOUNTANT';
 
     // Debounced search handler
     useEffect(() => {
@@ -153,7 +160,7 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                         <div className="flex items-center gap-1.5 px-3 py-2 border border-border bg-card rounded-md text-xs w-full sm:w-auto">
                             <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                             <select
@@ -173,6 +180,29 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                                 ))}
                             </select>
                         </div>
+
+                        {isPrivileged && (
+                            <div className="flex items-center gap-1.5 px-3 py-2 border border-border bg-card rounded-md text-xs w-full sm:w-auto">
+                                <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <select
+                                    value={selectedSalesman}
+                                    onChange={(e) => {
+                                        setSelectedSalesman(e.target.value);
+                                        applyFilters({ salesman_id: e.target.value });
+                                    }}
+                                    className="bg-transparent text-foreground border-none text-xs focus:outline-none cursor-pointer w-full"
+                                    aria-label="Filter by assigned sales representative"
+                                >
+                                    <option value="ALL">All Sales Reps</option>
+                                    <option value="UNASSIGNED">Unassigned Only</option>
+                                    {eligibleSalesmen.map((slm) => (
+                                        <option key={slm.id} value={slm.id}>
+                                            {slm.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -202,6 +232,7 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                                             <ArrowUpDown className="h-3 w-3" />
                                         </div>
                                     </th>
+                                    <th scope="col" className="py-3 px-4">Assigned Sales Rep</th>
                                     <th scope="col" className="py-3 px-4">Contact Person</th>
                                     <th scope="col" className="py-3 px-4">Location</th>
                                     <th
@@ -222,7 +253,7 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                             <tbody className="divide-y divide-border">
                                 {customers.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                                        <td colSpan={9} className="py-12 text-center text-muted-foreground">
                                             <div className="flex flex-col items-center justify-center space-y-2">
                                                 <Building2 className="h-8 w-8 text-muted-foreground/50" />
                                                 <p className="font-medium text-sm text-foreground">No customers found</p>
@@ -244,6 +275,22 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                                                 <Link href={`/customers/${cust.id}`} className="hover:underline block truncate max-w-[200px]">
                                                     {cust.name}
                                                 </Link>
+                                            </td>
+                                            <td className="py-3.5 px-4">
+                                                {cust.salesman ? (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <UserCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                        <div className="space-y-0.5 truncate max-w-[140px]">
+                                                            <div className="font-medium text-foreground truncate">{cust.salesman.name}</div>
+                                                            <div className="text-[10px] text-muted-foreground truncate">{cust.salesman.email}</div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-muted/50 text-muted-foreground text-[10px] font-normal">
+                                                        <UserX className="h-3 w-3 mr-1" />
+                                                        Unassigned
+                                                    </Badge>
+                                                )}
                                             </td>
                                             <td className="py-3.5 px-4">
                                                 <div className="space-y-0.5">
@@ -314,6 +361,20 @@ export default function CustomerIndex({ customers, filters, statuses }: Customer
                                                 </p>
                                             </div>
                                             {getStatusBadge(cust.status)}
+                                        </div>
+
+                                        <div className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                                            {cust.salesman ? (
+                                                <span className="inline-flex items-center gap-1 text-primary">
+                                                    <UserCheck className="h-3.5 w-3.5" />
+                                                    Rep: {cust.salesman.name}
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                                    <UserX className="h-3.5 w-3.5" />
+                                                    Rep: Unassigned
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border/60 text-muted-foreground">

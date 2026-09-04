@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Enums\AccountStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\PaymentTerms;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\AssignCustomerSalesmanRequest;
 use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerStatusRequest;
@@ -27,16 +30,18 @@ class CustomerController extends Controller
      */
     public function index(Request $request): Response
     {
-        $filters = $request->only(['search', 'status', 'sort_by', 'sort_order']);
+        $user = $request->user();
+        $filters = $request->only(['search', 'status', 'salesman_id', 'sort_by', 'sort_order']);
         $perPage = max(1, min((int) $request->input('per_page', 15), 100));
 
-        $customers = $this->customerService->list($filters, $perPage);
+        $customers = $this->customerService->list($filters, $perPage, $user);
 
         return Inertia::render('Customer/Index', [
             'customers' => $customers,
             'filters' => [
                 'search' => $request->input('search', ''),
                 'status' => $request->input('status', 'ALL'),
+                'salesman_id' => $request->input('salesman_id', 'ALL'),
                 'sort_by' => $request->input('sort_by', 'name'),
                 'sort_order' => $request->input('sort_order', 'asc'),
             ],
@@ -49,8 +54,12 @@ class CustomerController extends Controller
                 'value' => $p->value,
                 'label' => $p->label(),
             ]),
+            'eligibleSalesmen' => $user && $user->role !== UserRole::SALESMAN
+                ? $this->customerService->getEligibleSalesmen()
+                : [],
             'can' => [
-                'create' => $request->user()?->can('create', Customer::class),
+                'create' => $user?->can('create', Customer::class),
+                'assign' => $user?->role === UserRole::SUPER_ADMIN || $user?->role === UserRole::ADMIN,
             ],
         ]);
     }
@@ -70,6 +79,7 @@ class CustomerController extends Controller
                 'value' => $p->value,
                 'label' => $p->label(),
             ]),
+            'eligibleSalesmen' => $this->customerService->getEligibleSalesmen(),
         ]);
     }
 
@@ -98,8 +108,16 @@ class CustomerController extends Controller
     /**
      * Display the specified customer.
      */
-    public function show(Customer $customer): Response
+    public function show(Request $request, Customer $customer): Response
     {
+        $user = $request->user();
+
+        if ($user && ! $user->can('view', $customer)) {
+            abort(403, 'You are not authorized to access this customer record.');
+        }
+
+        $customer->loadMissing('salesman:id,name,email,role,status');
+
         return Inertia::render('Customer/Show', [
             'customer' => [
                 'id' => $customer->id,
@@ -130,6 +148,13 @@ class CustomerController extends Controller
                 'status_label' => $customer->status instanceof CustomerStatus ? $customer->status->label() : (string) $customer->status,
                 'can_order' => $customer->canPlaceOrders(),
                 'notes' => $customer->notes,
+                'salesman_id' => $customer->salesman_id,
+                'salesman' => $customer->salesman ? [
+                    'id' => $customer->salesman->id,
+                    'name' => $customer->salesman->name,
+                    'email' => $customer->salesman->email,
+                    'status' => $customer->salesman->status instanceof AccountStatus ? $customer->salesman->status->value : (string) $customer->salesman->status,
+                ] : null,
                 'created_at' => $customer->created_at?->toIso8601String(),
                 'updated_at' => $customer->updated_at?->toIso8601String(),
             ],
@@ -138,8 +163,12 @@ class CustomerController extends Controller
                 'label' => $s->label(),
                 'badgeVariant' => $s->badgeVariant(),
             ]),
+            'eligibleSalesmen' => $user && $user->role !== UserRole::SALESMAN
+                ? $this->customerService->getEligibleSalesmen()
+                : [],
             'can' => [
-                'update' => request()->user()?->can('update', $customer),
+                'update' => $user?->can('update', $customer),
+                'assign' => $user?->can('assign', $customer),
             ],
         ]);
     }
@@ -147,8 +176,16 @@ class CustomerController extends Controller
     /**
      * Show the form for editing the specified customer.
      */
-    public function edit(Customer $customer): Response
+    public function edit(Request $request, Customer $customer): Response
     {
+        $user = $request->user();
+
+        if ($user && ! $user->can('update', $customer)) {
+            abort(403, 'You are not authorized to edit this customer.');
+        }
+
+        $customer->loadMissing('salesman:id,name,email,role,status');
+
         return Inertia::render('Customer/Edit', [
             'customer' => [
                 'id' => $customer->id,
@@ -171,9 +208,10 @@ class CustomerController extends Controller
                 'shipping_country' => $customer->shipping_country,
                 'tax_id' => $customer->tax_id,
                 'credit_limit' => (float) $customer->credit_limit,
-                'payment_terms' => $customer->payment_terms,
-                'status' => $customer->status instanceof CustomerStatus ? $customer->status->value : $customer->status,
+                'payment_terms' => $customer->payment_terms instanceof PaymentTerms ? $customer->payment_terms->value : (string) $customer->payment_terms,
+                'status' => $customer->status instanceof CustomerStatus ? $customer->status->value : (string) $customer->status,
                 'notes' => $customer->notes,
+                'salesman_id' => $customer->salesman_id,
             ],
             'statuses' => collect(CustomerStatus::cases())->map(fn (CustomerStatus $s) => [
                 'value' => $s->value,
@@ -183,6 +221,7 @@ class CustomerController extends Controller
                 'value' => $p->value,
                 'label' => $p->label(),
             ]),
+            'eligibleSalesmen' => $this->customerService->getEligibleSalesmen(),
         ]);
     }
 
@@ -210,6 +249,32 @@ class CustomerController extends Controller
     }
 
     /**
+     * Assign or reassign customer to a sales representative.
+     */
+    public function assignSalesman(AssignCustomerSalesmanRequest $request, Customer $customer): RedirectResponse|JsonResponse
+    {
+        $salesmanId = $request->validated('salesman_id');
+        $reason = $request->validated('reason');
+
+        $updated = $this->customerService->assignSalesman(
+            customer: $customer,
+            salesmanId: $salesmanId,
+            actor: $request->user(),
+            reason: $reason,
+            ip: $request->ip()
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Sales representative assignment updated successfully.',
+                'customer' => $updated,
+            ]);
+        }
+
+        return redirect()->route('customers.show', $updated)->with('success', 'Sales representative assignment updated successfully.');
+    }
+
+    /**
      * Update customer lifecycle status.
      */
     public function updateStatus(UpdateCustomerStatusRequest $request, Customer $customer): RedirectResponse|JsonResponse
@@ -232,6 +297,7 @@ class CustomerController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', "Customer status transitioned to {$newStatus->label()}.");
+        return redirect()->route('customers.show', $updated)->with('success', "Customer status transitioned to {$newStatus->label()}.");
     }
 }
+

@@ -72,6 +72,7 @@ class UpdateCustomerRequest extends FormRequest
             'payment_terms' => ['required', 'string', Rule::in(PaymentTerms::values())],
             'status' => ['required', 'string', Rule::in(CustomerStatus::values())],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'salesman_id' => ['nullable', 'integer'],
         ];
     }
 
