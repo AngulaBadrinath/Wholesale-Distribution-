@@ -23,6 +23,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
 
+    Route::get('/login/mfa', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'create'])->name('mfa.challenge');
+    Route::post('/login/mfa', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'store'])->name('mfa.challenge.store');
+
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 
@@ -45,4 +48,11 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::post('/security/sessions/{id}/revoke', [SessionManagementController::class, 'destroy'])->name('sessions.revoke');
     Route::post('/security/sessions/revoke-others', [SessionManagementController::class, 'destroyOthers'])->name('sessions.revoke-others');
     Route::post('/security/sessions/revoke-all', [SessionManagementController::class, 'destroyAll'])->name('sessions.revoke-all');
+
+    // Multi-factor authentication settings
+    Route::get('/security/mfa', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'index'])->name('mfa.index');
+    Route::post('/security/mfa/enable', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'enable'])->name('mfa.enable');
+    Route::post('/security/mfa/confirm', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'confirm'])->name('mfa.confirm');
+    Route::delete('/security/mfa', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'disable'])->name('mfa.disable');
+    Route::post('/security/mfa/recovery-codes', [\App\Http\Controllers\Security\TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('mfa.recovery-codes');
 });

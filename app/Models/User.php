@@ -4,15 +4,18 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\AccountStatus;
+use App\Enums\UserRole;
+use App\Services\Auth\MfaPolicy;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'status'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'status', 'role', 'two_factor_secret', 'two_factor_confirmed_at'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -29,6 +32,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => AccountStatus::class,
+            'role' => UserRole::class,
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -80,5 +86,37 @@ class User extends Authenticatable
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new \App\Notifications\Auth\ResetPasswordNotification($token));
+    }
+
+    /**
+     * Get the two factor recovery codes for the user.
+     */
+    public function recoveryCodes(): HasMany
+    {
+        return $this->hasMany(TwoFactorRecoveryCode::class);
+    }
+
+    /**
+     * Determine whether the user has confirmed Multi-Factor Authentication.
+     */
+    public function hasMfaEnabled(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && ! empty($this->two_factor_secret);
+    }
+
+    /**
+     * Determine whether Multi-Factor Authentication is required for the user by policy.
+     */
+    public function requiresMfa(): bool
+    {
+        return app(MfaPolicy::class)->isMfaRequired($this);
+    }
+
+    /**
+     * Determine whether the user possesses a privileged administrative or financial role.
+     */
+    public function isPrivileged(): bool
+    {
+        return $this->role instanceof UserRole && $this->role->isPrivileged();
     }
 }

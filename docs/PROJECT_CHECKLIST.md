@@ -53,7 +53,7 @@
 - [x] `FEAT-AUTH-001`: Centralized Multi-Portal Login & Throttling
 - [x] `FEAT-AUTH-002`: Logout & Session Revocation
 - [x] `FEAT-AUTH-003`: Secure Password Reset Flow
-- [ ] `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)
+- [x] `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)
 
 ### Roles & Permissions
 - [ ] `FEAT-RBAC-001`: Role Model (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`)

@@ -51,7 +51,9 @@
 - [x] **Password Reset (Token Security):** High-entropy cryptographically secure tokens are single-use and time-limited (60 min) (`AUTH-PASSWORD-008`..`011`, `AUTH-PASSWORD-023`).
 - [x] **Password Reset (Session Invalidation):** Successful password reset purges all active database sessions across all devices via `SessionRevocationService` (`AUTH-PASSWORD-016`, `AUTH-PASSWORD-017`).
 - [x] **Password Reset (Policy & Secrets):** Enforces 8+ char password policy; plaintext passwords and raw tokens never stored or logged (`AUTH-PASSWORD-012`..`015`, `AUTH-PASSWORD-018`..`020`).
-- [ ] **Privileged MFA:** Super Admin / Admin / Accountant prompted for TOTP code (`FEAT-AUTH-004`).
+- [x] **Privileged MFA:** Super Admin / Admin / Accountant prompted for mandatory TOTP code; standard roles optional; zero bypass (`FEAT-AUTH-004` / `AUTH-MFA-001`..`034`).
+- [x] **MFA Recovery & Brute-Force:** 8 hashed single-use recovery codes, atomic consumption, 5 attempts/min rate limiting, challenge expiration (`AUTH-MFA-011`..`015`, `AUTH-MFA-020`..`023`).
+- [x] **MFA Step-Up & Session Security:** Password confirmation on security actions, role policy prevents mandatory disable, other sessions revoked (`AUTH-MFA-005`, `AUTH-MFA-024`..`025`, `AUTH-MFA-030`).
 - [x] **Responsive:** Login, Session management, Forgot Password, and Reset Password views verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`, `Sessions.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx`).
 
 ### 1.2 Roles & Permissions (`RBAC`)

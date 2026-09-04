@@ -74,4 +74,49 @@ class UserFactory extends Factory
             'status' => AccountStatus::INVITED,
         ]);
     }
+
+    /**
+     * Assign a specific role to the user.
+     */
+    public function role(\App\Enums\UserRole $role): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => $role,
+        ]);
+    }
+
+    /**
+     * Assign Super Admin role.
+     */
+    public function superAdmin(): static
+    {
+        return $this->role(\App\Enums\UserRole::SUPER_ADMIN);
+    }
+
+    /**
+     * Assign Admin role.
+     */
+    public function admin(): static
+    {
+        return $this->role(\App\Enums\UserRole::ADMIN);
+    }
+
+    /**
+     * Assign Accountant role.
+     */
+    public function accountant(): static
+    {
+        return $this->role(\App\Enums\UserRole::ACCOUNTANT);
+    }
+
+    /**
+     * Indicate that the user has configured and confirmed MFA.
+     */
+    public function withMfa(?string $secret = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_secret' => $secret ?? (new \PragmaRX\Google2FA\Google2FA())->generateSecretKey(32),
+            'two_factor_confirmed_at' => now(),
+        ]);
+    }
 }

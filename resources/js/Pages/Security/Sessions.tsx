@@ -114,19 +114,27 @@ export default function Sessions({ sessions }: SessionsProps) {
                             <span className="text-sm font-semibold">Security & Sessions</span>
                         </div>
                     </div>
-                    <form method="POST" action="/logout">
-                        <input type="hidden" name="_token" value={(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''} />
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            onClick={() => router.post('/logout')}
-                            className="gap-2 text-muted-foreground hover:text-destructive"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            <span>Sign Out</span>
-                        </Button>
-                    </form>
+                    <div className="flex items-center gap-2">
+                        <Link href="/security/mfa">
+                            <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                                <Shield className="h-4 w-4 text-primary" />
+                                <span>Two-Factor Auth</span>
+                            </Button>
+                        </Link>
+                        <form method="POST" action="/logout">
+                            <input type="hidden" name="_token" value={(document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''} />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                type="button"
+                                onClick={() => router.post('/logout')}
+                                className="gap-2 text-muted-foreground hover:text-destructive"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span>Sign Out</span>
+                            </Button>
+                        </form>
+                    </div>
                 </div>
             </header>
 

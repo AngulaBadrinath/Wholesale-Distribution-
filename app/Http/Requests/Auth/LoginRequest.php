@@ -38,9 +38,11 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials with throttling and account-state enforcement.
      *
+     * @return array<string, mixed>
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(): void
+    public function authenticate(): array
     {
         $this->ensureIsNotRateLimited();
 
@@ -75,14 +77,49 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        Auth::login($user, $this->boolean('remember'));
+        $hasMfa = $user->hasMfaEnabled();
+        $requiresMfa = $user->requiresMfa();
 
         RateLimiter::clear($this->throttleKey());
+
+        if ($hasMfa || $requiresMfa) {
+            $requiresSetup = ! $hasMfa && $requiresMfa;
+
+            $this->session()->put('mfa.challenge', [
+                'user_id' => $user->id,
+                'remember' => $this->boolean('remember'),
+                'requires_setup' => $requiresSetup,
+                'attempts' => 0,
+                'expires_at' => now()->addMinutes(5)->timestamp,
+            ]);
+
+            Log::info('auth.security_event', [
+                'action' => 'MFA_CHALLENGE_INITIATED',
+                'user_id' => $user->id,
+                'requires_setup' => $requiresSetup,
+                'ip' => $this->ip(),
+                'timestamp' => now()->toIso8601String(),
+            ]);
+
+            return [
+                'mfa_required' => true,
+                'requires_setup' => $requiresSetup,
+                'user' => $user,
+            ];
+        }
+
+        Auth::login($user, $this->boolean('remember'));
 
         Log::info('User authenticated successfully', [
             'user_id' => $user->id,
             'ip' => $this->ip(),
         ]);
+
+        return [
+            'mfa_required' => false,
+            'requires_setup' => false,
+            'user' => $user,
+        ];
     }
 
     /**

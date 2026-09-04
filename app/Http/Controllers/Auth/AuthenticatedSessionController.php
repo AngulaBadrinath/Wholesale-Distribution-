@@ -27,7 +27,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $result = $request->authenticate();
+
+        if ($result['mfa_required'] ?? false) {
+            return redirect()->route('mfa.challenge');
+        }
 
         $request->session()->regenerate();
 
