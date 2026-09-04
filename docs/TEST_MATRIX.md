@@ -466,6 +466,20 @@
 - [x] **Resumed Draft Submission Recalculation:** Resumed draft with modified quantities commits with exact authoritative totals and sequence number (`ORD-QTY-010`).
 - [x] **Unified Frontend Stepper (`QuantityStepper.tsx`):** Reusable segmented control with boundary disable states (`[-]` disabled at 1, `[+]` disabled at 999,999), direct numeric input buffer, Enter/blur normalization, $\ge 44\text{px}$ touch targets, and full ARIA semantics integrated across catalog card, cart drawer, and review table (`ORD-QTY-011`).
 
+### 1.8.3 Order Review, Line Tax Breakdown & Financial Summary (`ORDER REVIEW` / `FEAT-ORD-004`)
+- [x] **Multi-Line Mixed Tax Breakdown:** Orders with standard (8.25%), reduced (4.00%), and exempt (0.00%) lines calculate line taxable amounts, taxes, and totals authoritatively (`ORD-REV-001`).
+- [x] **Header Tax Sum of Lines Invariant:** Order tax total is strictly the sum of rounded line taxes ($\sum \text{line\_tax\_amount}$), eliminating 1-cent invoice rounding discrepancies (`ORD-REV-002`).
+- [x] **Tax Rounding Boundary Verification:** Deterministic line-level `ROUND_HALF_UP` boundary assertions match BCMath string arithmetic (`14.95 * 0.0825 = 1.233375 -> 1.23`, `15.00 * 0.0825 = 1.2375 -> 1.24`) (`ORD-REV-003`).
+- [x] **Master Data Drift Snapshot Immutability:** Renaming products, altering catalog prices, or changing tax profile rates after order submission does not mutate committed order item snapshots (`ORD-REV-004`).
+- [x] **Draft Preview vs Submission Parity:** Draft order review preview matches final committed transaction values to the exact cent (`ORD-REV-005`).
+- [x] **Zero / Exempt Tax Profiles:** Exempt products ($0.00\%$) calculate $\$0.00$ tax while preserving snapshot tax profile code and rate identity (`ORD-REV-006`).
+- [x] **Quantity Mutation Financial Recalculation:** Modifying line quantities dynamically recalculates taxable amounts, taxes, and grand totals deterministically (`ORD-REV-007`).
+- [x] **Cost Price Invisibility & Security:** Salesman view strictly omits `cost_price` on order creation, draft editing, and show views (`ORD-REV-008`).
+- [x] **Customer Scoping & Boundary Validation:** Salesmen cannot submit orders or review drafts for unassigned or inactive customers (`ORD-REV-009`).
+- [x] **Price Boundary Validation:** Selling prices below minimum allowed price or above MRP are rejected with 422 Unprocessable Entity (`ORD-REV-010`).
+- [x] **Client-Side Financial Preview Utilities (`financial.ts`):** Centralized financial calculation helpers (`formatCurrency`, `calculateLinePreview`, `calculateOrderPreview`) provide non-authoritative preview parity with zero binary-float authority (`ORD-REV-011`).
+- [x] **Responsive Review UI (`OrderReviewStep.tsx` & `OrderReviewLineCard.tsx`):** High-density 7-column B2B ERP table for Desktop/Tablet ($\ge 640\text{px}$) and dedicated touch cards with $\ge 44\text{px}$ targets for Mobile ($< 640\text{px}$, 320–430px) without horizontal scrolling (`ORD-REV-012`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

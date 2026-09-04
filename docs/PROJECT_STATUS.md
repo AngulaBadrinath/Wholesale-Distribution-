@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **24.2%** (31 / 128 tickets) | FEAT-ORD-003 verified complete; 600 automated tests passing (3,539 assertions, 1 skipped) |
+| **Overall Code Completion** | **25.0%** (32 / 128 tickets) | FEAT-ORD-004 verified complete; 607 automated tests passing (3,637 assertions, 1 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 03 — Ordering Workflows** | Status: `IN_PROGRESS` (FEAT-ORD-001, FEAT-ORD-002, FEAT-ORD-003 complete) |
+| **Current Phase** | **Phase 03 — Ordering Workflows** | Status: `IN_PROGRESS` (FEAT-ORD-001, FEAT-ORD-002, FEAT-ORD-003, FEAT-ORD-004 complete) |
 | **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00, Phase 01, Phase 02 complete; Phase 03 in progress) |
-| **Current Active Ticket** | **FEAT-ORD-003** (Complete) | Ready to begin `FEAT-ORD-004: Order Review, Line Tax Breakdown & Financial Summary` |
+| **Current Active Ticket** | **FEAT-ORD-004** (Complete) | Ready to begin `FEAT-ORD-005: Order Submission Idempotency Enforcement` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001` order model landed; `FEAT-DLV-001` delivery model pending) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **31** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`).
-- Current progress: **24.2%** (31 / 128).
+- Completed tickets: **32** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`).
+- Current progress: **25.0%** (32 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (31):**
+- **Completed Tickets (32):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -64,11 +64,12 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   29. `FEAT-ORD-001`: Salesman Order Creation Flow (Customer select, catalogue browse, add to cart, atomic submission)
   30. `FEAT-ORD-002`: Draft Order Persistence & Resumption (Working drafts, optimistic version locking, resume/discard, atomic submission)
   31. `FEAT-ORD-003`: Order Line Quantity Stepper & Validation Controls (Segmented stepper, direct numeric input, boundary disable states, mobile touch targets >= 44px)
+  32. `FEAT-ORD-004`: Order Review, Line Tax Breakdown & Financial Summary (Multi-line tax breakdown, tax profile code/rate display, financial summary, mobile review cards, zero client authority)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Delivery domain models in Phase 08).
 - **Upcoming Tickets (Phase 03 — Ordering Workflows):**
-  1. `FEAT-ORD-004`: Order Review, Line Tax Breakdown & Financial Summary
+  1. `FEAT-ORD-005`: Order Submission Idempotency Enforcement
 
 ---
 

@@ -224,6 +224,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ORD-003`.
 
+### CHANGE-007: FEAT-ORD-004 Order Review, Line Tax Breakdown & Financial Summary
+- **Change ID:** `CHANGE-007`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Upgrade the Salesman Order Builder review step (`OrderReviewStep.tsx`) into a production-grade pre-submission financial review workspace. Expose transparent, line-by-line financial visibility: Product Name, SKU, Unit, Quantity Stepper, Unit Price, Taxable Amount, Tax Profile Code & Rate (e.g., `STD-825 (8.25%)` / `EXEMPT-0 (0.00%)`), Line Tax Amount, Line Total, and explicit Remove action. Provide structured Financial Summary (Subtotal / Taxable Amount, Estimated Line Taxes, Grand Total) with server-authoritative notice. Implement centralized client preview utilities (`financial.ts`) adhering to `ROUND_HALF_UP` parity without claiming binary-float authority. Implement mobile-tailored review card component (`OrderReviewLineCard.tsx`) with $\ge 44\text{px}$ touch targets to prevent broken horizontal scrolling on screens $\le 430\text{px}$. Maintain zero client financial authority (server BCMath and `OrderService` remain authoritative).
+- **Reason:** Guarantee full commercial and tax transparency for wholesale salesmen prior to order submission, ensure mathematical parity between client previews and server transactions, and provide an accessible, responsive B2B review experience.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §11 (Product-Specific Tax), §12 (Ordering Workflow), §25.1 (Salesman Order Builder), §25.3 (Order Review & Financials).
+- **Affected Architecture:** Technical Architecture §5.1 (Order & Line Item Snapshot Model), §8.2 (Concurrency & Idempotency), §23 (Tax Calculation Engine).
+- **Affected Security:** Zero client trust (`RULE-SEC-002`); cost price (`cost_price`) hidden from salesman view; salesman customer scoping enforced; price boundary validation enforced ($0 < \text{min} \le \text{price} \le \text{mrp}$).
+- **Affected Frontend:** `financial.ts`, `OrderReviewStep.tsx`, `OrderReviewLineCard.tsx`, `order.ts`, `Create.tsx`.
+- **Affected Tickets:** `FEAT-ORD-004` completed.
+- **Inventory Impact:** None (stock reserved post-approval downstream).
+- **Order Impact:** Live preview of line taxes and totals; immutable historical snapshots persisted in `order_items` upon submission.
+- **Payment Impact:** None.
+- **Tax Impact:** Multi-line mixed tax rates calculated per line using BCMath `ROUND_HALF_UP`; order tax total equals exact sum of rounded line taxes ($\sum \text{line\_tax\_amount}$).
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None (existing schema fully supports all snapshot fields).
+- **Testing Impact:** Added 7 comprehensive feature tests (`OrderReviewFinancialSummaryTest.php`). Full suite at 607 tests (3,637 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-004`.
+
 ---
 
 ## 3. Template for Future Change Requests

@@ -82,6 +82,7 @@ export interface CatalogProduct {
         rate: string;
         formatted_rate: string;
         status: string;
+        is_exempt?: boolean;
     } | null;
     primary_image_url: string | null;
 }
@@ -199,3 +200,29 @@ export interface InitialDraftData {
         product: CatalogProduct | null;
     }>;
 }
+
+export interface LineFinancialPreview {
+    product: CatalogProduct;
+    quantity: number;
+    unitPrice: string;
+    isCustomPrice: boolean;
+    taxableAmount: string;
+    taxProfileCode: string;
+    taxProfileName: string;
+    taxRate: string;
+    formattedTaxRate: string;
+    isExempt: boolean;
+    taxAmount: string;
+    lineTotal: string;
+}
+
+export interface OrderFinancialPreview {
+    lines: LineFinancialPreview[];
+    itemCount: number;
+    totalUnits: number;
+    subtotal: string;
+    taxTotal: string;
+    adjustmentTotal: string;
+    grandTotal: string;
+}
+
