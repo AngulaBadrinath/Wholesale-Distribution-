@@ -148,5 +148,16 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::put('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'update'])->whereNumber('tax_profile')->name('tax-profiles.update');
         Route::delete('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'destroy'])->whereNumber('tax_profile')->name('tax-profiles.destroy');
     });
+
+    // Salesman Ordering
+    Route::middleware('permission:order.create')->group(function () {
+        Route::get('/salesman/orders/create', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'create'])->name('salesman.orders.create');
+        Route::post('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'store'])->name('salesman.orders.store');
+    });
+
+    Route::middleware('permission:order.view')->group(function () {
+        Route::get('/salesman/orders/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'show'])->whereNumber('order')->name('salesman.orders.show');
+    });
 });
+
 

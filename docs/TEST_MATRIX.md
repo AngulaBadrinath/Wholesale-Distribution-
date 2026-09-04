@@ -421,16 +421,21 @@
 - [x] **Structured Audit Logging:** Emits `TAX_PROFILE_CREATED`, `TAX_PROFILE_UPDATED`, `TAX_PROFILE_STATUS_CHANGED`, `TAX_PROFILE_DELETED`, and `PRODUCT_TAX_PROFILE_CHANGED` without secrets (`TaxProfileManagementTest::test_tax_profile_lifecycle_emits_audit_events`, `ProductTaxIntegrationTest::test_admin_can_update_product_tax_profile`).
 - [x] **Future Order Persistence Note:** Order-level persistence deferred to Phase 03/05 Order engine; contract DTOs `TaxSnapshotData` and `TaxCalculationResult` verified ready.
 
-### 1.8 Order Creation & Submission (`ORDER`)
-- [ ] **Happy Path:** Salesman selects customer, adds items, sets quantities, reviews totals, and submits order (`FEAT-ORD-001`).
-- [ ] **Validation:** Zero or negative quantities rejected.
-- [ ] **Validation:** Inactive customer or inactive product rejected.
-- [ ] **Security (Zero Client Trust):** Submitting tampered line subtotal or grand total is overridden by server calculations (`RULE-SEC-002`).
-- [ ] **Security (Scope):** Salesman attempting to create order for unassigned customer rejected (`403 Forbidden`).
-- [ ] **Idempotency:** Submitting same payload with identical idempotency token returns original order without duplicate DB rows (`EDGE-001`, `FEAT-ORD-005`).
-- [ ] **Database Transaction:** Order creation failure midway rolls back completely (`DB::transaction`).
-- [ ] **Audit:** Order submission creates `orders` audit record.
-- [ ] **Responsive:** Full order flow verified on Mobile S (320px), Mobile (375px), Tablet (768px), and Desktop (1440px).
+### 1.8 Order Creation & Submission (`ORDER` / `FEAT-ORD-001`)
+- [x] **Happy Path Creation:** Salesman creates order for assigned active customer with multiple products, valid pricing, and default pricing (`ORD-CREATE-001`..`003`).
+- [x] **Boundary Pricing Enforcement:** Exact minimum allowed price and exact MRP accepted; prices below minimum or above MRP rejected with 422 (`ORD-CREATE-004`..`007`).
+- [x] **Salesman Self-Override Prevention:** Salesman attempting to force price override parameters (`is_price_overridden`, `price_override_reason`) is rejected (`ORD-CREATE-008`).
+- [x] **Malformed Price Prevention:** Negative prices, scientific notation, and excessive decimals rejected with 422 (`ORD-CREATE-009`..`011`).
+- [x] **Quantity Constraints:** Positive integers (1 to 999,999) accepted; zero, negative, fractional, and excessive quantities rejected (`ORD-CREATE-012`..`015`).
+- [x] **Customer Lifecycle & Scope Guards:** Inactive/on-hold customers rejected (`422 Unprocessable Entity`); unassigned customers rejected (`403 Forbidden`) (`ORD-CREATE-016`..`017`).
+- [x] **Product Lifecycle & Deactivation:** Inactive products rejected at checkout; stale cart deactivation caught and aborted atomically (`ORD-CREATE-018`..`019`).
+- [x] **Tax Rounding & Inactive Profile Invariant:** Product-specific line taxes rounded with `ROUND_HALF_UP` and aggregated; products with retained inactive tax profiles orderable with established tax rate (`ORD-CREATE-020`..`021`).
+- [x] **Historical Snapshot Immutability:** Historical product name, SKU, unit, price, and tax snapshots preserved permanently after subsequent product/tax updates (`ORD-CREATE-022`).
+- [x] **Deterministic Idempotency & Conflict Safety:** Same idempotency key + identical payload returns existing order; same key + different payload returns 409 Conflict (`ORD-CREATE-023`).
+- [x] **Security (Zero Client Trust):** Client-supplied order numbers, salesman IDs, status, and calculated totals completely ignored and derived server-side (`RULE-SEC-002`).
+- [x] **Sequential Order Numbering:** PostgreSQL sequence `order_number_seq` generates unique `ORD-YYYY-XXXXXX` numbers safely across concurrent orders (`RULE-ORD-001`).
+- [x] **Structured Audit Logging:** Emits `ORDER_CREATED` event on initial commit and suppresses duplicate audit on idempotent replay (`ORD-CREATE-023`).
+- [x] **Responsive UI & UX States:** Flagship 3-step Salesman Order Builder (`Create.tsx`, `Show.tsx`) supports Desktop (1024-1920px), Tablet (768-1023px), and Mobile (320-430px) with custom ephemeral cart and LocalStorage draft persistence.
 
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.

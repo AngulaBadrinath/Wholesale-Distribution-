@@ -100,7 +100,7 @@
 ## 6. ORDERING WORKFLOWS
 
 ### Salesman Ordering
-- [ ] `FEAT-ORD-001`: Salesman Order Creation Flow (Customer select, catalogue browse, add to cart)
+- [x] `FEAT-ORD-001`: Salesman Order Creation Flow (Customer select, catalogue browse, add to cart)
 - [ ] `FEAT-ORD-002`: Draft Order Persistence & Resumption
 - [ ] `FEAT-ORD-003`: Order Line Quantity Stepper & Validation Controls
 - [ ] `FEAT-ORD-004`: Order Review, Line Tax Breakdown & Financial Summary

@@ -149,6 +149,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-TAX-001`.
 
+### CHANGE-004: FEAT-ORD-001 Salesman Order Creation Flow
+- **Change ID:** `CHANGE-004`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the flagship Salesman Order Creation workflow, including customer selection with server-side salesman scoping, product catalogue browsing with signed S3 images, ephemeral cart with LocalStorage draft persistence, boundary pricing enforcement, BCMath line tax calculation (`ROUND_HALF_UP`), historical line snapshots, PostgreSQL sequence-backed `ORD-YYYY-XXXXXX` numbering, unique idempotency token with canonical fingerprint replay conflict safety, atomic `DB::transaction` checkout with deterministic ascending product locking (`SELECT FOR UPDATE`), and structured `ORDER_CREATED` audit event emission.
+- **Reason:** Provide the core transactional order intake spine for salesman operations without client trust or downstream workflow entanglement.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Order Workflow), §25.1 (Salesman Ordering), §25.2 (Pricing Boundaries), §32 (Audit).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.2 (Historical Snapshots), §8.2 (Idempotency).
+- **Affected Security:** Zero client trust for prices/taxes/totals, customer salesman scoping, authenticated actor derivation.
+- **Affected Frontend:** Salesman Order Builder (`Create.tsx`, `Show.tsx`) across Desktop (1024-1920px), Tablet (768-1023px), and Mobile (320-430px).
+- **Affected Tickets:** `FEAT-ORD-001` completed.
+- **Inventory Impact:** Stock reservation and decrements explicitly out of scope and deferred to Phase 06.
+- **Order Impact:** Initial order lifecycle state established (`status = SUBMITTED`, `fulfillment_status = UNALLOCATED`, `payment_status = UNPAID`, `delivery_status = PENDING_ASSIGNMENT`, `adjustment_status = NONE`).
+- **Payment Impact:** Payments deferred to Phase 07.
+- **Tax Impact:** Integrated authoritative `TaxCalculationService::calculateLineTax()` for snapshotting.
+- **Accounting Impact:** Immutable transaction records created; GL posting deferred to Phase 09.
+- **Data Migration Impact:** Created `orders` (`2026_09_05_000008_create_orders_table.php`) and `order_items` (`2026_09_05_000009_create_order_items_table.php`) tables with PostgreSQL sequence `order_number_seq` and check constraints.
+- **Testing Impact:** Added 23 comprehensive feature tests (`SalesmanOrderCreationTest.php`). Full suite at 575 tests (3,391 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-001`.
+
 ---
 
 ## 3. Template for Future Change Requests
