@@ -237,13 +237,32 @@
 - [x] **IDOR & Cross-Customer Isolation:** Nonexistent customer ID returns 404 Not Found (`CUS-LIFE-025`).
 - [x] **Generic Update Payload Status Bypass Protection:** Updating status via generic customer update endpoint behaves authoritatively (`CUS-LIFE-026`).
 - [x] **Directory Filter by Lifecycle State:** Customer index filtering by `status=active`, `status=on_hold`, and `status=inactive` operates accurately (`CUS-LIFE-027`).
-- [x] **Enum Metadata & Transition Validation:** `description()`, `allowedTransitions()`, and `canTransitionTo()` helpers return correct state matrix (`CUS-LIFE-028`).
-
 ### 1.4 Salesman Management (`SALESMAN`)
-- [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
-- [ ] **Validation:** Duplicate email rejected.
-- [ ] **Security:** Suspended salesman immediately prevented from placing orders or recording payments.
-- [ ] **Audit:** Reassigning customer to a new salesman logs previous and new salesman IDs.
+
+### 1.4.1 Salesman Account Management & Lifecycle (`SALESMAN` / `FEAT-SLM-001`)
+- [x] **Authorized Directory Listing:** Super Admin and Admin can access salesman directory (`SLM-ACC-001`).
+- [x] **Unauthorized Directory Denial:** Accountant, Salesman, Warehouse Manager, Delivery Partner rejected with 403 Forbidden (`SLM-ACC-002`).
+- [x] **Unauthenticated Redirection:** Guests redirected to login (`SLM-ACC-003`).
+- [x] **Authorized Salesman Provisioning:** Admin provisions salesman account with name, email, password, and status (`SLM-ACC-004`).
+- [x] **Forced Role Assignment:** Server strictly enforces `UserRole::SALESMAN` regardless of client payload (`SLM-ACC-005`).
+- [x] **Duplicate Email Rejection:** Duplicate email rejected with 422 Unprocessable Entity (`SLM-ACC-006`).
+- [x] **Password Validation & Hashing:** Password validated and securely hashed in database (`SLM-ACC-007`).
+- [x] **Authorized Profile View:** Admin views salesman details and assigned customer portfolio list (`SLM-ACC-008`).
+- [x] **Authorized Profile Edit:** Admin updates salesman name and email (`SLM-ACC-009`).
+- [x] **Transition to Suspended:** Admin transitions salesman to suspended with reason and produces `SALESMAN_SUSPENDED` audit log (`SLM-ACC-010`).
+- [x] **Session Revocation on Suspension:** Suspending salesman immediately terminates active database sessions (`SLM-ACC-011`).
+- [x] **Authentication Block on Suspension:** Suspended salesman cannot authenticate (`SLM-ACC-012`).
+- [x] **Customer Assignment Preservation on Suspension:** Suspending salesman preserves `customers.salesman_id` and blocks new assignments (`SLM-ACC-013`).
+- [x] **Transition to Disabled:** Admin transitions salesman to disabled and revokes active sessions (`SLM-ACC-014`).
+- [x] **Reactivation to Active:** Admin reactivates suspended/disabled salesman to active (`SLM-ACC-015`).
+- [x] **Reactivated Login Restoration:** Reactivated salesman can successfully authenticate (`SLM-ACC-016`).
+- [x] **Self-Suspension Protection:** Admin attempting to alter own account via salesman endpoint is rejected (`SLM-ACC-017`).
+- [x] **No-Op Status Optimization:** Redundant status transition produces zero database writes and zero duplicate audit logs (`SLM-ACC-018`).
+- [x] **Directory Status Filtering:** Filtering by `status=active`, `status=suspended`, `status=disabled`, `status=invited` returns exact subsets (`SLM-ACC-019`).
+- [x] **Search Scoping:** Search query matches salesman name and email without leaking non-salesman users (`SLM-ACC-020`).
+- [x] **Audit Privacy:** Audit logs contain zero passwords, MFA secrets, or session tokens (`SLM-ACC-021`).
+- [x] **Non-Salesman IDOR Protection:** Attempting to manage non-salesman user via `/salesmen/{id}` returns 404 Not Found (`SLM-ACC-022`).
+- [x] **Enum Metadata & Transition Matrix:** `label()`, `description()`, `allowedTransitions()`, `canTransitionTo()` return correct state matrix (`SLM-ACC-023`).
 
 ### 1.5 Product & Category Management (`PRODUCT` & `CAT`)
 - [ ] **Happy Path:** Admin creates product with SKU, cost, list price, default selling price, minimum price, and tax profile.

@@ -75,7 +75,7 @@
 - [x] `FEAT-CUS-004`: Customer Lifecycle Controls (`ACTIVE`, `ON_HOLD`, `INACTIVE`)
 
 ### Salesman Management
-- [ ] `FEAT-SLM-001`: Salesman Account Management & Lifecycle
+- [x] `FEAT-SLM-001`: Salesman Account Management & Lifecycle
 - [ ] `FEAT-SLM-002`: Salesman Scoped Customer Access Enforcement
 
 ### Product & Category Management

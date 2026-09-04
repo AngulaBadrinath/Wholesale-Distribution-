@@ -83,4 +83,22 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Customer\CustomerController::class, 'updateStatus'])->name('customers.status');
         Route::patch('/customers/{customer}/assign', [\App\Http\Controllers\Customer\CustomerController::class, 'assignSalesman'])->name('customers.assign');
     });
+
+    // Salesman Management
+    Route::middleware('permission:user.view')->group(function () {
+        Route::get('/salesmen', [\App\Http\Controllers\Salesman\SalesmanController::class, 'index'])->name('salesmen.index');
+        Route::get('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'show'])->name('salesmen.show');
+    });
+
+    Route::middleware('permission:user.create')->group(function () {
+        Route::get('/salesmen-create', [\App\Http\Controllers\Salesman\SalesmanController::class, 'create'])->name('salesmen.create');
+        Route::post('/salesmen', [\App\Http\Controllers\Salesman\SalesmanController::class, 'store'])->name('salesmen.store');
+    });
+
+    Route::middleware('permission:user.update')->group(function () {
+        Route::get('/salesmen/{salesman}/edit', [\App\Http\Controllers\Salesman\SalesmanController::class, 'edit'])->name('salesmen.edit');
+        Route::put('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'update'])->name('salesmen.update');
+        Route::patch('/salesmen/{salesman}/status', [\App\Http\Controllers\Salesman\SalesmanController::class, 'updateStatus'])->name('salesmen.status');
+    });
 });
+
