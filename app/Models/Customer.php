@@ -1,0 +1,187 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\CustomerStatus;
+use App\Enums\PaymentTerms;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Customer extends Model
+{
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'code',
+        'name',
+        'contact_name',
+        'email',
+        'phone',
+        'billing_address_line1',
+        'billing_address_line2',
+        'billing_city',
+        'billing_state',
+        'billing_postal_code',
+        'billing_country',
+        'shipping_address_line1',
+        'shipping_address_line2',
+        'shipping_city',
+        'shipping_state',
+        'shipping_postal_code',
+        'shipping_country',
+        'tax_id',
+        'credit_limit',
+        'payment_terms',
+        'status',
+        'notes',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'status' => CustomerStatus::class,
+        'payment_terms' => PaymentTerms::class,
+        'credit_limit' => 'decimal:2',
+    ];
+
+    /**
+     * Scope query to active customers.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', CustomerStatus::ACTIVE);
+    }
+
+    /**
+     * Scope query by search term across code, name, contact name, email, and phone.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (blank($term)) {
+            return $query;
+        }
+
+        $term = trim($term);
+        $isPgsql = $query->getConnection()->getDriverName() === 'pgsql';
+        $like = $isPgsql ? 'ilike' : 'like';
+
+        return $query->where(function (Builder $q) use ($term, $like) {
+            $q->where('name', $like, "%{$term}%")
+                ->orWhere('code', $like, "%{$term}%")
+                ->orWhere('contact_name', $like, "%{$term}%")
+                ->orWhere('email', $like, "%{$term}%")
+                ->orWhere('phone', 'like', "%{$term}%");
+        });
+    }
+
+    /**
+     * Scope query by customer status filter.
+     */
+    public function scopeFilterByStatus(Builder $query, ?string $status): Builder
+    {
+        if (blank($status) || strtoupper($status) === 'ALL') {
+            return $query;
+        }
+
+        $resolved = CustomerStatus::tryFrom(strtoupper(trim($status)));
+
+        if ($resolved) {
+            return $query->where('status', $resolved);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Check if customer is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === CustomerStatus::ACTIVE;
+    }
+
+    /**
+     * Check if customer can place orders.
+     */
+    public function canPlaceOrders(): bool
+    {
+        return $this->status instanceof CustomerStatus && $this->status->canPlaceOrders();
+    }
+
+    /**
+     * Return formatted multi-line billing address.
+     */
+    public function formattedBillingAddress(): string
+    {
+        $lines = array_filter([
+            $this->billing_address_line1,
+            $this->billing_address_line2,
+            trim("{$this->billing_city}, {$this->billing_state} {$this->billing_postal_code}"),
+            $this->billing_country,
+        ]);
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Return formatted multi-line shipping address.
+     */
+    public function formattedShippingAddress(): string
+    {
+        if (empty($this->shipping_address_line1)) {
+            return $this->formattedBillingAddress();
+        }
+
+        $lines = array_filter([
+            $this->shipping_address_line1,
+            $this->shipping_address_line2,
+            trim("{$this->shipping_city}, {$this->shipping_state} {$this->shipping_postal_code}"),
+            $this->shipping_country,
+        ]);
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Accessor for single-line formatted billing address.
+     */
+    public function getFormattedBillingAddressAttribute(): string
+    {
+        $parts = array_filter([
+            $this->billing_address_line1,
+            $this->billing_address_line2,
+            trim("{$this->billing_city}, {$this->billing_state} {$this->billing_postal_code}"),
+            $this->billing_country,
+        ]);
+
+        return implode(', ', $parts);
+    }
+
+    /**
+     * Accessor for single-line formatted shipping address.
+     */
+    public function getFormattedShippingAddressAttribute(): string
+    {
+        if (empty($this->shipping_address_line1)) {
+            return $this->formatted_billing_address;
+        }
+
+        $parts = array_filter([
+            $this->shipping_address_line1,
+            $this->shipping_address_line2,
+            trim("{$this->shipping_city}, {$this->shipping_state} {$this->shipping_postal_code}"),
+            $this->shipping_country,
+        ]);
+
+        return implode(', ', $parts);
+    }
+}

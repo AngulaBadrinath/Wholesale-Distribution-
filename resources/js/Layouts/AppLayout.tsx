@@ -28,6 +28,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
 
     const hasRoleManage = auth?.user?.permissions?.includes('role.manage') || auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
+    const hasCustomerView = auth?.user?.permissions?.includes('customer.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -74,6 +75,22 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
 
                     {/* Navigation Items */}
                     <div className="flex-1 overflow-y-auto px-3 py-4">
+                        {hasCustomerView && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    Commercial Management
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    <Link
+                                        href="/customers"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Building2 className="h-4 w-4 text-primary" />
+                                        <span>Customer Accounts</span>
+                                    </Link>
+                                </nav>
+                            </>
+                        )}
                         {hasRoleManage && (
                             <>
                                 <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">

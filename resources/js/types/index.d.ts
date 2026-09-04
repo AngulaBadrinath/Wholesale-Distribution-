@@ -84,4 +84,72 @@ export interface RoleOption {
     is_privileged: boolean;
 }
 
+export type CustomerStatus = 'ACTIVE' | 'ON_HOLD' | 'INACTIVE';
+export type PaymentTerms = 'NET_30' | 'NET_15' | 'NET_60' | 'COD' | 'DUE_ON_RECEIPT';
+
+export interface Customer {
+    id: number;
+    code: string;
+    name: string;
+    contact_name: string;
+    email: string | null;
+    phone: string;
+    billing_address_line1: string;
+    billing_address_line2: string | null;
+    billing_city: string;
+    billing_state: string;
+    billing_postal_code: string;
+    billing_country: string;
+    formatted_billing_address?: string;
+    shipping_address_line1: string | null;
+    shipping_address_line2: string | null;
+    shipping_city: string | null;
+    shipping_state: string | null;
+    shipping_postal_code: string | null;
+    shipping_country: string;
+    formatted_shipping_address?: string;
+    tax_id: string | null;
+    credit_limit: number;
+    payment_terms: string;
+    payment_terms_label?: string;
+    status: CustomerStatus;
+    status_label?: string;
+    can_order?: boolean;
+    notes: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CustomerStatusOption {
+    value: CustomerStatus;
+    label: string;
+    badgeVariant?: string;
+}
+
+export interface PaymentTermsOption {
+    value: PaymentTerms;
+    label: string;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    current_page: number;
+    first_page_url: string;
+    from: number | null;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number | null;
+    total: number;
+}
+
+
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & SharedProps;

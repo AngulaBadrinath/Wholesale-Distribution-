@@ -65,4 +65,21 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/system/company', [\App\Http\Controllers\System\CompanyInformationController::class, 'index'])->name('system.company.index');
         Route::put('/system/company', [\App\Http\Controllers\System\CompanyInformationController::class, 'update'])->name('system.company.update');
     });
+
+    // Customer Management
+    Route::middleware('permission:customer.view')->group(function () {
+        Route::get('/customers', [\App\Http\Controllers\Customer\CustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'show'])->name('customers.show');
+    });
+
+    Route::middleware('permission:customer.create')->group(function () {
+        Route::get('/customers-create', [\App\Http\Controllers\Customer\CustomerController::class, 'create'])->name('customers.create');
+        Route::post('/customers', [\App\Http\Controllers\Customer\CustomerController::class, 'store'])->name('customers.store');
+    });
+
+    Route::middleware('permission:customer.update')->group(function () {
+        Route::get('/customers/{customer}/edit', [\App\Http\Controllers\Customer\CustomerController::class, 'edit'])->name('customers.edit');
+        Route::put('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'update'])->name('customers.update');
+        Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Customer\CustomerController::class, 'updateStatus'])->name('customers.status');
+    });
 });

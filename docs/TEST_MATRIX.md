@@ -118,13 +118,37 @@
 - [x] **Audit Event Generation:** Successful updates produce `SYSTEM_COMPANY_INFORMATION_UPDATED` audit log with changed field keys (`SYS-COMPANY-014`).
 - [x] **SYS-001 Application Identity Independence:** Changes to database company information do not overwrite deployment application branding (`SYS-COMPANY-015`).
 
-### 1.3 Customer Management (`CUSTOMER`)
-- [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
-- [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).
-- [ ] **Security:** Only `customer.create` and `customer.update` permissions permit modifications.
-- [ ] **State Transition:** Changing customer lifecycle from `ACTIVE` to `INACTIVE` immediately blocks new orders.
-- [ ] **Audit:** Credit limit changes capture old limit, new limit, actor, and reason.
-- [ ] **Responsive:** Customer list dense table on Desktop; mobile card view on Mobile (375px).
+### 1.3 Customer Management (`CUSTOMER` / `FEAT-CUS-001`)
+- [x] **Authorized List Access:** `SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN` can view customer list (`CUS-CRUD-001`).
+- [x] **Unauthorized List Denial:** Roles without `customer.view` (`WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`CUS-CRUD-002`).
+- [x] **Unauthenticated Access Denial:** Guest requests to customer endpoints redirect to login (`CUS-CRUD-003`).
+- [x] **Authorized Create Form:** Privileged roles (`SUPER_ADMIN`, `ADMIN`) can access customer creation form with suggested sequential code (`CUS-CRUD-004`).
+- [x] **Authorized Customer Creation:** Full customer record created with physical and shipping addresses, credit limit, payment terms, and status (`CUS-CRUD-005`).
+- [x] **Unauthorized Creation Denial:** Non-admin roles (`ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`CUS-CRUD-006`).
+- [x] **Required Field Validation:** Missing code, name, contact name, phone, billing address line 1, city, state, postal code, country, credit limit, payment terms, or status rejected with 422 (`CUS-CRUD-007`).
+- [x] **Email Format Validation:** Malformed customer emails rejected with 422 (`CUS-CRUD-008`).
+- [x] **Maximum Length Validation:** Oversized codes (>32), names (>255), and country codes (!=2) rejected (`CUS-CRUD-009`).
+- [x] **Unique Customer Code Enforcement:** Duplicate customer codes return clean validation errors (`CUS-CRUD-010`).
+- [x] **Database Constraint Race Safety:** Database unique constraint on `code` prevents race conditions (`CUS-CRUD-011`).
+- [x] **Authorized Detail View:** Roles with `customer.view` can inspect full customer profile and formatted addresses (`CUS-CRUD-012`).
+- [x] **Unauthorized Detail Denial:** Roles without `customer.view` rejected with 403 Forbidden (`CUS-CRUD-013`).
+- [x] **Authorized Update Flow:** Authorized admin updates customer details and credit terms atomically (`CUS-CRUD-014`).
+- [x] **Unauthorized Update Denial:** Non-admin roles rejected with 403 Forbidden on edit form and update mutation (`CUS-CRUD-015`).
+- [x] **Enum State Invariant:** Arbitrary or invalid customer status and payment term values rejected (`CUS-CRUD-016`).
+- [x] **Lifecycle State Transition & Deactivation:** Authorized admin can transition status to `INACTIVE` or `ON_HOLD`; inactive status blocks order placement (`CUS-CRUD-017`, `CUS-CRUD-029`).
+- [x] **Unauthorized Lifecycle Transition Denial:** Unauthorized roles cannot alter lifecycle states (`CUS-CRUD-018`).
+- [x] **Server-Side Debounced Search:** Fast case-insensitive search across code, name, contact name, email, and phone (`CUS-CRUD-019`).
+- [x] **Database Query Pagination:** Database-level pagination with configurable per-page sizing verified (`CUS-CRUD-020`).
+- [x] **Sort and Filter Parameter Validation:** Status filters and multi-column sorting applied securely (`CUS-CRUD-021`).
+- [x] **IDOR & Scoping Protection:** Direct customer ID manipulation rejected for unauthorized actors (`CUS-CRUD-022`).
+- [x] **Audit Logging:** Structured audit events (`CUSTOMER_CREATED`, `CUSTOMER_UPDATED`, `CUSTOMER_STATUS_CHANGED`, `CUSTOMER_DEACTIVATED`) logged with changed keys and actor metadata (`CUS-CRUD-023`).
+- [x] **Secrets & Credential Protection:** Customer audit events strictly contain zero passwords, tokens, or sensitive credentials (`CUS-CRUD-024`).
+- [x] **Identity Stability:** Primary key and customer code remain permanent and relational across updates (`CUS-CRUD-025`).
+- [x] **Authoritative RBAC Integration:** Verified against closed 47-permission registry and PermissionService (`CUS-CRUD-026`).
+- [x] **Sequential Code Generation:** Deterministic sequential customer code generation (`CUS-CRUD-027`).
+- [x] **Address Formatting Helpers:** Address formatters handle multi-line and single-line comma formatting accurately (`CUS-CRUD-028`).
+- [x] **Lifecycle Invariants & Order Capability:** `ACTIVE` allows order placement; `ON_HOLD` and `INACTIVE` restrict order entry (`CUS-CRUD-029`).
+- [x] **Adversarial & XSS Sanitization:** Script tags and HTML payloads safely stored and escaped without evaluation (`CUS-CRUD-030`).
 
 ### 1.4 Salesman Management (`SALESMAN`)
 - [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
