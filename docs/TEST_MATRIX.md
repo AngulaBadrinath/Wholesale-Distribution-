@@ -1,0 +1,202 @@
+# TEST_MATRIX.md — Master Test Coverage Matrix
+
+## Wholesale Distribution Management System
+
+**Document Version:** 1.0  
+**Effective Date:** September 2026  
+**Status:** Authoritative Quality Assurance Contract  
+**Standard:** Every critical path must include positive (happy path), negative (validation & state transitions), security (authorization & resource scoping), transactional (concurrency & atomicity), audit, and responsive tests.
+
+---
+
+## 1. Domain Coverage Matrices
+
+### 1.1 Authentication (`AUTH`)
+- [ ] **Happy Path:** Valid credentials authenticate and redirect to portal dashboard (`QA-001`).
+- [ ] **Validation:** Missing email/password returns 422 with structured field error.
+- [ ] **Security:** Invalid credentials return generic non-enumerating error (`401 Unauthorized`).
+- [ ] **Security:** Repeated failed logins trigger rate limiter (`429 Too Many Requests`).
+- [ ] **Security:** Suspended / inactive accounts cannot authenticate.
+- [ ] **State Transition:** Logout successfully revokes and invalidates session.
+- [ ] **Edge Case:** Password reset token expires, is one-time use, and revokes prior sessions (`FEAT-AUTH-003`).
+- [ ] **Privileged MFA:** Super Admin / Admin / Accountant prompted for TOTP code (`FEAT-AUTH-004`).
+- [ ] **Responsive:** Login form verified on Desktop (1280px), Tablet (768px), and Mobile (375px).
+
+### 1.2 Roles & Permissions (`RBAC`)
+- [ ] **Happy Path:** Authorized user accesses permitted route and performs allowed action.
+- [ ] **Security:** Default-deny rejects user lacking required permission (`403 Forbidden`).
+- [ ] **Security (IDOR):** Salesman attempting to query another salesman's customer returns `403 Forbidden` / `404 Not Found`.
+- [ ] **Security (IDOR):** Delivery Driver attempting to query unassigned delivery returns `403 Forbidden`.
+- [ ] **Security:** Tampering with hidden frontend role inputs is rejected by backend token validation.
+- [ ] **Audit:** Permission grants and role assignments write to `audit_logs` (`FEAT-AUD-001`).
+
+### 1.3 Customer Management (`CUSTOMER`)
+- [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
+- [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).
+- [ ] **Security:** Only `customer.create` and `customer.update` permissions permit modifications.
+- [ ] **State Transition:** Changing customer lifecycle from `ACTIVE` to `INACTIVE` immediately blocks new orders.
+- [ ] **Audit:** Credit limit changes capture old limit, new limit, actor, and reason.
+- [ ] **Responsive:** Customer list dense table on Desktop; mobile card view on Mobile (375px).
+
+### 1.4 Salesman Management (`SALESMAN`)
+- [ ] **Happy Path:** Admin creates salesman account and assigns customer portfolio.
+- [ ] **Validation:** Duplicate email rejected.
+- [ ] **Security:** Suspended salesman immediately prevented from placing orders or recording payments.
+- [ ] **Audit:** Reassigning customer to a new salesman logs previous and new salesman IDs.
+
+### 1.5 Product & Category Management (`PRODUCT` & `CAT`)
+- [ ] **Happy Path:** Admin creates product with SKU, cost, list price, default selling price, minimum price, and tax profile.
+- [ ] **Validation:** Duplicate SKU rejected; minimum price > MRP rejected.
+- [ ] **Security:** Product image upload validated for file size ($\le 5\text{MB}$) and MIME type.
+- [ ] **State Transition:** Deactivating product blocks new order creation; historical orders remain intact.
+- [ ] **Responsive:** Product catalog grid with lazy-loaded images on Desktop and Mobile.
+
+### 1.6 Pricing Engine (`PRICING`)
+- [ ] **Happy Path:** Salesman selects actual selling price within allowed bounds (`min_price <= price <= mrp`).
+- [ ] **Validation:** Selling price below minimum allowed price rejected with 422 unless override authorized.
+- [ ] **Security:** Price override requires `pricing.override` permission and mandatory documented reason (`FEAT-PRICE-002`).
+- [ ] **Database / Snapshot:** Order item permanently stores actual transaction price; product master edits do not alter historical orders (`EDGE-007`).
+- [ ] **Audit:** Price override event logged with authorized actor, original range, and override value.
+
+### 1.7 Product-Specific Tax (`TAX`)
+- [ ] **Happy Path:** Line-item tax calculated correctly using assigned product tax profile rate (`RULE-TAX-001`).
+- [ ] **Validation:** Zero-tax (exempt) and standard-rate products mixed in one order calculate correct aggregated tax.
+- [ ] **Database / Snapshot:** Historical line records `tax_profile_id`, `tax_rate`, and `tax_amount`. Updating tax rate on product profile does not retroactively change existing orders (`EDGE-008`, `EDGE-023`).
+- [ ] **Rounding Test:** Banker's rounding (`ROUND_HALF_UP`) verified to 2 decimal places per line item.
+
+### 1.8 Order Creation & Submission (`ORDER`)
+- [ ] **Happy Path:** Salesman selects customer, adds items, sets quantities, reviews totals, and submits order (`FEAT-ORD-001`).
+- [ ] **Validation:** Zero or negative quantities rejected.
+- [ ] **Validation:** Inactive customer or inactive product rejected.
+- [ ] **Security (Zero Client Trust):** Submitting tampered line subtotal or grand total is overridden by server calculations (`RULE-SEC-002`).
+- [ ] **Security (Scope):** Salesman attempting to create order for unassigned customer rejected (`403 Forbidden`).
+- [ ] **Idempotency:** Submitting same payload with identical idempotency token returns original order without duplicate DB rows (`EDGE-001`, `FEAT-ORD-005`).
+- [ ] **Database Transaction:** Order creation failure midway rolls back completely (`DB::transaction`).
+- [ ] **Audit:** Order submission creates `orders` audit record.
+- [ ] **Responsive:** Full order flow verified on Mobile S (320px), Mobile (375px), Tablet (768px), and Desktop (1440px).
+
+### 1.9 Admin Order Processing (`ORDER PROCESSING`)
+- [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
+- [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.
+- [ ] **State Transition:** Rejected order requires mandatory rejection reason; moves to `Cancelled` queue.
+- [ ] **Security:** Non-admin roles attempting to approve orders receive `403 Forbidden`.
+- [ ] **Audit:** Approval and rejection events recorded with actor ID and timestamp.
+
+### 1.10 Quantity Allocation & Adjustments (`ALLOCATION` & `ADJUSTMENT`)
+- [ ] **Happy Path:** Damaged stock reported; Admin creates adjustment cancelling 2 units out of 10 (`FEAT-ADJ-004`).
+- [ ] **Invariant Assertion:** Original `ordered_quantity` remains 10; `cancelled_quantity` becomes 2; `fulfillable_quantity` becomes 8 (`RULE-DOM-001`, `RULE-ALLOC-001`).
+- [ ] **Validation:** Cancelling more units than fulfillable quantity rejected (`EDGE-009`).
+- [ ] **Recalculation:** Subtotal, line tax, and grand total recalculated authoritatively for 8 fulfillable units (`FEAT-ADJ-002`).
+- [ ] **Concurrency:** Two admins approving conflicting adjustments concurrently handled via row locks (`EDGE-010`).
+- [ ] **Reversal:** Adjustment reversal restores fulfillable allocation and updates financial balance via reversing record (`FEAT-ADJ-005`).
+- [ ] **Audit:** Full before/after adjustment snapshot recorded in `order_adjustments`.
+
+### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
+- [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
+- [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).
+- [ ] **Constraint Assertion:** Normal reservation never allows `available < 0` (`RULE-INV-002`).
+- [ ] **Movement Ledger:** Stock movement record created (`AVAILABLE` → `RESERVED`) in `inventory_movements`.
+- [ ] **Damaged Stock:** Warehouse stock exception moves stock from `RESERVED` to `DAMAGED` (`RULE-INV-004`).
+- [ ] **Security:** Direct manual editing of available stock via API prohibited.
+
+### 1.12 Payment Entry & Verification (`PAYMENT`)
+- [ ] **Happy Path (Cash):** Cash payment recorded; customer outstanding balance decreases.
+- [ ] **Happy Path (Cheque):** Cheque recorded with mandatory JPEG image, cheque number, date, and bank name.
+- [ ] **Happy Path (Money Order):** Money order recorded with mandatory JPEG image and reference.
+- [ ] **Validation:** Cheque or Money Order submitted without JPEG evidence rejected with 422 (`RULE-PAY-002`).
+- [ ] **Verification:** Authorized accountant verifies payment (`payment.verify`); status transitions to `VERIFIED`.
+- [ ] **Idempotency:** Repeated payment submission prevented via unique payment idempotency token (`EDGE-002`).
+- [ ] **Reversal / Bounce:** Bounced cheque transitions to `BOUNCED`, reverses customer credit, and logs audit record (`FEAT-PAY-009`).
+
+### 1.13 Payment Evidence Storage (`PAYMENT EVIDENCE`)
+- [ ] **Security (MIME Sniffing):** Uploading executable or script renamed to `.jpg` rejected by server-side magic byte inspection (`RULE-FILE-001`, `EDGE-014`).
+- [ ] **Security (Storage Isolation):** S3 bucket blocks public ACLs; direct HTTP access to S3 object returns 403.
+- [ ] **Security (Access Control):** Previewing evidence generates short-lived presigned URL ($\le 15\text{ mins}$) accessible only to authorized roles (`QA-006`).
+- [ ] **Security (IDOR):** Salesman cannot access payment evidence for unassigned customer.
+
+### 1.14 Invoicing & Document Generation (`INVOICE`)
+- [ ] **Happy Path:** Invoice generated with unique number (`INV-XXXXXX`) from historical line snapshots.
+- [ ] **Hard Rule Assertion (NO PRODUCT IMAGES):** Output HTML and PDF inspected; zero `<img>` tags or thumbnail URLs present for products (`RULE-DOC-001`).
+- [ ] **Historical Immutability:** Editing product name, price, or tax in catalog does NOT alter historical invoice PDF or HTML (`RULE-DOC-003`, `EDGE-022`).
+- [ ] **Printing:** Print stylesheet hides navigation chrome, buttons, and headers cleanly.
+- [ ] **PDF Export:** Chromium PDF renderer outputs clean, multi-page, formatted vector document.
+
+### 1.15 Delivery Operations (`DELIVERY`)
+- [ ] **Happy Path:** Order assigned to Delivery Partner; driver accepts, marks picked up, out for delivery, and delivered (`FEAT-DEL-005`).
+- [ ] **Quantity Visibility:** Driver manifest displays current deliverable quantity (8), never cancelled quantity (2) (`RULE-DLV-001`).
+- [ ] **Security (Scoping):** Driver can only view assigned deliveries in mobile workspace (`RULE-DLV-002`).
+- [ ] **Failure Handling:** Failed delivery records mandatory structured reason code (customer unavailable, wrong address, etc.) (`FEAT-DEL-006`, `EDGE-016`).
+- [ ] **Idempotency:** Duplicate delivery completion clicks execute exactly once (`EDGE-015`).
+- [ ] **Responsive:** Mobile driver view tested with simulated touch interactions on 375px screen.
+
+### 1.16 Returns, Credits & Refunds (`RETURNS`, `CREDITS`, `REFUNDS`)
+- [ ] **Happy Path:** Customer returns 2 delivered units; warehouse inspects, accepts 1 good, accepts 1 damaged.
+- [ ] **Validation:** Return quantity > delivered quantity rejected.
+- [ ] **Inventory Movement:** Accepted good unit returned to `AVAILABLE`; damaged unit moved to `DAMAGED`.
+- [ ] **Credit Note:** Credit Note (`CR-XXXXXX`) issued strictly for accepted units.
+- [ ] **Refund Approval:** Cash refund requires explicit approval by separate authorized user (`RULE-CR-003`).
+- [ ] **Constraint Assertion:** Refund cannot exceed eligible customer credit balance (`EDGE-017`).
+
+### 1.17 Receivables & Customer Statements (`AR`)
+- [ ] **Happy Path:** Customer statement lists chronological invoices, payments, credits, and running balance.
+- [ ] **Aging Buckets:** Invoices categorized accurately into 0-30, 31-60, 61-90, and 90+ days.
+- [ ] **Credit Limit Enforcement:** Orders exceeding available credit limit flagged for admin approval (`PRD §25.3`).
+
+### 1.18 General Ledger Accounting (`ACCOUNTING`)
+- [ ] **Happy Path:** Invoice issuance automatically generates balanced double-entry journal (Debit AR, Credit Revenue, Credit Tax Liability) (`FEAT-ACC-003`).
+- [ ] **Happy Path:** Payment verification generates balanced journal (Debit Cash, Credit AR).
+- [ ] **Balance Assertion:** Trial balance total debits equal total credits ($\sum \text{Debits} = \sum \text{Credits}$) (`FEAT-ACC-005`).
+- [ ] **Immutability Assertion:** Direct `UPDATE` or `DELETE` on `journal_lines` rejected by database constraint (`RULE-ACC-001`).
+- [ ] **Reversal:** Reversing journal entry successfully offsets original entry and is linked by reference ID (`FEAT-ACC-008`, `EDGE-018`).
+
+### 1.19 Audit & Compliance (`AUDIT`)
+- [ ] **Completeness:** All state changes across orders, adjustments, prices, payments, and permissions produce `audit_logs` entries (`FEAT-AUD-001`).
+- [ ] **Immutability:** Audit log table rejects `UPDATE` and `DELETE` commands (`FEAT-AUD-003`).
+- [ ] **Timeline UI:** Activity timeline renders human-readable chronological event stream.
+
+---
+
+## 2. Cross-Feature Edge Case Register (`EDGE-001` to `EDGE-025`)
+
+| Edge Case ID | Scenario | Expected Behavior | Target Test Suite |
+|---|---|---|---|
+| `EDGE-001` | Double order submission on network retry | Second request returns original order; no duplicate DB rows | `QA-003` |
+| `EDGE-002` | Double payment submission | Idempotency token prevents duplicate financial recording | `QA-007` |
+| `EDGE-003` | Double adjustment approval | Only first approval applies changes; second returns error | `QA-004` |
+| `EDGE-004` | Concurrent stock allocation for scarce inventory | Row lock prevents overselling; available stock never negative | `QA-005` |
+| `EDGE-005` | Product deactivated during active checkout | Server validation rejects submission with descriptive message | `QA-003` |
+| `EDGE-006` | Customer suspended during checkout | Server validation rejects submission; order blocked | `QA-003` |
+| `EDGE-007` | Product price changed after order placement | Historical order line price snapshot remains unchanged | `QA-003` |
+| `EDGE-008` | Product tax configuration changed after placement | Historical order line tax snapshot remains unchanged | `QA-003` |
+| `EDGE-009` | Adjustment quantity exceeds eligible remaining units | Request rejected with 422 domain validation error | `QA-004` |
+| `EDGE-010` | Two admins adjust same order item concurrently | Pessimistic lock serializes operations; second validates new state | `QA-004` |
+| `EDGE-011` | Order reaches disallowed state while adjustment pending | Adjustment approval fails state-machine transition check | `QA-004` |
+| `EDGE-012` | Payment verification attempted twice | Second attempt returns already verified status idempotently | `QA-007` |
+| `EDGE-013` | Payment evidence file inaccessible in S3 | Controlled error response; no unhandled exception crash | `QA-006` |
+| `EDGE-014` | Executable file disguised as JPEG uploaded | Server MIME sniffing detects invalid magic bytes; rejects 422 | `QA-006` |
+| `EDGE-015` | Delivery completion submitted twice | Second request recognized as duplicate; downstream hooks fire once | `QA-009` |
+| `EDGE-016` | Delivery marked failed then immediately delivered | Invalid state transition rejected by delivery state machine | `QA-009` |
+| `EDGE-017` | Refund requested exceeds customer credit balance | Domain validation rejects request; refund cannot exceed balance | `QA-007` |
+| `EDGE-018` | Accounting reversal attempted twice on same journal | System detects prior reversal; rejects duplicate reversal | `QA-008` |
+| `EDGE-019` | User role changed during active session | Next privileged request triggers permission re-evaluation | `QA-002` |
+| `EDGE-020` | User account suspended during active session | Immediate 401/403 on next API or page request | `QA-001` |
+| `EDGE-021` | ID substitution (IDOR) on customer or order URL | Server-side query scoping returns 403/404 | `QA-002` |
+| `EDGE-022` | Historical invoice viewed after product master rename | Invoice renders immutable product name snapshot | `QA-003` |
+| `EDGE-023` | Historical tax report run after tax rate change | Report reflects transaction-time snapshotted tax data | `QA-008` |
+| `EDGE-024` | Database connection fails midway through adjustment | Entire multi-table transaction rolls back cleanly | `QA-004` |
+| `EDGE-025` | Financial report discrepancy check | Analytical report matches sum of general ledger journal lines | `QA-008` |
+
+---
+
+## 3. Responsive Quality Assurance Breakpoint Matrix
+
+| View / Page | Mobile S (320px) | Mobile (375px) | Tablet (768px) | Desktop (1280px) | Desktop XL (1920px) |
+|---|---|---|---|---|---|
+| **Login / Auth** | Stacked form | Stacked form | Centered card | Centered card | Centered card |
+| **Salesman Catalog** | 1-col card | 1-col card | 2-col grid | 3-col grid | 4-col grid |
+| **Order Creation** | Bottom sheet | Bottom sheet | Split sheet | Right drawer | Right panel |
+| **Admin Orders** | Stacked list | Stacked list | Priority table | Full data table | Dense command table |
+| **Adjustment Modal** | Full screen | Full screen | Centered modal | Centered modal | Centered modal |
+| **Delivery Driver** | Touch cards | Touch cards | Split view | Desktop view | Desktop view |
+| **Invoice View** | Responsive fit | Responsive fit | Standard page | A4 preview | A4 preview |
+| **General Ledger** | Summary cards | Summary cards | Scrollable table | Dense ledger table | Dense ledger table |
