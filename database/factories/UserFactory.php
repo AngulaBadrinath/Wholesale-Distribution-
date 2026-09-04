@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +30,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'status' => AccountStatus::ACTIVE,
             'remember_token' => Str::random(10),
         ];
     }
@@ -40,6 +42,36 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is suspended.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => AccountStatus::SUSPENDED,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is disabled.
+     */
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => AccountStatus::DISABLED,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is invited.
+     */
+    public function invited(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => AccountStatus::INVITED,
         ]);
     }
 }

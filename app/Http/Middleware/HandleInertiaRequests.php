@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AccountStatus;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,7 +40,14 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'appName' => config('app.name', 'Wholesale Distribution Management System'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'status' => $request->user()->status instanceof AccountStatus
+                        ? $request->user()->status->value
+                        : (string) $request->user()->status,
+                ] : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

@@ -50,7 +50,7 @@
 ## 3. IDENTITY, AUTHENTICATION & ACCESS CONTROL (AUTH & RBAC)
 
 ### Authentication
-- [ ] `FEAT-AUTH-001`: Centralized Multi-Portal Login & Throttling
+- [x] `FEAT-AUTH-001`: Centralized Multi-Portal Login & Throttling
 - [ ] `FEAT-AUTH-002`: Logout & Session Revocation
 - [ ] `FEAT-AUTH-003`: Secure Password Reset Flow
 - [ ] `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)

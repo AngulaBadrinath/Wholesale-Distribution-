@@ -32,15 +32,15 @@
 ## 1. Domain Coverage Matrices
 
 ### 1.1 Authentication (`AUTH`)
-- [ ] **Happy Path:** Valid credentials authenticate and redirect to portal dashboard (`QA-001`).
-- [ ] **Validation:** Missing email/password returns 422 with structured field error.
-- [ ] **Security:** Invalid credentials return generic non-enumerating error (`401 Unauthorized`).
-- [ ] **Security:** Repeated failed logins trigger rate limiter (`429 Too Many Requests`).
-- [ ] **Security:** Suspended / inactive accounts cannot authenticate.
-- [ ] **State Transition:** Logout successfully revokes and invalidates session.
+- [x] **Happy Path:** Valid credentials authenticate and redirect to portal dashboard (`QA-001`, `AUTH-002`).
+- [x] **Validation:** Missing email/password returns 422 with structured field error.
+- [x] **Security:** Invalid credentials return generic non-enumerating error (`trans('auth.failed')`, `AUTH-003`, `AUTH-004`).
+- [x] **Security:** Repeated failed logins trigger rate limiter (`429 Too Many Requests`, `AUTH-005`, `AUTH-006`).
+- [x] **Security:** Suspended / inactive accounts cannot authenticate (`AUTH-008`, `AUTH-009`, `AUTH-010`, `AUTH-015`).
+- [x] **State Transition:** Logout successfully revokes and invalidates session (`AUTH-012`).
 - [ ] **Edge Case:** Password reset token expires, is one-time use, and revokes prior sessions (`FEAT-AUTH-003`).
 - [ ] **Privileged MFA:** Super Admin / Admin / Accountant prompted for TOTP code (`FEAT-AUTH-004`).
-- [ ] **Responsive:** Login form verified on Desktop (1280px), Tablet (768px), and Mobile (375px).
+- [x] **Responsive:** Login form verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`).
 
 ### 1.2 Roles & Permissions (`RBAC`)
 - [ ] **Happy Path:** Authorized user accesses permitted route and performs allowed action.
