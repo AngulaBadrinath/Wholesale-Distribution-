@@ -10,6 +10,7 @@ use App\Enums\UserRole;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Pricing\PriceBoundaryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,8 @@ class ProductService
 {
     public function __construct(
         protected PermissionService $permissionService,
-        protected ProductImageService $productImageService
+        protected ProductImageService $productImageService,
+        protected PriceBoundaryService $priceBoundaryService
     ) {}
 
     /**
@@ -119,7 +121,7 @@ class ProductService
             'status' => $product->status instanceof ProductStatus ? $product->status->value : (string) $product->status,
             'status_label' => $product->status instanceof ProductStatus ? $product->status->label() : (string) $product->status,
             'status_badge_variant' => $product->status instanceof ProductStatus ? $product->status->badgeVariant() : 'secondary',
-            'cost_price' => $isAdmin ? (float) $product->cost_price : null,
+            'cost_price' => $isAdmin ? ($product->cost_price !== null ? (float) $product->cost_price : null) : null,
             'minimum_allowed_price' => (float) $product->minimum_allowed_price,
             'default_selling_price' => (float) $product->default_selling_price,
             'mrp' => (float) $product->mrp,
@@ -168,37 +170,14 @@ class ProductService
      *
      * @throws ValidationException
      */
-    public function validatePricingHierarchy(float $costPrice, float $minPrice, float $defaultPrice, float $mrp): void
+    public function validatePricingHierarchy(mixed $costPrice, mixed $minPrice, mixed $defaultPrice, mixed $mrp): void
     {
-        $errors = [];
-
-        if ($costPrice < 0) {
-            $errors['cost_price'] = 'Cost price cannot be negative.';
-        }
-
-        if ($minPrice <= 0) {
-            $errors['minimum_allowed_price'] = 'Minimum allowed price must be greater than zero.';
-        }
-
-        if ($minPrice > $mrp) {
-            $errors['minimum_allowed_price'] = 'Minimum allowed price cannot exceed the MRP / list price.';
-        }
-
-        if ($defaultPrice < $minPrice) {
-            $errors['default_selling_price'] = 'Default selling price cannot be less than the minimum allowed price.';
-        }
-
-        if ($defaultPrice > $mrp) {
-            $errors['default_selling_price'] = 'Default selling price cannot exceed the MRP / list price.';
-        }
-
-        if ($mrp < $defaultPrice) {
-            $errors['mrp'] = 'MRP / list price cannot be less than the default selling price.';
-        }
-
-        if (! empty($errors)) {
-            throw ValidationException::withMessages($errors);
-        }
+        $this->priceBoundaryService->validateProductMasterPricing(
+            $costPrice,
+            $minPrice,
+            $defaultPrice,
+            $mrp
+        );
     }
 
     /**
@@ -280,19 +259,25 @@ class ProductService
     {
         $this->ensureActorIsActiveAndAuthorized($actor, Permission::PRODUCT_UPDATE);
 
-        $this->validatePricingHierarchy(
-            $data->cost_price,
-            $data->minimum_allowed_price,
-            $data->default_selling_price,
-            $data->mrp
-        );
-
         return DB::transaction(function () use ($product, $data, $actor, $ip) {
             /** @var Product $lockedProduct */
             $lockedProduct = Product::query()
                 ->where('id', $product->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            // 1. Resulting-state pricing resolution & authoritative validation
+            $resultingCost = $data->cost_price;
+            $resultingMin = $data->minimum_allowed_price;
+            $resultingDefault = $data->default_selling_price;
+            $resultingMrp = $data->mrp;
+
+            $this->validatePricingHierarchy(
+                $resultingCost,
+                $resultingMin,
+                $resultingDefault,
+                $resultingMrp
+            );
 
             $newSku = strtoupper(trim($data->sku));
 
@@ -314,20 +299,20 @@ class ProductService
             }
 
             $previousPrices = [
-                'cost_price' => (float) $lockedProduct->cost_price,
-                'minimum_allowed_price' => (float) $lockedProduct->minimum_allowed_price,
-                'default_selling_price' => (float) $lockedProduct->default_selling_price,
-                'mrp' => (float) $lockedProduct->mrp,
+                'cost_price' => PriceBoundaryService::normalize((string) $lockedProduct->cost_price, 'cost_price'),
+                'minimum_allowed_price' => PriceBoundaryService::normalize((string) $lockedProduct->minimum_allowed_price, 'minimum_allowed_price'),
+                'default_selling_price' => PriceBoundaryService::normalize((string) $lockedProduct->default_selling_price, 'default_selling_price'),
+                'mrp' => PriceBoundaryService::normalize((string) $lockedProduct->mrp, 'mrp'),
             ];
 
             $newPrices = [
-                'cost_price' => $data->cost_price,
-                'minimum_allowed_price' => $data->minimum_allowed_price,
-                'default_selling_price' => $data->default_selling_price,
-                'mrp' => $data->mrp,
+                'cost_price' => $resultingCost,
+                'minimum_allowed_price' => $resultingMin,
+                'default_selling_price' => $resultingDefault,
+                'mrp' => $resultingMrp,
             ];
 
-            $pricingChanged = ($previousPrices != $newPrices);
+            $pricingChanged = ($previousPrices !== $newPrices);
 
             // If pricing changed, verify actor possesses PRODUCT_PRICE_UPDATE
             if ($pricingChanged) {
@@ -412,6 +397,7 @@ class ProductService
             return $lockedProduct->load('category:id,name,code');
         });
     }
+
 
     /**
      * Transition product lifecycle status.

@@ -85,16 +85,18 @@ export default function ProductShow({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
-    const formatCurrency = (amount: number | null | undefined) => {
-        if (amount === null || amount === undefined) {
+    const formatCurrency = (amount: number | string | null | undefined) => {
+        if (amount === null || amount === undefined || amount === '') {
             return null;
         }
+        const numeric = typeof amount === 'string' ? parseFloat(amount) : amount;
+        if (isNaN(numeric)) return null;
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(amount);
+        }).format(numeric);
     };
 
     const formatBytes = (bytes: number) => {
@@ -149,11 +151,11 @@ export default function ProductShow({
         }
     };
 
-    // Calculate margins if cost price is available
-    const cost = product.cost_price;
-    const sellingPrice = product.default_selling_price;
-    const grossMargin = cost !== null && cost !== undefined && sellingPrice > 0
-        ? ((sellingPrice - cost) / sellingPrice) * 100
+    // Calculate margins if cost price is available (UX display only)
+    const costNum = product.cost_price !== null && product.cost_price !== undefined ? Number(product.cost_price) : null;
+    const sellingNum = Number(product.default_selling_price) || 0;
+    const grossMargin = costNum !== null && sellingNum > 0
+        ? ((sellingNum - costNum) / sellingNum) * 100
         : null;
 
     return (

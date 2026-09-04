@@ -72,6 +72,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-002: Authoritative Price Boundary Constraint Enforcement & Decimal Hardening
+- **Change ID:** `CHANGE-002`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Establish server-side price boundary enforcement (`0 <= cost_price`, `0 < min <= default <= mrp`), eliminate float casting in favor of exact 2-decimal BCMath arithmetic strings via `PriceBoundaryService`, add PostgreSQL `products_pricing_hierarchy_check` constraint, enforce resulting-state validation on updates, and create reusable domain method `validateOrderUnitPrice()` for future Phase 05 Orders.
+- **Reason:** Eliminate float-precision rounding anomalies in financial data, enforce defense-in-depth database constraints, and provide reusable domain authority for order lines.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P1` (Commerce Spine Prerequisite)
+- **Affected PRD Requirements:** PRD §9.1, §9.2, §10.1.
+- **Affected Architecture:** Technical Architecture §18, §19, §23.
+- **Affected Security:** Permission `product.price.update` strictly enforced on price mutations.
+- **Affected Frontend:** Product Create/Edit forms with step="0.01" and real-time visual hierarchy feedback.
+- **Affected Tickets:** `FEAT-PRICE-001`.
+- **Inventory Impact:** None.
+- **Order Impact:** Reusable order line unit price boundary validator (`validateOrderUnitPrice`) established for Phase 05.
+- **Payment Impact:** None.
+- **Tax Impact:** None.
+- **Accounting Impact:** Preserves accurate, non-floating-point financial base prices.
+- **Data Migration Impact:** Added PostgreSQL CHECK constraint `products_pricing_hierarchy_check` via migration `2026_09_05_000005_add_pricing_hierarchy_check_to_products_table.php`.
+- **Testing Impact:** Added `PriceBoundaryServiceTest` (24 unit tests) and `ProductPriceBoundaryTest` (17 feature tests). Total suite at 492 tests passing.
+- **Deployment Impact:** Verified BCMath extension availability in PHP runtime.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-PRICE-001`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

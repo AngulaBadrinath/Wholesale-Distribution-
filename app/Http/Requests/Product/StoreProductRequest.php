@@ -52,17 +52,18 @@ class StoreProductRequest extends FormRequest
             ],
             'unit' => ['required', 'string', 'max:30'],
             'status' => ['required', 'string', Rule::in(ProductStatus::values())],
-            'cost_price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
-            'minimum_allowed_price' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+            'cost_price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0', 'max:99999999.99'],
+            'minimum_allowed_price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0.01', 'max:99999999.99'],
             'default_selling_price' => [
                 'required',
+                'regex:/^\d+(\.\d{1,2})?$/',
                 'numeric',
                 'min:0.01',
                 'max:99999999.99',
                 'gte:minimum_allowed_price',
                 'lte:mrp',
             ],
-            'mrp' => ['required', 'numeric', 'min:0.01', 'max:99999999.99', 'gte:default_selling_price'],
+            'mrp' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0.01', 'max:99999999.99', 'gte:default_selling_price'],
         ];
     }
 
@@ -80,6 +81,10 @@ class StoreProductRequest extends FormRequest
             'mrp.gte' => 'MRP / list price cannot be less than the default selling price.',
             'minimum_allowed_price.min' => 'Minimum allowed price must be greater than zero.',
             'cost_price.min' => 'Cost price cannot be negative.',
+            'cost_price.regex' => 'Cost price must be a valid non-negative amount with at most 2 decimal places.',
+            'minimum_allowed_price.regex' => 'Minimum allowed price must be a valid positive amount with at most 2 decimal places.',
+            'default_selling_price.regex' => 'Default selling price must be a valid positive amount with at most 2 decimal places.',
+            'mrp.regex' => 'MRP / list price must be a valid positive amount with at most 2 decimal places.',
         ];
     }
 
@@ -94,13 +99,15 @@ class StoreProductRequest extends FormRequest
             if (is_string($value)) {
                 $trimmed = trim($value);
                 $sanitized[$key] = $trimmed === '' ? null : $trimmed;
+            } elseif (is_numeric($value) && in_array($key, ['cost_price', 'minimum_allowed_price', 'default_selling_price', 'mrp'], true)) {
+                $sanitized[$key] = (string) $value;
             } else {
                 $sanitized[$key] = $value;
             }
         }
 
-        if (isset($sanitized['sku'])) {
-            $sanitized['sku'] = strtoupper((string) $sanitized['sku']);
+        if (isset($sanitized['sku']) && is_string($sanitized['sku'])) {
+            $sanitized['sku'] = strtoupper(trim((string) $sanitized['sku']));
         }
 
         $this->merge($sanitized);

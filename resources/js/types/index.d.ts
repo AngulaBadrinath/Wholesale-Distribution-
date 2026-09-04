@@ -249,10 +249,10 @@ export interface Product {
     status_label?: string;
     status_badge_variant?: string;
     can_order?: boolean;
-    cost_price: number | null;
-    minimum_allowed_price: number;
-    default_selling_price: number;
-    mrp: number;
+    cost_price: number | string | null;
+    minimum_allowed_price: number | string;
+    default_selling_price: number | string;
+    mrp: number | string;
     tax_profile_id: number | null;
     primary_image_url?: string | null;
     images?: ProductImage[];

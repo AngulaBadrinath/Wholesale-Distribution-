@@ -397,11 +397,16 @@
 - [x] **Status & Root Filters:** Category status filter and root-only toggle apply accurately (`CAT-MGT-026`).
 
 ### 1.6 Pricing Engine (`PRICING`)
-- [ ] **Happy Path:** Salesman selects actual selling price within allowed bounds (`min_price <= price <= mrp`).
-- [ ] **Validation:** Selling price below minimum allowed price rejected with 422 unless override authorized.
-- [ ] **Security:** Price override requires `pricing.override` permission and mandatory documented reason (`FEAT-PRICE-002`).
+- [x] **Authoritative Boundary Enforcement:** Canonical hierarchy $0 \le \text{cost\_price}$ and $0 < \text{minimum\_allowed\_price} \le \text{default\_selling\_price} \le \text{mrp}$ enforced with BCMath arbitrary-precision string math (`PRICE-BND-001`).
+- [x] **Boundary Equalities:** Boundary equality permitted ($\text{min} = \text{default} = \text{mrp}$) for fixed-price products (`PRICE-BND-002`).
+- [x] **Decimal Precision & Format:** Numbers with $>2$ decimal places, scientific notation, or non-numeric strings rejected with 422 (`PRICE-BND-003`).
+- [x] **Resulting-State Validation:** Product updates validate complete merged resulting state against locked rows (`PRICE-BND-004`).
+- [x] **Reusable Order Unit Price Validation:** `PriceBoundaryService::validateOrderUnitPrice()` verifies $\text{min} \le \text{unit\_price} \le \text{mrp}$ (`PRICE-BND-005`).
+- [x] **Pricing Update Permission:** Price modifications protected by `product.price.update` (`PRICE-BND-006`).
+- [x] **Audit Logging:** Emits `PRODUCT_PRICING_UPDATED` only upon actual price change and successful transaction (`PRICE-BND-007`).
+- [x] **Database CHECK Backstop:** PostgreSQL `products_pricing_hierarchy_check` constraint verified (`PRICE-BND-008`).
+- [ ] **Security (Override):** Price override requires `pricing.override` permission and mandatory documented reason (`FEAT-PRICE-002`).
 - [ ] **Database / Snapshot:** Order item permanently stores actual transaction price; product master edits do not alter historical orders (`EDGE-007`).
-- [ ] **Audit:** Price override event logged with authorized actor, original range, and override value.
 
 ### 1.7 Product-Specific Tax (`TAX`)
 - [ ] **Happy Path:** Line-item tax calculated correctly using assigned product tax profile rate (`RULE-TAX-001`).

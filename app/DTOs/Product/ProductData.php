@@ -3,6 +3,7 @@
 namespace App\DTOs\Product;
 
 use App\Enums\ProductStatus;
+use App\Services\Pricing\PriceBoundaryService;
 
 readonly class ProductData
 {
@@ -13,10 +14,10 @@ readonly class ProductData
         public ?int $category_id,
         public string $unit,
         public ProductStatus $status,
-        public float $cost_price,
-        public float $minimum_allowed_price,
-        public float $default_selling_price,
-        public float $mrp,
+        public string $cost_price,
+        public string $minimum_allowed_price,
+        public string $default_selling_price,
+        public string $mrp,
         public ?int $tax_profile_id = null,
     ) {}
 
@@ -39,10 +40,10 @@ readonly class ProductData
             category_id: isset($data['category_id']) && $data['category_id'] !== '' && $data['category_id'] !== null ? (int) $data['category_id'] : null,
             unit: isset($data['unit']) && trim((string) $data['unit']) !== '' ? trim((string) $data['unit']) : 'UNIT',
             status: $status,
-            cost_price: (float) ($data['cost_price'] ?? 0.00),
-            minimum_allowed_price: (float) ($data['minimum_allowed_price'] ?? 0.00),
-            default_selling_price: (float) ($data['default_selling_price'] ?? 0.00),
-            mrp: (float) ($data['mrp'] ?? 0.00),
+            cost_price: PriceBoundaryService::normalize($data['cost_price'] ?? '0.00', 'cost_price', allowZero: true),
+            minimum_allowed_price: PriceBoundaryService::normalize($data['minimum_allowed_price'] ?? '0.00', 'minimum_allowed_price', allowZero: true),
+            default_selling_price: PriceBoundaryService::normalize($data['default_selling_price'] ?? '0.00', 'default_selling_price', allowZero: true),
+            mrp: PriceBoundaryService::normalize($data['mrp'] ?? '0.00', 'mrp', allowZero: true),
             tax_profile_id: isset($data['tax_profile_id']) && $data['tax_profile_id'] !== '' && $data['tax_profile_id'] !== null ? (int) $data['tax_profile_id'] : null,
         );
     }
@@ -69,3 +70,4 @@ readonly class ProductData
         ];
     }
 }
+

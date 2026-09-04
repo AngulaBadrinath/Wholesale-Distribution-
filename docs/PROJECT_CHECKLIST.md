@@ -89,7 +89,7 @@
 ## 5. COMMERCE: PRICING & PRODUCT-SPECIFIC TAX
 
 ### Pricing
-- [ ] `FEAT-PRICE-001`: Price Boundary Constraint Enforcement (`min_price <= order_price <= mrp`)
+- [x] `FEAT-PRICE-001`: Price Boundary Constraint Enforcement (`min_price <= order_price <= mrp`)
 - [ ] `FEAT-PRICE-002`: Authorized Price Override Engine with Auditing
 
 ### Product-Specific Tax

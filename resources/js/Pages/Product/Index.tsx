@@ -87,16 +87,18 @@ export default function ProductIndex({
         applyFilters({ sort_by: field, sort_order: newOrder });
     };
 
-    const formatCurrency = (amount: number | null | undefined) => {
-        if (amount === null || amount === undefined) {
+    const formatCurrency = (amount: number | string | null | undefined) => {
+        if (amount === null || amount === undefined || amount === '') {
             return '—';
         }
+        const numeric = typeof amount === 'string' ? parseFloat(amount) : amount;
+        if (isNaN(numeric)) return '—';
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(amount);
+        }).format(numeric);
     };
 
     const getStatusBadge = (status: string) => {
