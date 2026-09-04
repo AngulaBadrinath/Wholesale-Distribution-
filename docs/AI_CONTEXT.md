@@ -107,11 +107,11 @@ Independent transaction streams proceed in parallel:
 
 ## 7. Current Project Status (Actual Repository State)
 
-- **Overall Progress:** 10.9% code implementation (14 / 128 tickets completed; specifications 100% complete)
-- **Current Phase:** Phase 02 — System & Master Data Management (Status: `IN_PROGRESS`)
-- **Current Active Ticket:** `FEAT-SYS-001` (Configurable Application Identity completed)
+- **Overall Progress:** 11.7% code implementation (15 / 128 tickets completed; specifications 100% complete)
+- **Current Phase:** Phase 02 — Master Data Management & Configuration (Status: `IN_PROGRESS`)
+- **Current Active Ticket:** `FEAT-SYS-002` (Company Settings & Business Details completed)
 - **Active Git Branch:** `main` (tracking `origin/main`)
-- **Working Tree State:** Clean; 182 automated tests passing (100%), TypeScript passing, Vite build passing
-- **Source Code Status:** Centralized authentication, session lifecycle, account-state validation, active session tracking, IDOR-safe revocation, enumeration-resistant password reset, session invalidation on reset, privileged TOTP multi-factor authentication, single-use recovery codes, step-up password confirmation, canonical six-role definition (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`), atomic role assignment with row locking, last-super-admin guard, target session invalidation, security audit logging, 47 canonical permissions registry enum, in-memory role-to-permission mapping, default-deny PermissionService, account lifecycle gating, Gate::before integration, route permission middleware (`permission:role.manage`), safe Inertia capability sharing, and centralized ApplicationIdentityService / config-backed identity operational
+- **Working Tree State:** Clean; 197 automated tests passing (100%), TypeScript passing, Vite build passing
+- **Source Code Status:** Centralized authentication, session lifecycle, account-state validation, active session tracking, IDOR-safe revocation, enumeration-resistant password reset, session invalidation on reset, privileged TOTP multi-factor authentication, single-use recovery codes, step-up password confirmation, canonical six-role definition (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`), atomic role assignment with row locking, last-super-admin guard, target session invalidation, security audit logging, 47 canonical permissions registry enum, in-memory role-to-permission mapping, default-deny PermissionService, account lifecycle gating, Gate::before integration, route permission middleware (`permission:role.manage`), safe Inertia capability sharing, centralized ApplicationIdentityService / config-backed identity, and database-backed singleton CompanyInformationService / business settings operational
 - **Active Blockers / Deferrals:** `FEAT-RBAC-003` deferred per DEC-014 pending concrete domain entity models in Phases 03, 05, and 08 (`Customer`, `Order`, `Delivery`); single central warehouse confirmed for V1 per PRD §39.2
-- **Next Immediate Action:** Begin `FEAT-SYS-002` (Company Settings)
+- **Next Immediate Action:** Begin `FEAT-CUS-001` (Customer CRUD)

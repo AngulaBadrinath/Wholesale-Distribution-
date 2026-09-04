@@ -101,6 +101,23 @@
 - [x] **Zero Database Queries:** `ApplicationIdentityService` executes zero database queries, ensuring instantaneous resolution without database overhead (`SYS-IDENTITY-011`).
 - [x] **Authentication & RBAC Regression Safety:** Authentication flows, session revocation, MFA, and permission checks continue to pass with full fidelity (`SYS-IDENTITY-012`).
 
+### 1.2.4 Company Information & Business Details Configuration (`SYS` / `FEAT-SYS-002`)
+- [x] **Authorized Retrieval:** Active `SUPER_ADMIN` and `ADMIN` can retrieve company settings overview with Inertia view (`SYS-COMPANY-001`).
+- [x] **Unauthenticated Access Denial:** Unauthenticated requests to company settings redirect to login (`SYS-COMPANY-002`).
+- [x] **Unauthorized Role Denial:** Non-administrative roles (`ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`SYS-COMPANY-003`).
+- [x] **Inactive Account Protection:** Inactive administrators (`SUSPENDED`, `DISABLED`, `INVITED`) are blocked by middleware and rejected by service (`SYS-COMPANY-004`).
+- [x] **Authorized Mutation Flow:** Authorized admin updates legal name, address, tax IDs, and invoicing defaults atomically (`SYS-COMPANY-005`).
+- [x] **Server-Side Validation:** Malformed email, oversized strings, invalid country codes, and invalid timezones rejected with 422 (`SYS-COMPANY-006`).
+- [x] **Whitespace & Formatting Normalization:** Whitespace in text and uppercase normalization for country/currency codes executed automatically (`SYS-COMPANY-007`).
+- [x] **Unsafe URL Scheme Rejection:** `javascript:`, `data:`, and `vbscript:` schemes in website URL rejected (`SYS-COMPANY-008`).
+- [x] **Output & XSS Safety:** Script tags and HTML payloads in company attributes safely stored and rendered as escaped text (`SYS-COMPANY-009`).
+- [x] **Safe Public Representation:** Transformation methods format address and omit internal metadata/singleton flags (`SYS-COMPANY-010`).
+- [x] **Inertia Sharing:** Safe company summary shared through Inertia props without leaking internal credentials (`SYS-COMPANY-011`).
+- [x] **Singleton Invariant:** Exactly one authoritative company configuration record is preserved in the database (`SYS-COMPANY-012`).
+- [x] **Atomic Transaction with Row Locking:** Company updates execute inside database transaction with `lockForUpdate` row locking (`SYS-COMPANY-013`).
+- [x] **Audit Event Generation:** Successful updates produce `SYSTEM_COMPANY_INFORMATION_UPDATED` audit log with changed field keys (`SYS-COMPANY-014`).
+- [x] **SYS-001 Application Identity Independence:** Changes to database company information do not overwrite deployment application branding (`SYS-COMPANY-015`).
+
 ### 1.3 Customer Management (`CUSTOMER`)
 - [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
 - [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).

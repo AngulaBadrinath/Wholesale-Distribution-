@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import { 
     Menu, 
@@ -8,7 +8,11 @@ import {
     Activity, 
     ShieldCheck, 
     Terminal, 
-    Settings
+    Settings,
+    Building2,
+    Users,
+    KeyRound,
+    Shield
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -17,10 +21,13 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, title }: AppLayoutProps) {
-    const { appName, identity } = usePage<PageProps>().props;
+    const { appName, identity, company, auth } = usePage<PageProps>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+    const displayCompany = company?.display_name || identity?.company_name || 'Wholesale Distribution';
     const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
+
+    const hasRoleManage = auth?.user?.permissions?.includes('role.manage') || auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -51,7 +58,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                     {displayName}
                                 </span>
                                 <span className="text-[11px] text-muted-foreground font-mono truncate">
-                                    {identity?.company_name || 'v1.0-foundation'}
+                                    {displayCompany}
                                 </span>
                             </div>
                         </div>
@@ -65,8 +72,56 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                         </button>
                     </div>
 
-                    {/* Navigation Items (Framework shell navigation) */}
+                    {/* Navigation Items */}
                     <div className="flex-1 overflow-y-auto px-3 py-4">
+                        {hasRoleManage && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    System & Admin
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    <Link
+                                        href="/system/company"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Building2 className="h-4 w-4 text-primary" />
+                                        <span>Company Settings</span>
+                                    </Link>
+                                    <Link
+                                        href="/security/roles"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Users className="h-4 w-4 text-primary" />
+                                        <span>Role Management</span>
+                                    </Link>
+                                </nav>
+                            </>
+                        )}
+
+                        {auth?.user && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    User Security
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    <Link
+                                        href="/security/mfa"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                        <span>Two-Factor Auth</span>
+                                    </Link>
+                                    <Link
+                                        href="/security/sessions"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <KeyRound className="h-4 w-4" />
+                                        <span>Active Sessions</span>
+                                    </Link>
+                                </nav>
+                            </>
+                        )}
+
                         <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
                             Platform Foundation
                         </div>

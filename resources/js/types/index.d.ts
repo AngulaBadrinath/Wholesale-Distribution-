@@ -19,9 +19,33 @@ export interface ApplicationIdentity {
     footer_text: string;
 }
 
+export interface CompanyInformation {
+    id: number;
+    legal_name: string;
+    dba_name: string | null;
+    display_name: string;
+    address_line1: string;
+    address_line2: string | null;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    formatted_address: string;
+    phone: string;
+    email: string;
+    website: string | null;
+    tax_id: string | null;
+    state_tax_id: string | null;
+    currency: string;
+    timezone: string;
+    invoice_footer_note: string | null;
+    updated_at: string | null;
+}
+
 export interface SharedProps {
     appName: string;
     identity: ApplicationIdentity;
+    company?: CompanyInformation;
     auth: {
         user: User | null;
     };

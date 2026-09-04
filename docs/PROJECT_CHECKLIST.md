@@ -66,7 +66,7 @@
 
 ### System Configuration
 - [x] `FEAT-SYS-001`: Configurable Application Identity (Metadata, dynamic product title)
-- [ ] `FEAT-SYS-002`: Company Settings & Branding Profile
+- [x] `FEAT-SYS-002`: Company Settings & Branding Profile
 
 ### Customer Management
 - [ ] `FEAT-CUS-001`: Customer CRUD Operations

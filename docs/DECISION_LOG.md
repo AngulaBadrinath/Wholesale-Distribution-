@@ -239,6 +239,24 @@
 
 ---
 
+### DEC-015: Database-Backed Singleton Company Information & Business Details Configuration
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Store legal company details, operating address, tax identifiers, base currency, operational timezone, and default invoicing notes in a normalized, database-backed `company_information` singleton table in PostgreSQL with atomic `lockForUpdate` mutations and audit logging.
+- **Context:** The system requires an authoritative source for legal entity records, billing/shipping origin addresses, tax registration numbers (e.g. EIN, State Tax ID), and invoice metadata across customer statements and financial documents.
+- **Reason:** Separates mutable business entity configuration (`FEAT-SYS-002`) from deployment-level product branding (`FEAT-SYS-001`), ensuring admin-editable corporate metadata without requiring application code changes or server redeployment.
+- **Alternatives Considered:**
+  - *Storing company details in `.env` / static config:* Rejected because corporate address, phone, and invoice notes need runtime administrative editability.
+  - *Arbitrary key-value EAV configuration table:* Rejected due to lack of type safety, poor schema validation, and potential configuration drift.
+  - *Multi-company tenancy tables:* Rejected as out of scope for V1 single-business distribution model.
+- **Chosen Approach:** Dedicated normalized Eloquent model `CompanyInformation`, singleton constraint (`is_singleton` unique boolean), `CompanyInformationService`, FormRequest validation, `role.manage` permission protection, and structured `SYSTEM_COMPANY_INFORMATION_UPDATED` audit events.
+- **Affected Domains:** System Configuration, UI Shell, Invoicing, Financial Reports.
+- **Affected Documents:** PRD §0.2; Technical Architecture §43; Security & Access §18.
+- **Affected Tickets:** `FEAT-SYS-002`, `FEAT-DOC-001`, `FEAT-ACC-001`.
+- **Consequences:** All invoices, dispatch manifests, and customer statements query `CompanyInformationService` for official legal entity and tax registration metadata.
+
+---
+
 ## Open Decisions & TBD Register
 
 The following items are recognized as open client policy items and must remain configurable until confirmed:

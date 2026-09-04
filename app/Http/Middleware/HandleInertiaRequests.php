@@ -40,6 +40,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'appName' => app(\App\Services\System\ApplicationIdentityService::class)->getAppName(),
             'identity' => app(\App\Services\System\ApplicationIdentityService::class)->getPublicIdentity(),
+            'company' => fn () => app(\App\Services\System\CompanyInformationService::class)->getPublicDetails(),
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
