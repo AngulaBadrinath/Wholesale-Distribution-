@@ -161,10 +161,10 @@ class PermissionService
         }
 
         self::$rolePermissions = [
-            // SUPER_ADMIN: Full system authority (all 47 permissions)
+            // SUPER_ADMIN: Full system authority (all 48 permissions)
             UserRole::SUPER_ADMIN->value => Permission::cases(),
 
-            // ADMIN: Operational administration across all business surfaces (39 permissions)
+            // ADMIN: Operational administration across all business surfaces (40 permissions)
             UserRole::ADMIN->value => [
                 // Customer
                 Permission::CUSTOMER_VIEW,
@@ -177,6 +177,9 @@ class PermissionService
                 Permission::PRODUCT_UPDATE,
                 Permission::PRODUCT_PRICE_UPDATE,
                 Permission::PRODUCT_TAX_UPDATE,
+
+                // Pricing
+                Permission::PRICING_OVERRIDE,
 
                 // Order
                 Permission::ORDER_VIEW,

@@ -90,7 +90,7 @@
 
 ### Pricing
 - [x] `FEAT-PRICE-001`: Price Boundary Constraint Enforcement (`min_price <= order_price <= mrp`)
-- [ ] `FEAT-PRICE-002`: Authorized Price Override Engine with Auditing
+- [x] `FEAT-PRICE-002`: Authorized Price Override Engine with Auditing
 
 ### Product-Specific Tax
 - [ ] `FEAT-TAX-001`: Product-Specific Tax Profile Engine & Order-Line Snapshot

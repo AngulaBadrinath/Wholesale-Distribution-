@@ -99,6 +99,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-003: Authorized Price Override Engine & Permission Registry Expansion
+- **Change ID:** `CHANGE-003`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Establish the server-side price override domain engine (`PricingOverrideService`) to evaluate and authorize selling price exceptions outside normal boundaries (`minimum_allowed_price <= price <= mrp`) with mandatory reason capture (5-500 chars), strict BCMath decimal math, registration of `Permission::PRICING_OVERRIDE = 'pricing.override'` (expanding registry to 48 canonical codes mapped to `SUPER_ADMIN` and `ADMIN`), readonly DTO `PriceOverrideDecision`, non-zero/non-negative invariant enforcement ($> 0.00$), structured audit logging (`PRODUCT_PRICE_OVERRIDE_AUTHORIZED`), and security warning emission for unauthorized attempts.
+- **Reason:** Enable commercial flexibility for strategic discounts and expedited surcharges while protecting Product Master immutability, ensuring zero client trust, and preserving complete financial auditability.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P1` (Commerce Spine Prerequisite)
+- **Affected PRD Requirements:** PRD §9.1, §9.2, §10.1, §10.2.
+- **Affected Architecture:** Technical Architecture §18, §19, §23.
+- **Affected Security:** Registered `pricing.override` in `Permission` enum; mapped exclusively to `SUPER_ADMIN` (48 permissions) and `ADMIN` (40 permissions); rejected unauthorized roles (Salesman, Warehouse Manager, Accountant, Delivery Partner) with 403.
+- **Affected Frontend:** None in this ticket; ready for future Phase 05 Order placement UI integration.
+- **Affected Tickets:** `FEAT-PRICE-002`.
+- **Inventory Impact:** None.
+- **Order Impact:** Reusable price override evaluation and authorization engine (`PricingOverrideService`) established for Phase 05 Order workflows.
+- **Payment Impact:** None.
+- **Tax Impact:** None.
+- **Accounting Impact:** Preserves immutable Product Master prices while providing auditable prospective transaction override context.
+- **Data Migration Impact:** None. Product Master `products_pricing_hierarchy_check` PostgreSQL CHECK constraint remains unmodified and un-weakened.
+- **Testing Impact:** Added `PricingOverrideServiceTest` (18 unit tests) and `PriceOverrideIntegrationTest` (9 feature tests). Total suite at 521 tests passing (3,127 assertions).
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-PRICE-002`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

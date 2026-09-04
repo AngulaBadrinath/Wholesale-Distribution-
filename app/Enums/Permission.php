@@ -16,6 +16,9 @@ enum Permission: string
     case PRODUCT_PRICE_UPDATE = 'product.price.update';
     case PRODUCT_TAX_UPDATE = 'product.tax.update';
 
+    // Pricing
+    case PRICING_OVERRIDE = 'pricing.override';
+
     // Order
     case ORDER_VIEW = 'order.view';
     case ORDER_CREATE = 'order.create';
@@ -97,6 +100,8 @@ enum Permission: string
             self::PRODUCT_PRICE_UPDATE => 'Update Product Prices',
             self::PRODUCT_TAX_UPDATE => 'Update Product Tax Profiles',
 
+            self::PRICING_OVERRIDE => 'Authorized Price Override',
+
             self::ORDER_VIEW => 'View Orders',
             self::ORDER_CREATE => 'Create Orders',
             self::ORDER_SUBMIT => 'Submit Orders',
@@ -165,6 +170,8 @@ enum Permission: string
             self::PRODUCT_UPDATE => 'Edit product metadata, descriptions, units of measure, and categories.',
             self::PRODUCT_PRICE_UPDATE => 'Authoritatively modify base prices, price tiers, and list prices.',
             self::PRODUCT_TAX_UPDATE => 'Assign and update product tax categories and tax profiles.',
+
+            self::PRICING_OVERRIDE => 'Authorize unit prices below minimum allowed price or above MRP for transactions.',
 
             self::ORDER_VIEW => 'Inspect orders, order lines, fulfillment status, and history.',
             self::ORDER_CREATE => 'Draft new sales orders with selected customer and products.',

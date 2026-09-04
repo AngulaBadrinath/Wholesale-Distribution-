@@ -30,13 +30,13 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-001: Exactly 47 canonical permission codes exist.
+     * RBAC-PERM-001: Exactly 48 canonical permission codes exist.
      */
-    public function test_exactly_47_canonical_permission_codes_exist(): void
+    public function test_exactly_48_canonical_permission_codes_exist(): void
     {
         $cases = Permission::cases();
-        $this->assertCount(47, $cases);
-        $this->assertCount(47, Permission::values());
+        $this->assertCount(48, $cases);
+        $this->assertCount(48, Permission::values());
     }
 
     /**
@@ -79,6 +79,10 @@ class PermissionRegistryTest extends TestCase
         // Test casesForModule helper
         $customerCases = Permission::casesForModule('customer');
         $this->assertCount(3, $customerCases);
+
+        $pricingCases = Permission::casesForModule('pricing');
+        $this->assertCount(1, $pricingCases);
+        $this->assertSame([Permission::PRICING_OVERRIDE], $pricingCases);
     }
 
     /**
@@ -99,12 +103,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-006: SUPER_ADMIN has exactly all 47 permissions.
+     * RBAC-PERM-006: SUPER_ADMIN has exactly all 48 permissions.
      */
-    public function test_super_admin_has_all_47_permissions(): void
+    public function test_super_admin_has_all_48_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SUPER_ADMIN);
-        $this->assertCount(47, $permissions);
+        $this->assertCount(48, $permissions);
         $this->assertSame(Permission::cases(), $permissions);
 
         $superAdmin = User::factory()->superAdmin()->create();
@@ -117,12 +121,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 39 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 40 permissions.
      */
-    public function test_admin_has_exactly_the_intended_39_permissions(): void
+    public function test_admin_has_exactly_the_intended_40_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(39, $permissions);
+        $this->assertCount(40, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 
@@ -142,6 +146,7 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains(Permission::ORDER_REJECT->value, $permissionValues);
         $this->assertContains(Permission::PAYMENT_VERIFY->value, $permissionValues);
         $this->assertContains(Permission::USER_SUSPEND->value, $permissionValues);
+        $this->assertContains(Permission::PRICING_OVERRIDE->value, $permissionValues);
     }
 
     /**
