@@ -17,8 +17,10 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, title }: AppLayoutProps) {
-    const { appName } = usePage<PageProps>().props;
+    const { appName, identity } = usePage<PageProps>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -42,14 +44,14 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                     <div className="h-16 flex items-center justify-between px-6 border-b border-border">
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-semibold text-sm tracking-tight shadow-xs">
-                                WD
+                                {initials}
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className="font-semibold text-sm leading-tight truncate">
-                                    {appName || 'WDMS Core'}
+                                    {displayName}
                                 </span>
-                                <span className="text-[11px] text-muted-foreground font-mono">
-                                    v1.0-foundation
+                                <span className="text-[11px] text-muted-foreground font-mono truncate">
+                                    {identity?.company_name || 'v1.0-foundation'}
                                 </span>
                             </div>
                         </div>
@@ -154,7 +156,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                     {/* Subdued Footer */}
                     <footer className="border-t border-border py-3 px-4 sm:px-6 text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
                         <div className="font-mono text-[11px]">
-                            Wholesale Distribution Management System &bull; Phase 00 Infrastructure
+                            {identity?.footer_text || displayName} &bull; Phase 00 Infrastructure
                         </div>
                         <div className="flex items-center gap-4 text-[11px]">
                             <span>Tailwind CSS 4</span>

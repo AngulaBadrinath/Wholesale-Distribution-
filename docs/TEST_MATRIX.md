@@ -90,6 +90,17 @@
 > [!NOTE]
 > Resource scope enforcement tests (`RBAC-SCOPE-001` through `RBAC-SCOPE-030`) are deferred until concrete domain models (`Customer`, `Order`, `Delivery`) and their assignment relationships are implemented in Phases 03, 05, and 08 (`FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-ORD-001`, `FEAT-DLV-001`). V1 enforces single central warehouse operational scope per PRD §39.2.
 
+### 1.2.3 Application Identity & System Configuration (`SYS` / `FEAT-SYS-001`)
+- [x] **Authoritative Identity Source:** `ApplicationIdentityService` returns deterministic, server-authoritative identity DTO from configuration baseline (`SYS-IDENTITY-001`).
+- [x] **Safe Documented Defaults:** When configuration values are missing, empty, or whitespace, fallback defaults are provided deterministically (`SYS-IDENTITY-002`).
+- [x] **Trimmed & Normalized String Sanitization:** Whitespace in identity configuration is trimmed and normalized (`SYS-IDENTITY-003`).
+- [x] **Safe Inertia Sharing:** `HandleInertiaRequests` middleware safely shares public identity fields (`appName`, `identity`) on all Inertia responses (`SYS-IDENTITY-004`).
+- [x] **Zero Secrets Exposure:** Sensitive server configuration, database credentials, and internal paths are strictly omitted from shared public identity props (`SYS-IDENTITY-005`).
+- [x] **Auth Surface Identity Rendering:** Dynamic branding displays correctly on Login (`SYS-IDENTITY-006`), Forgot Password (`SYS-IDENTITY-007`), Reset Password (`SYS-IDENTITY-008`), and MFA Challenge (`SYS-IDENTITY-009`) surfaces without hardcoded title strings.
+- [x] **Output & XSS Safety:** Identity values containing HTML/script tags are safely escaped by Blade and React rendering engines (`SYS-IDENTITY-010`).
+- [x] **Zero Database Queries:** `ApplicationIdentityService` executes zero database queries, ensuring instantaneous resolution without database overhead (`SYS-IDENTITY-011`).
+- [x] **Authentication & RBAC Regression Safety:** Authentication flows, session revocation, MFA, and permission checks continue to pass with full fidelity (`SYS-IDENTITY-012`).
+
 ### 1.3 Customer Management (`CUSTOMER`)
 - [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
 - [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).

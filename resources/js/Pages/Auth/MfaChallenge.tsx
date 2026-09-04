@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
+import { PageProps } from '@/types';
 import { Shield, KeyRound, ArrowLeft, Loader2, AlertCircle, Copy, Check, QrCode } from 'lucide-react';
 
 interface MfaChallengeProps {
@@ -15,6 +16,9 @@ export default function MfaChallenge({
     qr_code_svg,
     manual_key,
 }: MfaChallengeProps) {
+    const { appName, identity } = usePage<PageProps>().props;
+    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+
     const [useRecoveryCode, setUseRecoveryCode] = useState(false);
     const [copiedKey, setCopiedKey] = useState(false);
     const codeInputRef = useRef<HTMLInputElement>(null);
@@ -53,7 +57,7 @@ export default function MfaChallenge({
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <Head title="Two-Factor Authentication — Wholesale Distribution" />
+            <Head title={`Two-Factor Authentication — ${displayName}`} />
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center">

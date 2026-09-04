@@ -109,16 +109,19 @@ export default function MfaIndex({
         }
     };
 
+    const { appName, identity } = usePage<PageProps>().props;
+    const titleName = (identity?.name || appName || 'Wholesale Distribution Management System').toUpperCase();
+
     const handleDownloadRecoveryCodes = () => {
         if (recovery_codes && recovery_codes.length > 0) {
-            const content = `WHOLESALE DISTRIBUTION MANAGEMENT SYSTEM\nTWO-FACTOR AUTHENTICATION RECOVERY CODES\nGenerated: ${new Date().toISOString()}\n\nEach code can only be used once.\n\n${recovery_codes.join(
+            const content = `${titleName}\nTWO-FACTOR AUTHENTICATION RECOVERY CODES\nGenerated: ${new Date().toISOString()}\n\nEach code can only be used once.\n\n${recovery_codes.join(
                 '\n'
             )}\n`;
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'wdms-mfa-recovery-codes.txt';
+            link.download = 'mfa-recovery-codes.txt';
             link.click();
             URL.revokeObjectURL(url);
         }

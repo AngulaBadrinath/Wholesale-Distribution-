@@ -1,9 +1,10 @@
 import React, { FormEventHandler, useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
+import { PageProps } from '@/types';
 import { Shield, Eye, EyeOff, KeyRound, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 
 interface ResetPasswordProps {
@@ -12,6 +13,9 @@ interface ResetPasswordProps {
 }
 
 export default function ResetPassword({ token, email }: ResetPasswordProps) {
+    const { appName, identity } = usePage<PageProps>().props;
+    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -31,7 +35,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
 
     return (
         <div className="min-h-screen bg-background flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12">
-            <Head title="Set New Password — Wholesale Distribution Management System" />
+            <Head title={`Set New Password — ${displayName}`} />
 
             <div className="w-full max-w-md space-y-6">
                 {/* Brand Header */}
@@ -41,7 +45,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                            Wholesale Distribution
+                            {displayName}
                         </h1>
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-mono mt-0.5">
                             Credential Security

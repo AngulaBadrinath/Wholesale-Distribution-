@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **10.2%** (13 / 128 tickets) | FEAT-RBAC-002 verified complete; 170 automated tests passing (1,060 assertions) |
+| **Overall Code Completion** | **10.9%** (14 / 128 tickets) | FEAT-SYS-001 verified complete; 182 automated tests passing (1,189 assertions) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 01 — Identity, Authentication & Access Control** | Status: `IN_PROGRESS` (AUTH 001..004 complete; RBAC-001..002 complete) |
-| **Current Milestone Gate** | **GATE A — Foundation** | Status: In progress (Phase 00 complete; Phase 01 in progress) |
-| **Current Active Ticket** | **FEAT-SYS-001** (Ready to start) | `FEAT-RBAC-003` deferred per DEC-014; moving to Phase 02 |
+| **Current Phase** | **Phase 02 — Master Data Management & Configuration** | Status: `IN_PROGRESS` (SYS-001 complete) |
+| **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00 & Phase 01 complete/deferred) |
+| **Current Active Ticket** | **FEAT-SYS-001** (Complete) | Ready to begin `FEAT-SYS-002: Company Settings` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-CUS-001`, `FEAT-ORD-001`, `FEAT-DLV-001`) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **13** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`).
-- Current progress: **10.16%** (~10.2%).
+- Completed tickets: **14** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`).
+- Current progress: **10.94%** (~10.9%).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (13):**
+- **Completed Tickets (14):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -46,12 +46,13 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   11. `FEAT-AUTH-004`: Privileged Multi-Factor Authentication (MFA)
   12. `FEAT-RBAC-001`: Role Model Definition
   13. `FEAT-RBAC-002`: Server-Side Permission Registry
+  14. `FEAT-SYS-001`: Configurable Application Identity
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Customer, Order, and Delivery domain models in Phases 03, 05, and 08).
 - **Upcoming Tickets (Phase 02 — System & Master Data Management):**
-  1. `FEAT-SYS-001`: Configurable Application Identity
-  2. `FEAT-SYS-002`: Company Settings
+  1. `FEAT-SYS-002`: Company Settings
+  2. `FEAT-CUS-001`: Customer CRUD
 
 ---
 
@@ -115,13 +116,12 @@ The following items are recognized as future enterprise enhancements and are int
 - **Local Development Environment:** Fully bootstrapped and operational. Docker Compose running `postgres:18-alpine` (port 5433) and `redis:7-alpine` (port 6380).
 - **Staging Environment:** Not configured (`DEPLOY-001` scheduled for Phase 11).
 - **Production AWS Environment:** Architecture-ready (`DEPLOY-002` scheduled for Phase 11).
-- **Automated Test Runner:** PHPUnit harness operational (170 tests passing, 1,060 assertions). TypeScript static check operational (`npm run type-check`).
+- **Automated Test Runner:** PHPUnit harness operational (182 tests passing, 1,189 assertions). TypeScript static check operational (`npm run type-check`).
 - **CI/CD Pipelines:** GitHub Actions CI workflow implemented in `.github/workflows/ci.yml`.
 
 ---
 
 ## 8. Next Recommended Action
  
-1. Activate next unblocked ticket in sequence from Document 05 / BUILD_PHASES.md:
-   - **`FEAT-SYS-001: Configurable Application Identity`** (Phase 02 / Epic 03: System / Company Configuration).
-   *(Note: `FEAT-RBAC-003` is deferred per DEC-014 pending domain entity implementations in Phases 03, 05, and 08).*
+1. Activate next ticket in sequence from Document 05 / BUILD_PHASES.md:
+   - **`FEAT-SYS-002: Company Settings`** (Phase 02 / Epic 03: System / Company Configuration).

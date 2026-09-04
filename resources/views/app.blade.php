@@ -5,7 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title inertia>{{ config('app.name', 'Wholesale Distribution Management System') }}</title>
+        <title inertia>{{ app(\App\Services\System\ApplicationIdentityService::class)->getAppName() }}</title>
+        <link rel="icon" href="{{ app(\App\Services\System\ApplicationIdentityService::class)->getFaviconPath() }}">
 
         <!-- Typography: Inter font -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

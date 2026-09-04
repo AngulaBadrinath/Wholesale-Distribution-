@@ -8,8 +8,20 @@ export interface User {
     created_at?: string;
 }
 
+export interface ApplicationIdentity {
+    name: string;
+    company_name: string;
+    tagline: string;
+    support_email: string;
+    support_phone: string;
+    logo_path: string;
+    favicon_path: string;
+    footer_text: string;
+}
+
 export interface SharedProps {
     appName: string;
+    identity: ApplicationIdentity;
     auth: {
         user: User | null;
     };

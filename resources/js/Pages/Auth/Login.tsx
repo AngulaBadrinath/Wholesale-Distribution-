@@ -12,8 +12,10 @@ interface LoginProps {
 }
 
 export default function Login({ status }: LoginProps) {
-    const { appName } = usePage<PageProps>().props;
+    const { appName, identity } = usePage<PageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
+    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -39,14 +41,14 @@ export default function Login({ status }: LoginProps) {
                 {/* Brand Header */}
                 <div className="flex flex-col items-center text-center space-y-2">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-base shadow-xs">
-                        WD
+                        {initials}
                     </div>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                            {appName || 'Wholesale Distribution Management System'}
+                            {displayName}
                         </h1>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Centralized Authentication Gateway &bull; Multi-Portal Access
+                            {identity?.tagline || 'Centralized Authentication Gateway • Multi-Portal Access'}
                         </p>
                     </div>
                 </div>

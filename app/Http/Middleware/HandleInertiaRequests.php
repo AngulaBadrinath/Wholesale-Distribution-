@@ -38,7 +38,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'appName' => config('app.name', 'Wholesale Distribution Management System'),
+            'appName' => app(\App\Services\System\ApplicationIdentityService::class)->getAppName(),
+            'identity' => app(\App\Services\System\ApplicationIdentityService::class)->getPublicIdentity(),
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,

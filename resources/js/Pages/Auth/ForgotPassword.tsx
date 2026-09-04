@@ -1,9 +1,10 @@
 import React, { FormEventHandler } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
+import { PageProps } from '@/types';
 import { Shield, ArrowLeft, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ForgotPasswordProps {
@@ -11,6 +12,9 @@ interface ForgotPasswordProps {
 }
 
 export default function ForgotPassword({ status }: ForgotPasswordProps) {
+    const { appName, identity } = usePage<PageProps>().props;
+    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
+
     const { data, setData, post, processing, errors } = useForm({
         email: '',
     });
@@ -22,7 +26,7 @@ export default function ForgotPassword({ status }: ForgotPasswordProps) {
 
     return (
         <div className="min-h-screen bg-background flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12">
-            <Head title="Forgot Password — Wholesale Distribution Management System" />
+            <Head title={`Forgot Password — ${displayName}`} />
 
             <div className="w-full max-w-md space-y-6">
                 {/* Brand Header */}
@@ -32,7 +36,7 @@ export default function ForgotPassword({ status }: ForgotPasswordProps) {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                            Wholesale Distribution
+                            {displayName}
                         </h1>
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-mono mt-0.5">
                             Password Recovery

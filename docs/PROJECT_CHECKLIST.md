@@ -65,7 +65,7 @@
 ## 4. SYSTEM & MASTER DATA MANAGEMENT
 
 ### System Configuration
-- [ ] `FEAT-SYS-001`: Configurable Application Identity (Metadata, dynamic product title)
+- [x] `FEAT-SYS-001`: Configurable Application Identity (Metadata, dynamic product title)
 - [ ] `FEAT-SYS-002`: Company Settings & Branding Profile
 
 ### Customer Management
