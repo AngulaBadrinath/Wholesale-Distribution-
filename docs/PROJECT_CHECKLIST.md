@@ -40,10 +40,10 @@
 
 ## 2. FOUNDATION & ARCHITECTURE
 
-- [ ] `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
-- [ ] `TECH-FOUND-002`: PostgreSQL 18 Database Connectivity, Migrations & Testing Setup
-- [ ] `TECH-FOUND-003`: Global Error Handling & Secure Structured Logging Foundation
-- [ ] `TECH-FOUND-004`: Redis Cache & Queue Infrastructure Setup
+- [x] `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
+- [x] `TECH-FOUND-002`: PostgreSQL 18 Database Connectivity, Migrations & Testing Setup
+- [x] `TECH-FOUND-003`: Global Error Handling & Secure Structured Logging Foundation
+- [x] `TECH-FOUND-004`: Redis Cache & Queue Infrastructure Setup
 
 ---
 
@@ -230,8 +230,8 @@
 
 ## 12. DESIGN SYSTEM & USER INTERFACES
 
-- [ ] `UI-001`: Design Tokens Implementation (Inter font, Tailwind 4, HSL palette)
-- [ ] `UI-002`: Core shadcn/ui Component Library Tailoring
+- [x] `UI-001`: Design Tokens Implementation (Inter font, Tailwind 4, HSL palette)
+- [x] `UI-002`: Core shadcn/ui Component Library Tailoring
 - [ ] `UI-003`: Admin Portal Shell (Desktop-first control center, collapsable sidebar)
 - [ ] `UI-004`: Salesman Portal Shell (Mobile-first workspace, bottom navigation)
 - [ ] `UI-005`: Delivery Partner Portal Shell (Mobile-first driver workspace)
@@ -263,6 +263,6 @@
 
 - [ ] `DEPLOY-001`: Staging Environment Configuration
 - [ ] `DEPLOY-002`: Production AWS Infrastructure Baseline (EC2, RDS PostgreSQL, ElastiCache, S3)
-- [ ] `DEPLOY-003`: GitHub Actions CI/CD Pipeline Configuration
+- [x] `DEPLOY-003`: GitHub Actions CI/CD Pipeline Configuration (Foundation CI pipeline implemented)
 - [ ] `DEPLOY-004`: Disaster Recovery, Automated Backups & Restore Verification
 - [ ] `DEPLOY-005`: Production Security Hardening Checklist (HTTPS, SSL Labs A+, least privilege)

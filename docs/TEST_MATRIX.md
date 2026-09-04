@@ -9,6 +9,26 @@
 
 ---
 
+## 0. Foundation & Core Infrastructure Coverage Matrix (Phase 00)
+
+### 0.1 Application Bootstrap & Health (`TECH-FOUND-001`, `TECH-FOUND-003`)
+- [x] **Framework Boot:** Laravel 13 boots successfully; root route `/` renders Inertia page with 200 OK (`FoundationTest::test_application_boots_and_renders_inertia_welcome_view`).
+- [x] **Inertia Props Contract:** Shared props `phpVersion`, `laravelVersion`, `appName`, and `auth.user` passed to frontend view.
+- [x] **Health Check Endpoint:** `/health` responds with JSON status contract for application, database, and redis (`FoundationTest::test_health_check_endpoint_contract`).
+- [x] **Configuration Baseline:** Application configuration loads correct app name and environment parameters (`FoundationTest::test_application_configuration_baseline`).
+
+### 0.2 Persistence & Cache (`TECH-FOUND-002`, `TECH-FOUND-004`)
+- [x] **PostgreSQL 18 Connectivity:** Active database ping (`SELECT 1 as ping`) succeeds (`FoundationTest::test_database_connection_operational`).
+- [x] **Migration System:** Default framework migrations execute cleanly creating `users`, `cache`, and `jobs` tables without business schema.
+- [x] **Redis 7 Connectivity:** Redis ping via Predis returns PONG and cache put/get operations succeed.
+
+### 0.3 Frontend Static Analysis & Asset Compilation (`UI-001`, `UI-002`)
+- [x] **TypeScript Validation:** `npm run type-check` (`tsc --noEmit`) passes with 0 type errors.
+- [x] **Vite Production Build:** `npm run build` compiles 2,387 modules into optimized chunks in $\le 2\text{s}$ with 0 warnings.
+- [x] **Design Tokens & Primitives:** Tailwind CSS 4 HSL variables, Inter font, Button, Card, Input, and Badge primitives verified.
+
+---
+
 ## 1. Domain Coverage Matrices
 
 ### 1.1 Authentication (`AUTH`)

@@ -207,6 +207,21 @@
 - **Affected Tickets:** `FEAT-ACC-001` through `FEAT-ACC-009`.
 - **Consequences:** Database triggers or application policies must reject `UPDATE`/`DELETE` queries on `journal_lines`.
 
+### DEC-013: Local Development Port Mapping and Redis Client Strategy
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Host port mapping for Docker Compose development uses port `5433` for PostgreSQL (mapped to internal `5432`) and port `6380` for Redis (mapped to internal `6379`) via `.env` variables `FORWARD_DB_PORT` and `FORWARD_REDIS_PORT`. Redis client uses `predis` for cross-platform portability without requiring native PECL C-extensions on Windows/Mac/Linux.
+- **Context:** Developer machines may host pre-existing containers on standard host ports 5432 and 6379; Windows PHP environments benefit from pure-PHP Predis client.
+- **Reason:** Avoids port collisions while ensuring immediate out-of-the-box local developer reproducibility on any machine.
+- **Alternatives Considered:**
+  - *Hardcoding ports 5432 and 6379:* Rejected due to immediate collision with running services.
+  - *Requiring phpredis C-extension:* Rejected due to Windows development complexity and lack of pre-compiled PECL DLLs in some distributions.
+- **Chosen Approach:** Configurable port variables with safe non-colliding defaults, and `predis/predis` package.
+- **Affected Domains:** Local Infrastructure, Docker, Redis, Database.
+- **Affected Documents:** Technical Architecture §1, §3.
+- **Affected Tickets:** `TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-004`.
+- **Consequences:** All developer documentation and `.env.example` state port `5433` for PostgreSQL and `6380` for Redis.
+
 ---
 
 ## Open Decisions & TBD Register

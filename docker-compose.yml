@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: wdms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-wdms}
+      POSTGRES_USER: ${DB_USERNAME:-wdms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wdms_secret}
+    ports:
+      - "${FORWARD_DB_PORT:-5433}:5432"
+    volumes:
+      - wdms_pgdata:/var/lib/postgresql
+    networks:
+      - wdms_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wdms_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-wdms_redis_secret}"]
+    ports:
+      - "${FORWARD_REDIS_PORT:-6380}:6379"
+    volumes:
+      - wdms_redisdata:/data
+    networks:
+      - wdms_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$${REDIS_PASSWORD:-wdms_redis_secret}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  wdms_network:
+    driver: bridge
+
+volumes:
+  wdms_pgdata:
+    driver: local
+  wdms_redisdata:
+    driver: local
