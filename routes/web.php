@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\SessionManagementController;
 use App\Http\Controllers\HealthCheckController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -30,4 +31,10 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             'laravelVersion' => app()->version(),
         ]);
     })->name('dashboard');
+
+    // Active session tracking and revocation
+    Route::get('/security/sessions', [SessionManagementController::class, 'index'])->name('sessions.index');
+    Route::post('/security/sessions/{id}/revoke', [SessionManagementController::class, 'destroy'])->name('sessions.revoke');
+    Route::post('/security/sessions/revoke-others', [SessionManagementController::class, 'destroyOthers'])->name('sessions.revoke-others');
+    Route::post('/security/sessions/revoke-all', [SessionManagementController::class, 'destroyAll'])->name('sessions.revoke-all');
 });

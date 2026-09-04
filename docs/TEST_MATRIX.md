@@ -31,16 +31,24 @@
 
 ## 1. Domain Coverage Matrices
 
-### 1.1 Authentication (`AUTH`)
+### 1.1 Authentication & Session Revocation (`AUTH` / `FEAT-AUTH-001` & `FEAT-AUTH-002`)
 - [x] **Happy Path:** Valid credentials authenticate and redirect to portal dashboard (`QA-001`, `AUTH-002`).
 - [x] **Validation:** Missing email/password returns 422 with structured field error.
 - [x] **Security:** Invalid credentials return generic non-enumerating error (`trans('auth.failed')`, `AUTH-003`, `AUTH-004`).
 - [x] **Security:** Repeated failed logins trigger rate limiter (`429 Too Many Requests`, `AUTH-005`, `AUTH-006`).
 - [x] **Security:** Suspended / inactive accounts cannot authenticate (`AUTH-008`, `AUTH-009`, `AUTH-010`, `AUTH-015`).
-- [x] **State Transition:** Logout successfully revokes and invalidates session (`AUTH-012`).
+- [x] **State Transition:** Logout successfully revokes and invalidates session (`AUTH-012`, `AUTH-SESSION-001`, `AUTH-SESSION-002`, `AUTH-SESSION-003`).
+- [x] **Session Tracking:** Authenticated users can list active sessions with approximate device, masked IP, and current session marker (`AUTH-SESSION-004`, `AUTH-SESSION-005`).
+- [x] **Single Revocation:** Users can revoke specific active sessions belonging to their identity (`AUTH-SESSION-006`, `AUTH-SESSION-007`).
+- [x] **Bulk Revocation:** Users can revoke all other active sessions while preserving current session (`AUTH-SESSION-008`, `AUTH-SESSION-009`).
+- [x] **Revoke All Everywhere:** Users can invalidate all sessions including current and redirect to login (`AUTH-SESSION-016`).
+- [x] **Security (IDOR):** Attempting to revoke another user's session returns 404 and leaves session untouched (`AUTH-SESSION-010`).
+- [x] **Security (Privacy & Secrets):** Raw database session IDs are never exposed in Inertia props/DOM; opaque HMAC tokens used (`AUTH-SESSION-018`).
+- [x] **Security (Audit):** Structured audit logs written for all session lifecycle events without passwords or hashes (`AUTH-SESSION-015`).
+- [x] **Security Hook:** Application service supports programmatic session revocation for account security events (`AUTH-SESSION-017`).
 - [ ] **Edge Case:** Password reset token expires, is one-time use, and revokes prior sessions (`FEAT-AUTH-003`).
 - [ ] **Privileged MFA:** Super Admin / Admin / Accountant prompted for TOTP code (`FEAT-AUTH-004`).
-- [x] **Responsive:** Login form verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`).
+- [x] **Responsive:** Login & Session management views verified on Desktop (1280px), Tablet (768px), and Mobile (375px) (`AUTH-001`, `Sessions.tsx`).
 
 ### 1.2 Roles & Permissions (`RBAC`)
 - [ ] **Happy Path:** Authorized user accesses permitted route and performs allowed action.

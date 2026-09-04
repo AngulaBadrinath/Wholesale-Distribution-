@@ -39,6 +39,18 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user) {
+            \Illuminate\Support\Facades\Log::info('session.security_event', [
+                'action' => 'SESSION_LOGOUT',
+                'user_id' => $user->id,
+                'actor_id' => $user->id,
+                'ip' => $request->ip(),
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
