@@ -222,6 +222,21 @@
 - **Affected Tickets:** `TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-004`.
 - **Consequences:** All developer documentation and `.env.example` state port `5433` for PostgreSQL and `6380` for Redis.
 
+### DEC-014: Deferral of FEAT-RBAC-003 Pending Concrete Domain Entity Models
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Defer `FEAT-RBAC-003 — Resource Scope Enforcement` until the underlying domain entity models (`Customer`, `Order`, `Delivery`) and their assignment relationships are implemented by their respective authoritative feature tickets (`FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-ORD-001`, `FEAT-DLV-001`). Do NOT introduce premature mock/placeholder models or invented multi-warehouse schemas.
+- **Context:** `FEAT-RBAC-003` was scheduled at the end of Phase 01 (Identity & Access). However, resource scoping requires concrete database foreign keys and query scopes (`assigned_salesman_id` on customers, `customer_id`/`salesman_id` on orders, `delivery_partner_id` on deliveries). The codebase currently only contains authentication and user models (`users`, `sessions`, `recovery_codes`). Furthermore, PRD §39.2 explicitly excludes multi-warehouse orchestration in V1, defining a single central warehouse.
+- **Reason:** Creating placeholder domain models or synthetic multi-warehouse tables would invent unapproved schemas and violate single responsibility, dead-code protocols, and PRD §39.2. Real resource scoping must be enforced against actual domain schemas.
+- **Alternatives Considered:**
+  - *Creating minimal forward domain models (Customer, Order, Delivery) during Phase 01:* Rejected by client direction to avoid premature schema creation and maintain phase integrity.
+  - *Introducing multi-warehouse tables (warehouses, user.warehouse_id):* Explicitly rejected as contradictory to PRD §39.2 (single central distribution warehouse in V1).
+- **Chosen Approach:** Mark `FEAT-RBAC-003` as `DEFERRED / PENDING DOMAIN PREREQUISITES`. Proceed with the next unblocked tickets (`FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`). Implement resource scoping rules directly on each domain model as it is built.
+- **Affected Domains:** RBAC, Customer Management, Order Management, Delivery Management, Warehouse Operations.
+- **Affected Documents:** Feature Ticket List §11 (`FEAT-RBAC-003`), Technical Architecture §18, Security & Access §18.
+- **Affected Tickets:** `FEAT-RBAC-003` (deferred), `FEAT-CUS-002`, `FEAT-ORD-003`, `FEAT-DLV-001`.
+- **Consequences:** `FEAT-RBAC-003` remains open/deferred. The permission registry (`FEAT-RBAC-002`) remains the authoritative action-authorization boundary until domain resource scoping is bound to real entities.
+
 ---
 
 ## Open Decisions & TBD Register

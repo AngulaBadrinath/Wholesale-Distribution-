@@ -18,9 +18,9 @@
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
 | **Current Phase** | **Phase 01 — Identity, Authentication & Access Control** | Status: `IN_PROGRESS` (AUTH 001..004 complete; RBAC-001..002 complete) |
 | **Current Milestone Gate** | **GATE A — Foundation** | Status: In progress (Phase 00 complete; Phase 01 in progress) |
-| **Current Active Ticket** | **FEAT-RBAC-002** (Complete) | Ready to begin `FEAT-RBAC-003: Resource Scope Enforcement` |
+| **Current Active Ticket** | **FEAT-SYS-001** (Ready to start) | `FEAT-RBAC-003` deferred per DEC-014; moving to Phase 02 |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
-| **Active Blockers** | **0** | No technical or business blockers exist |
+| **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-CUS-001`, `FEAT-ORD-001`, `FEAT-DLV-001`) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
@@ -47,9 +47,11 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   12. `FEAT-RBAC-001`: Role Model Definition
   13. `FEAT-RBAC-002`: Server-Side Permission Registry
 - **In-Progress Tickets (0):** None.
-- **Blocked Tickets (0):** None.
-- **Upcoming Tickets (Phase 01 — Identity & Access):**
-  1. `FEAT-RBAC-003`: Resource Scope Enforcement
+- **Blocked / Deferred Tickets (1):**
+  1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Customer, Order, and Delivery domain models in Phases 03, 05, and 08).
+- **Upcoming Tickets (Phase 02 — System & Master Data Management):**
+  1. `FEAT-SYS-001`: Configurable Application Identity
+  2. `FEAT-SYS-002`: Company Settings
 
 ---
 
@@ -120,5 +122,6 @@ The following items are recognized as future enterprise enhancements and are int
 
 ## 8. Next Recommended Action
  
-1. Activate next ticket in sequence from Document 05:
-   - **`FEAT-RBAC-003: Resource Scope Enforcement`** (Epic 02: Roles, Permissions & Access).
+1. Activate next unblocked ticket in sequence from Document 05 / BUILD_PHASES.md:
+   - **`FEAT-SYS-001: Configurable Application Identity`** (Phase 02 / Epic 03: System / Company Configuration).
+   *(Note: `FEAT-RBAC-003` is deferred per DEC-014 pending domain entity implementations in Phases 03, 05, and 08).*

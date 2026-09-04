@@ -86,6 +86,10 @@
 - [x] **Capability Sharing & Zero Client Trust:** Inertia shares safe `permissions` array for authenticated active user for UI hints; frontend manipulation cannot bypass server-side authorization (`RBAC-PERM-028`, `RBAC-PERM-029`).
 - [x] **Authentication & Role Regressions:** Full regression passed for role transitions, session invalidation, login, MFA, and password reset (`RBAC-PERM-022`..`027`).
 
+### 1.2.2 Resource Scope Enforcement (`RBAC` / `FEAT-RBAC-003`) — *DEFERRED per DEC-014*
+> [!NOTE]
+> Resource scope enforcement tests (`RBAC-SCOPE-001` through `RBAC-SCOPE-030`) are deferred until concrete domain models (`Customer`, `Order`, `Delivery`) and their assignment relationships are implemented in Phases 03, 05, and 08 (`FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-ORD-001`, `FEAT-DLV-001`). V1 enforces single central warehouse operational scope per PRD §39.2.
+
 ### 1.3 Customer Management (`CUSTOMER`)
 - [ ] **Happy Path:** Admin creates and updates customer profile with credit limit and payment terms.
 - [ ] **Validation:** Duplicate business tax ID or malformed email/phone rejected (422).
