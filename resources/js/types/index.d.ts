@@ -182,5 +182,42 @@ export interface PaginatedResponse<T> {
     total: number;
 }
 
+export type ProductStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface Category {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    status: string;
+}
+
+export interface Product {
+    id: number;
+    sku: string;
+    name: string;
+    description: string | null;
+    category_id: number | null;
+    category?: Category | null;
+    unit: string;
+    status: ProductStatus;
+    status_label?: string;
+    status_badge_variant?: string;
+    can_order?: boolean;
+    cost_price: number | null;
+    minimum_allowed_price: number;
+    default_selling_price: number;
+    mrp: number;
+    tax_profile_id: number | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ProductStatusOption {
+    value: ProductStatus;
+    label: string;
+    badgeVariant?: string;
+}
 
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & SharedProps;
+

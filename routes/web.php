@@ -100,5 +100,22 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::put('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'update'])->name('salesmen.update');
         Route::patch('/salesmen/{salesman}/status', [\App\Http\Controllers\Salesman\SalesmanController::class, 'updateStatus'])->name('salesmen.status');
     });
+
+    // Product Management
+    Route::middleware('permission:product.view')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
+        Route::get('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->name('products.show');
+    });
+
+    Route::middleware('permission:product.create')->group(function () {
+        Route::get('/products-create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
+        Route::post('/products', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
+    });
+
+    Route::middleware('permission:product.update')->group(function () {
+        Route::get('/products/{product}/edit', [\App\Http\Controllers\Product\ProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])->name('products.update');
+        Route::patch('/products/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.status');
+    });
 });
 

@@ -293,11 +293,36 @@
 - [x] **Empty Portfolio Clean Handling:** Salesman with zero assigned customers receives clean paginator (`total: 0`, `data: []`) (`SLM-SCOPE-026`).
 
 ### 1.5 Product & Category Management (`PRODUCT` & `CAT`)
-- [ ] **Happy Path:** Admin creates product with SKU, cost, list price, default selling price, minimum price, and tax profile.
-- [ ] **Validation:** Duplicate SKU rejected; minimum price > MRP rejected.
-- [ ] **Security:** Product image upload validated for file size ($\le 5\text{MB}$) and MIME type.
-- [ ] **State Transition:** Deactivating product blocks new order creation; historical orders remain intact.
-- [ ] **Responsive:** Product catalog grid with lazy-loaded images on Desktop and Mobile.
+
+### 1.5.1 Product Master CRUD (`PRODUCT` / `FEAT-PROD-001`)
+- [x] **Super Admin & Admin Directory Access:** Super Admin and Admin can access product catalog and creation capabilities (`PROD-CRUD-001`).
+- [x] **Salesman & Warehouse Manager Catalog Access:** Salesman and Warehouse Manager can view product catalog read-only with creation actions hidden (`PROD-CRUD-002`).
+- [x] **Accountant & Delivery Partner Forbidden:** Roles without `product.view` (`ACCOUNTANT`, `DELIVERY_PARTNER`) rejected with 403 Forbidden (`PROD-CRUD-003`).
+- [x] **Authorized Product Creation:** Admin creates master product with valid attributes and commercial pricing hierarchy (`PROD-CRUD-004`).
+- [x] **SKU Uppercase Normalization & Trimming:** SKUs trimmed and normalized to uppercase on server (`PROD-CRUD-005`).
+- [x] **Sequential SKU Auto-Generation:** Sequential SKU generated when SKU omitted (`PROD-00001`, `PROD-00002`...) (`PROD-CRUD-006`).
+- [x] **Duplicate SKU Rejection:** Duplicate SKU rejected at validation layer and guarded by PostgreSQL unique index (`PROD-CRUD-007`).
+- [x] **Pricing Hierarchy - Cost Price gte 0:** Negative cost price rejected with 422 Unprocessable Entity (`PROD-CRUD-008`).
+- [x] **Pricing Hierarchy - Minimum Allowed Price gt 0:** Zero or negative minimum price rejected with 422 (`PROD-CRUD-009`).
+- [x] **Pricing Hierarchy - Default Selling gte Minimum Allowed:** Selling price below minimum allowed rejected with 422 (`PROD-CRUD-010`).
+- [x] **Pricing Hierarchy - MRP gte Default Selling:** MRP below default selling price rejected with 422 (`PROD-CRUD-011`).
+- [x] **Pricing Hierarchy - Equal Boundaries Allowed:** Flat pricing boundary (`min = selling = mrp`) allowed (`PROD-CRUD-012`).
+- [x] **Unauthorized Creation Rejection:** Salesman and Warehouse Manager cannot create products (403 Forbidden) (`PROD-CRUD-013`).
+- [x] **Authoritative Cost Visibility for Admin:** Admin views product detail with authoritative `cost_price` (`PROD-CRUD-014`).
+- [x] **Sensitive Cost Price Masking:** Salesman and Warehouse Manager receive masked (`null`) `cost_price` to prevent commercial leak (`PROD-CRUD-015`).
+- [x] **Authorized General Metadata Update:** Admin updates product name, unit, description, and category classification (`PROD-CRUD-016`).
+- [x] **Authorized Pricing Update:** Actor with `product.price.update` updates commercial pricing bounds (`PROD-CRUD-017`).
+- [x] **Pricing Hierarchy Violation Rejection on Update:** Update violating $0 \le \text{cost}$, $0 < \text{min} \le \text{selling} \le \text{mrp}$ rejected with 422 (`PROD-CRUD-018`).
+- [x] **Unauthorized Update Denial:** Salesman cannot update product attributes or pricing (403 Forbidden) (`PROD-CRUD-019`).
+- [x] **Lifecycle Status Transition:** Admin transitions product between `ACTIVE` and `INACTIVE` with audit trail (`PROD-CRUD-020`).
+- [x] **Lifecycle No-Op Suppression:** Redundant lifecycle status transition produces zero database writes and zero duplicate audits (`PROD-CRUD-021`).
+- [x] **Future Order Readiness Contract - Active:** `Product::ensureCanOrder()` completes normally for active product (`PROD-CRUD-022`).
+- [x] **Future Order Readiness Contract - Inactive:** `Product::ensureCanOrder()` throws `ValidationException` for inactive product (`PROD-CRUD-023`).
+- [x] **Directory Search:** Case-insensitive search matches SKU, name, and description (`PROD-CRUD-024`).
+- [x] **Directory Filter by Status & Category:** Filtering by lifecycle status (`ACTIVE`, `INACTIVE`) and category ID filters accurately (`PROD-CRUD-025`).
+- [x] **Referential Integrity Safety:** Category deletion nulls `products.category_id` without deleting product record (`PROD-CRUD-026`).
+- [x] **Physical Deletion Prohibited:** `ProductPolicy::delete()` returns `false` to preserve historical referential integrity (`PROD-CRUD-027`).
+- [x] **Authoritative Audit Logging:** Structured audit events (`PRODUCT_CREATED`, `PRODUCT_UPDATED`, `PRODUCT_PRICING_UPDATED`, `PRODUCT_ACTIVATED`, `PRODUCT_DEACTIVATED`) logged with actor and product context (`PROD-CRUD-028`).
 
 ### 1.6 Pricing Engine (`PRICING`)
 - [ ] **Happy Path:** Salesman selects actual selling price within allowed bounds (`min_price <= price <= mrp`).
