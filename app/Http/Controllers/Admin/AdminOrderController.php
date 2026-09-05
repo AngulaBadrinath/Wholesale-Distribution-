@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AccountStatus;
 use App\Enums\AdjustmentStatus;
+use App\Enums\CustomerStatus;
 use App\Enums\DeliveryStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\Permission;
+use App\Enums\ProductStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\AdminOrderQueueRequest;
@@ -426,6 +428,256 @@ class AdminOrderController extends Controller
             'backUrl' => '/admin/orders',
             'backLabel' => 'Back to Order Queue',
         ]);
+    }
+
+    /**
+     * Display the dedicated New Order Review Workspace for administrative evaluation.
+     * Accessible only for orders in reviewable states (SUBMITTED, PENDING_APPROVAL).
+     */
+    public function review(Order $order, Request $request): Response|\Illuminate\Http\RedirectResponse
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
+
+        // Salesmen are strictly denied from the admin review workspace
+        if ($actor->role === UserRole::SALESMAN) {
+            throw new AuthorizationException('Salesmen are not authorized to access the admin order review workspace.');
+        }
+
+        // Draft orders are strictly excluded from admin review (fail-closed draft isolation)
+        if ($order->status === OrderStatus::DRAFT) {
+            abort(404, 'Draft orders cannot be reviewed in the administrative workspace.');
+        }
+
+        // Check review eligibility: only SUBMITTED or PENDING_APPROVAL orders are in the initial review stage
+        $reviewableStatuses = [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL];
+        if (! in_array($order->status, $reviewableStatuses, true)) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('info', "Order {$order->order_number} has already been {$order->status->label()} and is no longer pending initial review.");
+        }
+
+        // Bounded eager loading (strictly omitting cost_price from product selection)
+        $order->load([
+            'customer:id,code,name,contact_name,email,phone,billing_address_line1,billing_address_line2,billing_city,billing_state,billing_postal_code,billing_country,shipping_address_line1,shipping_address_line2,shipping_city,shipping_state,shipping_postal_code,shipping_country,tax_id,credit_limit,payment_terms,status',
+            'salesman:id,name,email',
+            'creator:id,name,email',
+            'approver:id,name',
+            'canceller:id,name',
+            'items' => fn ($q) => $q->orderBy('id', 'asc'),
+            'items.product:id,sku,name,status,minimum_allowed_price,mrp,default_selling_price',
+            'items.priceOverrideApprover:id,name',
+        ]);
+
+        // Compute review warnings/blockers deterministically
+        $warnings = $this->buildReviewWarnings($order);
+        $hasBlockers = collect($warnings)->contains('severity', 'blocker');
+
+        // Multi-line tax breakdown aggregation
+        $taxBreakdown = [];
+        foreach ($order->items as $item) {
+            $code = $item->tax_profile_code_snapshot;
+            if (! isset($taxBreakdown[$code])) {
+                $taxBreakdown[$code] = [
+                    'code' => $code,
+                    'name' => $item->tax_profile_name_snapshot,
+                    'rate' => number_format((float) $item->tax_rate_snapshot, 2, '.', ''),
+                    'formatted_rate' => rtrim(rtrim((string) $item->tax_rate_snapshot, '0'), '.') . '%',
+                    'taxable_amount' => '0.00',
+                    'tax_amount' => '0.00',
+                ];
+            }
+            $taxBreakdown[$code]['taxable_amount'] = bcadd($taxBreakdown[$code]['taxable_amount'], (string) $item->taxable_amount, 2);
+            $taxBreakdown[$code]['tax_amount'] = bcadd($taxBreakdown[$code]['tax_amount'], (string) $item->tax_amount, 2);
+        }
+
+        $customer = $order->customer;
+        $creditLimit = (float) $customer->credit_limit;
+
+        return Inertia::render('Admin/Orders/Review', [
+            'reviewData' => [
+                'order' => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status->value,
+                    'status_label' => $order->status->label(),
+                    'status_badge_variant' => $order->status->badgeVariant(),
+                    'fulfillment_status' => $order->fulfillment_status?->value,
+                    'fulfillment_status_label' => $order->fulfillment_status?->label(),
+                    'fulfillment_badge_variant' => $order->fulfillment_status?->badgeVariant(),
+                    'payment_status' => $order->payment_status?->value,
+                    'payment_status_label' => $order->payment_status?->label(),
+                    'payment_badge_variant' => $order->payment_status?->badgeVariant(),
+                    'delivery_status' => $order->delivery_status?->value,
+                    'delivery_status_label' => $order->delivery_status?->label(),
+                    'delivery_badge_variant' => $order->delivery_status?->badgeVariant(),
+                    'adjustment_status' => $order->adjustment_status?->value,
+                    'adjustment_status_label' => $order->adjustment_status?->label(),
+                    'adjustment_badge_variant' => $order->adjustment_status?->badgeVariant(),
+                    'currency' => $order->currency ?? 'USD',
+                    'subtotal' => (string) $order->subtotal,
+                    'tax_total' => (string) $order->tax_total,
+                    'adjustment_total' => (string) $order->adjustment_total,
+                    'grand_total' => (string) $order->grand_total,
+                    'notes' => $order->notes,
+                    'submitted_at' => $order->submitted_at?->toIso8601String(),
+                    'submitted_at_formatted' => $order->submitted_at ? $order->submitted_at->format('M d, Y H:i') : null,
+                    'submitted_at_relative' => $order->submitted_at ? $order->submitted_at->diffForHumans() : null,
+                    'created_at' => $order->created_at->toIso8601String(),
+                    'is_reviewable' => true,
+                ],
+                'customer' => [
+                    'id' => $customer->id,
+                    'code' => $customer->code,
+                    'name' => $customer->name,
+                    'contact_name' => $customer->contact_name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                    'billing_address' => $customer->formatted_billing_address,
+                    'shipping_address' => $customer->formatted_shipping_address,
+                    'tax_id' => $customer->tax_id,
+                    'credit_limit' => $customer->credit_limit !== null ? number_format((float) $customer->credit_limit, 2, '.', '') : null,
+                    'payment_terms' => $customer->payment_terms?->label(),
+                    'status' => $customer->status->value,
+                    'status_label' => $customer->status->label(),
+                    'is_on_hold' => $customer->status === CustomerStatus::ON_HOLD,
+                    'is_active' => $customer->status === CustomerStatus::ACTIVE,
+                ],
+                'salesman' => [
+                    'id' => $order->salesman->id,
+                    'name' => $order->salesman->name,
+                    'email' => $order->salesman->email,
+                ],
+                'items' => $order->items->map(function (OrderItem $item) {
+                    $catalogProduct = $item->product;
+
+                    return [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name_snapshot,
+                        'sku' => $item->sku_snapshot,
+                        'unit' => $item->unit_snapshot,
+                        'ordered_quantity' => $item->ordered_quantity,
+                        'cancelled_quantity' => $item->cancelled_quantity,
+                        'unit_price' => (string) $item->unit_price,
+                        'is_price_overridden' => (bool) $item->is_price_overridden,
+                        'price_override_reason' => $item->price_override_reason,
+                        'price_override_approver' => $item->priceOverrideApprover ? [
+                            'id' => $item->priceOverrideApprover->id,
+                            'name' => $item->priceOverrideApprover->name,
+                        ] : null,
+                        'tax_profile_code' => $item->tax_profile_code_snapshot,
+                        'tax_profile_name' => $item->tax_profile_name_snapshot,
+                        'tax_rate' => number_format((float) $item->tax_rate_snapshot, 2, '.', ''),
+                        'formatted_tax_rate' => rtrim(rtrim((string) $item->tax_rate_snapshot, '0'), '.') . '%',
+                        'taxable_amount' => (string) $item->taxable_amount,
+                        'tax_amount' => (string) $item->tax_amount,
+                        'line_total' => (string) $item->line_total,
+                        'catalog_product' => $catalogProduct ? [
+                            'name' => $catalogProduct->name,
+                            'status' => $catalogProduct->status->value,
+                            'is_active' => $catalogProduct->status === ProductStatus::ACTIVE,
+                            'minimum_allowed_price' => (string) $catalogProduct->minimum_allowed_price,
+                            'mrp' => (string) $catalogProduct->mrp,
+                            'default_selling_price' => (string) $catalogProduct->default_selling_price,
+                        ] : null,
+                    ];
+                }),
+                'tax_breakdown' => array_values($taxBreakdown),
+                'warnings' => $warnings,
+                'has_blockers' => $hasBlockers,
+                'timeline' => $this->buildOrderTimeline($order),
+                'can' => [
+                    'approve' => $this->permissionService->has($actor, Permission::ORDER_APPROVE),
+                    'reject' => $this->permissionService->has($actor, Permission::ORDER_REJECT),
+                ],
+            ],
+            'backUrl' => '/admin/orders?queue=new',
+            'backLabel' => 'Back to New Orders Queue',
+        ]);
+    }
+
+    /**
+     * Compute deterministic review warnings based on authoritative domain state.
+     *
+     * @return array<int, array<string, string>>
+     */
+    protected function buildReviewWarnings(Order $order): array
+    {
+        $warnings = [];
+
+        // 1. Customer on Hold (Blocker)
+        if ($order->customer->status === CustomerStatus::ON_HOLD) {
+            $warnings[] = [
+                'code' => 'CUSTOMER_ON_HOLD',
+                'severity' => 'blocker',
+                'title' => 'Customer Account On Hold',
+                'description' => 'The customer account has been placed on hold. Orders cannot be approved until customer account status is restored to active.',
+                'action_text' => 'View Customer',
+                'action_url' => "/customers/{$order->customer_id}",
+            ];
+        }
+
+        // 2. Customer Inactive (Blocker)
+        if ($order->customer->status === CustomerStatus::INACTIVE) {
+            $warnings[] = [
+                'code' => 'CUSTOMER_INACTIVE',
+                'severity' => 'blocker',
+                'title' => 'Customer Account Inactive',
+                'description' => 'The customer account has been deactivated. New orders cannot proceed.',
+                'action_text' => 'View Customer',
+                'action_url' => "/customers/{$order->customer_id}",
+            ];
+        }
+
+        // 3. Credit Limit Exceeded (Warning)
+        $creditLimit = (float) $order->customer->credit_limit;
+        if ($creditLimit > 0 && bccomp((string) $order->grand_total, (string) $creditLimit, 2) === 1) {
+            $formattedLimit = '$' . number_format($creditLimit, 2);
+            $formattedTotal = '$' . number_format((float) $order->grand_total, 2);
+            $warnings[] = [
+                'code' => 'CREDIT_LIMIT_EXCEEDED',
+                'severity' => 'warning',
+                'title' => 'Credit Limit Exceeded',
+                'description' => "Order grand total ({$formattedTotal}) exceeds the customer's approved credit limit ({$formattedLimit}).",
+            ];
+        }
+
+        // 4. Authorized Price Override Present (Notice)
+        $overrideItems = $order->items->filter(fn ($item) => (bool) $item->is_price_overridden);
+        if ($overrideItems->isNotEmpty()) {
+            $count = $overrideItems->count();
+            $warnings[] = [
+                'code' => 'PRICE_OVERRIDE_PRESENT',
+                'severity' => 'info',
+                'title' => 'Authorized Price Overrides',
+                'description' => "This order contains {$count} line item(s) sold with authorized price overrides outside standard pricing boundaries.",
+            ];
+        }
+
+        // 5. Order Aging (Warning)
+        if ($order->submitted_at && $order->submitted_at->lessThan(Carbon::now()->subHours(24))) {
+            $ageString = $order->submitted_at->diffForHumans();
+            $warnings[] = [
+                'code' => 'AGING_ORDER',
+                'severity' => 'warning',
+                'title' => 'Aging Order (Pending > 24 Hours)',
+                'description' => "This order was submitted {$ageString} and has been awaiting review for over 24 hours.",
+            ];
+        }
+
+        // 6. Inactive Catalog Product (Blocker)
+        $inactiveItems = $order->items->filter(fn ($item) => $item->product && $item->product->status === ProductStatus::INACTIVE);
+        if ($inactiveItems->isNotEmpty()) {
+            $names = $inactiveItems->pluck('product_name_snapshot')->implode(', ');
+            $warnings[] = [
+                'code' => 'PRODUCT_INACTIVE',
+                'severity' => 'blocker',
+                'title' => 'Product Deactivated in Catalog',
+                'description' => "The following ordered product(s) were deactivated in the product master after submission: {$names}.",
+            ];
+        }
+
+        return $warnings;
     }
 
     /**

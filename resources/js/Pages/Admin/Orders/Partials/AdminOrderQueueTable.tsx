@@ -15,6 +15,7 @@ import {
     User,
     Building2,
     Package,
+    FileText,
 } from 'lucide-react';
 
 interface AdminOrderQueueTableProps {
@@ -261,16 +262,29 @@ export default function AdminOrderQueueTable({
 
                                     {/* Action */}
                                     <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                                        <Link href={`/admin/orders/${order.id}`}>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 min-h-[32px] px-2.5 text-xs gap-1 hover:bg-primary hover:text-primary-foreground"
-                                            >
-                                                <Eye className="h-3.5 w-3.5" />
-                                                <span>View</span>
-                                            </Button>
-                                        </Link>
+                                        {['SUBMITTED', 'PENDING_APPROVAL'].includes(order.status) ? (
+                                            <Link href={`/admin/orders/${order.id}/review`}>
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    className="h-8 min-h-[32px] px-2.5 text-xs gap-1 shadow-sm"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    <span>Review</span>
+                                                </Button>
+                                            </Link>
+                                        ) : (
+                                            <Link href={`/admin/orders/${order.id}`}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 min-h-[32px] px-2.5 text-xs gap-1 hover:bg-primary hover:text-primary-foreground"
+                                                >
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    <span>View</span>
+                                                </Button>
+                                            </Link>
+                                        )}
                                     </td>
                                 </tr>
                             );

@@ -80,6 +80,14 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {['SUBMITTED', 'PENDING_APPROVAL'].includes(order.status) && backUrl === '/admin/orders' && (
+                            <Link href={`/admin/orders/${order.id}/review`}>
+                                <Button size="sm" className="text-xs gap-1.5 shadow-sm">
+                                    <FileText className="h-3.5 w-3.5" />
+                                    <span>Open Review Workspace</span>
+                                </Button>
+                            </Link>
+                        )}
                         <Link href="/customers">
                             <Button variant="outline" size="sm" className="text-xs">
                                 Customer Accounts

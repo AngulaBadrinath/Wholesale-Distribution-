@@ -370,3 +370,115 @@ export interface OrderFinancialPreview {
     grandTotal: string;
 }
 
+export interface ReviewWarning {
+    code: 'CUSTOMER_ON_HOLD' | 'CUSTOMER_INACTIVE' | 'CREDIT_LIMIT_EXCEEDED' | 'PRICE_OVERRIDE_PRESENT' | 'AGING_ORDER' | 'PRODUCT_INACTIVE';
+    severity: 'blocker' | 'warning' | 'info';
+    title: string;
+    description: string;
+    action_text?: string;
+    action_url?: string;
+}
+
+export interface AdminOrderReviewItem {
+    id: number;
+    product_id: number;
+    product_name: string;
+    sku: string;
+    unit: string;
+    ordered_quantity: number;
+    cancelled_quantity: number;
+    unit_price: string;
+    is_price_overridden: boolean;
+    price_override_reason: string | null;
+    price_override_approver: {
+        id: number;
+        name: string;
+    } | null;
+    tax_profile_code: string;
+    tax_profile_name: string;
+    tax_rate: string;
+    formatted_tax_rate: string;
+    taxable_amount: string;
+    tax_amount: string;
+    line_total: string;
+    catalog_product: {
+        name?: string;
+        status: string;
+        is_active: boolean;
+        minimum_allowed_price: string;
+        mrp: string;
+        default_selling_price?: string;
+    } | null;
+}
+
+export interface AdminOrderReviewData {
+    order: {
+        id: number;
+        order_number: string;
+        status: OrderStatus;
+        status_label: string;
+        status_badge_variant: string;
+        fulfillment_status: FulfillmentStatus | null;
+        fulfillment_status_label: string | null;
+        fulfillment_badge_variant: string | null;
+        payment_status: PaymentStatus | null;
+        payment_status_label: string | null;
+        payment_badge_variant: string | null;
+        delivery_status: DeliveryStatus | null;
+        delivery_status_label: string | null;
+        delivery_badge_variant: string | null;
+        adjustment_status: AdjustmentStatus | null;
+        adjustment_status_label: string | null;
+        adjustment_badge_variant: string | null;
+        currency: string;
+        subtotal: string;
+        tax_total: string;
+        adjustment_total: string;
+        grand_total: string;
+        notes: string | null;
+        submitted_at: string | null;
+        submitted_at_formatted: string | null;
+        submitted_at_relative: string | null;
+        created_at: string;
+        is_reviewable: boolean;
+    };
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        contact_name: string | null;
+        email: string | null;
+        phone: string | null;
+        billing_address: string;
+        shipping_address: string;
+        tax_id: string | null;
+        credit_limit: number;
+        payment_terms: string | null;
+        status: string;
+        status_label: string;
+        is_on_hold: boolean;
+        is_active: boolean;
+    };
+    salesman: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    items: AdminOrderReviewItem[];
+    tax_breakdown: Array<{
+        code: string;
+        name: string;
+        rate: string;
+        formatted_rate: string;
+        taxable_amount: string;
+        tax_amount: string;
+    }>;
+    warnings: ReviewWarning[];
+    has_blockers: boolean;
+    timeline: OrderTimelineEvent[];
+    can: {
+        approve: boolean;
+        reject: boolean;
+    };
+}
+

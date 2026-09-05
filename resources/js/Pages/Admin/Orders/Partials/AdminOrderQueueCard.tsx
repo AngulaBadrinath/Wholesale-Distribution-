@@ -149,15 +149,28 @@ export default function AdminOrderQueueCard({ order }: AdminOrderQueueCardProps)
                         </span>
                     </div>
 
-                    <Link href={`/admin/orders/${order.id}`}>
-                        <Button
-                            size="sm"
-                            className="min-h-[44px] px-4 text-xs gap-1.5 font-medium"
-                        >
-                            <span>Open Order</span>
-                            <ArrowRight className="h-3.5 w-3.5" />
-                        </Button>
-                    </Link>
+                    {['SUBMITTED', 'PENDING_APPROVAL'].includes(order.status) ? (
+                        <Link href={`/admin/orders/${order.id}/review`}>
+                            <Button
+                                size="sm"
+                                className="min-h-[44px] px-4 text-xs gap-1.5 font-medium shadow-sm"
+                            >
+                                <span>Review Order</span>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                            </Button>
+                        </Link>
+                    ) : (
+                        <Link href={`/admin/orders/${order.id}`}>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="min-h-[44px] px-4 text-xs gap-1.5 font-medium"
+                            >
+                                <span>Open Order</span>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </CardContent>
         </Card>

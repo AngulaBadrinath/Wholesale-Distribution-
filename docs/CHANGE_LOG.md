@@ -326,6 +326,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-011: FEAT-ORD-011 New Order Review Workspace
+- **Change ID:** `CHANGE-011`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the dedicated New Order Review Workspace (`GET /admin/orders/{order}/review`) for administrative evaluation and readiness inspection of orders in reviewable states (`SUBMITTED`, `PENDING_APPROVAL`). Strictly enforce read-only boundary (no approval, rejection, hold mutation, inventory reservation, or payment verification state transitions). Enforce server-authoritative RBAC (`order.view` permission; `ADMIN` and `SUPER_ADMIN` granted readiness capabilities; `ACCOUNTANT` granted read-only access with `can.approve = false`, `can.reject = false`; `SALESMAN` strictly denied with HTTP 403 Forbidden). Fail-closed draft isolation returns HTTP 404 Not Found for drafts (`status = DRAFT`). Post-review orders (`APPROVED`, `COMPLETED`, `CANCELLED`, `REJECTED`) redirect to `/admin/orders/{order}` with informative notification. Implement bounded eager loading strictly omitting `cost_price` and private payment evidence. Derive deterministic review warnings server-side (`CUSTOMER_ON_HOLD` [blocker], `CUSTOMER_INACTIVE` [blocker], `CREDIT_LIMIT_EXCEEDED` [warning], `PRICE_OVERRIDE_PRESENT` [notice], `AGING_ORDER` [warning > 24h], `PRODUCT_INACTIVE` [blocker]). Separate historical order-time snapshots (`unit_price`, `ordered_quantity`, line tax snapshot, override metadata) from contextual catalog master properties. Render independent 5 status dimensions (`order`, `fulfillment`, `payment`, `delivery`, `adjustment`). Provide responsive 12-column desktop command layout, adaptive tablet views, and purpose-built mobile cards with >=44px touch targets.
+- **Reason:** Provide administrators with an authoritative, risk-free pre-approval evaluation cockpit to audit line items, customer credit, authorized pricing overrides, and operational warnings before committing state mutations.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §25.2 (Admin Order Operations), §25.4 (New Order Review Workspace).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.6 (Multi-Dimension Status Model), §18 (Database & Transaction Integrity).
+- **Affected Security:** Strict server-side zero-trust security architecture (`RULE-SEC-001`, `RULE-SEC-002`); permission `order.view` verified; Salesman role denied from Admin routes with 403 Forbidden; zero exposure of `cost_price`, purchase cost, or private payment evidence photos/keys (`RULE-PRI-001`, `RULE-PAY-002`).
+- **Affected Frontend:** `resources/js/Pages/Admin/Orders/Review.tsx`, `resources/js/Pages/Admin/Orders/Partials/*` (`ReviewActionHeader.tsx`, `ReviewAlerts.tsx`, `ReviewCustomerCard.tsx`, `ReviewItemsTable.tsx`, `ReviewItemsCards.tsx`, `ReviewFinancialSummary.tsx`), `resources/js/types/order.ts`, `resources/js/Pages/Admin/Orders/Partials/AdminOrderQueueTable.tsx`, `resources/js/Pages/Admin/Orders/Partials/AdminOrderQueueCard.tsx`, `resources/js/Pages/Salesman/Orders/Show.tsx`.
+- **Affected Tickets:** `FEAT-ORD-011` completed.
+- **Inventory Impact:** None (reservation deferred to FEAT-ORD-012/FEAT-INV-003).
+- **Order Impact:** Standardized pre-approval review evaluation cockpit with fail-closed draft 404 isolation and post-review redirection.
+- **Payment Impact:** None; high-level payment status rendered read-only; payment evidence withheld.
+- **Tax Impact:** None; line tax snapshots displayed immutably; multi-line tax profiles aggregated deterministically.
+- **Accounting Impact:** Accountant granted read-only operational evaluation visibility via `order.view`.
+- **Data Migration Impact:** None (existing schema and snapshots fully support review workspace).
+- **Testing Impact:** Added 26 comprehensive automated tests in `AdminOrderReviewTest.php`. Full test suite at 701 tests (4,557 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-011`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

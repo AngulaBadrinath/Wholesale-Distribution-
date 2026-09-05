@@ -554,6 +554,34 @@
 - [x] **Admin Order Detail Safe Routing:** Admin can view order details via `/admin/orders/{order}` with safe return navigation, while salesmen are denied (`ORD-QUEUE-028`).
 - [x] **Bounded Query Execution (No N+1):** Queue workspace executes in bounded SQL queries regardless of item count using selective eager loading and count aggregation (`ORD-QUEUE-029`).
 
+### 1.8.7 New Order Review Workspace (`ADMIN ORDER REVIEW` / `FEAT-ORD-011`)
+- [x] **Admin Review Workspace Access:** Administrator accesses review workspace for `SUBMITTED` order (`ORD-REV-001`).
+- [x] **Super Admin Global Review Access:** Super Admin accesses review workspace with full capabilities (`ORD-REV-002`).
+- [x] **Accountant Read-Only Evaluation:** Accountant accesses review workspace with read-only capabilities (`can.approve = false`, `can.reject = false`) (`ORD-REV-003`).
+- [x] **Admin Readiness Capabilities:** Admin is provided workflow readiness capabilities (`can.approve = true`, `can.reject = true`) (`ORD-REV-004`).
+- [x] **Salesman Strict Access Denial (403):** Salesmen are strictly denied access to `/admin/orders/{order}/review` (`ORD-REV-005`).
+- [x] **Unauthenticated Redirection:** Guests accessing review workspace are redirected to login (`ORD-REV-006`).
+- [x] **Inactive Account Interception:** Inactive/suspended admin accounts are denied access (`ORD-REV-007`).
+- [x] **Draft Order Isolation (404):** Draft orders (`status = DRAFT`) return 404 Not Found (`ORD-REV-008`).
+- [x] **Pending Approval Review Eligibility:** Orders in `PENDING_APPROVAL` status are reviewable (`ORD-REV-009`).
+- [x] **Post-Review State Redirection (APPROVED):** Already approved orders redirect to `/admin/orders/{order}` with informative message (`ORD-REV-010`).
+- [x] **Post-Review State Redirection (COMPLETED):** Completed orders redirect to detail view with informative message (`ORD-REV-011`).
+- [x] **Post-Review State Redirection (CANCELLED):** Cancelled orders redirect to detail view with informative message (`ORD-REV-012`).
+- [x] **Post-Review State Redirection (REJECTED):** Rejected orders redirect to detail view with informative message (`ORD-REV-013`).
+- [x] **Non-Existent Order IDOR Protection (404):** Non-existent order IDs safely return 404 (`ORD-REV-014`).
+- [x] **Zero Cost Price Leakage:** Neither `cost_price` nor purchase cost data are exposed in props or JSON payloads (`ORD-REV-015`).
+- [x] **Zero Payment Evidence or Secrets Leakage:** Private payment evidence, storage keys, and presigned URLs strictly omitted (`ORD-REV-016`).
+- [x] **Immutable Historical Order & Item Snapshots:** Changing product master names or prices does not overwrite historical snapshots (`ORD-REV-017`).
+- [x] **Authorized Price Override Auditing:** Price override authorizer identity and business reason exposed without revealing cost prices (`ORD-REV-018`).
+- [x] **Deterministic Multi-Line Tax Aggregation:** Line-item tax profiles aggregated accurately into grouped tax breakdown (`ORD-REV-019`).
+- [x] **Warning Engine - Customer On Hold:** Customer on hold deterministically flagged as a review blocker (`ORD-REV-020`).
+- [x] **Warning Engine - Customer Inactive:** Inactive customer deterministically flagged as a review blocker (`ORD-REV-021`).
+- [x] **Warning Engine - Credit Limit Exceeded:** Grand total exceeding approved credit limit flagged as an operational warning (`ORD-REV-022`).
+- [x] **Warning Engine - Price Override Present:** Presence of authorized price overrides flagged as an operational notice (`ORD-REV-023`).
+- [x] **Warning Engine - Aging Order:** Orders awaiting review for > 24 hours deterministically flagged with aging warning (`ORD-REV-024`).
+- [x] **Warning Engine - Deactivated Catalog Product:** Products deactivated in catalog master flagged as blockers (`ORD-REV-025`).
+- [x] **Bounded Query Execution (No N+1):** Review workspace queries execute within bounded limits using selective eager loading (`ORD-REV-026`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

@@ -168,9 +168,10 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'index'])->name('salesman.orders.index');
         Route::get('/salesman/orders/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'show'])->whereNumber('order')->name('salesman.orders.show');
 
-        // Admin Operational Order Queues
+        // Admin Operational Order Queues & Review Workspace
         Route::get('/admin/orders', [\App\Http\Controllers\Admin\AdminOrderController::class, 'index'])->name('admin.orders.index');
         Route::get('/admin/orders/{order}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->whereNumber('order')->name('admin.orders.show');
+        Route::get('/admin/orders/{order}/review', [\App\Http\Controllers\Admin\AdminOrderController::class, 'review'])->whereNumber('order')->name('admin.orders.review');
     });
 });
 
