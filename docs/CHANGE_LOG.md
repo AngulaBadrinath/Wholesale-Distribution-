@@ -299,6 +299,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-010: FEAT-ORD-010 Admin Order Queue Framework
+- **Change ID:** `CHANGE-010`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the flagship Admin Order Queue Workspace (`GET /admin/orders`) and authorization-safe detail inspection route (`GET /admin/orders/{order}`) across 8 operational queues: `New Orders`, `Needs Attention`, `Processing`, `Delivery`, `Adjustments`, `Completed`, `Cancelled`, and `All Orders`. Enforce 100% server-authoritative RBAC (`order.view` permission; `ADMIN`, `SUPER_ADMIN`, and `ACCOUNTANT` granted access; `SALESMAN` strictly denied with HTTP 403 Forbidden). Draft orders (`status = DRAFT`) are strictly excluded from all queues. Compute live queue badge counts in a single consolidated SQL aggregation query. Support multi-column parameterized search (`order_number`, customer `name`, customer `code`, salesman `name`), independent status dimension filtering (`status`, `fulfillment_status`, `payment_status`, `delivery_status`, `adjustment_status`), salesman and customer filtering, date range filtering (`date_from`, `date_to`), allowlisted sorting (`submitted_at`, `order_number`, `customer_name`, `grand_total`, `status`), and bounded 25/page pagination with query string preservation. Enforce zero leakage of sensitive data (`cost_price`, private S3 payment evidence photos/URLs). Provide responsive desktop dense table, tablet layout, and mobile cards ($\ge 44\text{px}$ touch targets, zero horizontal scrolling) adhering to WCAG 2.1 AA.
+- **Reason:** Provide operations, logistics, customer service, and accounting with an auditable, high-density, real-time command center to monitor orders across all operational stages from placement to delivery and payment.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §25.2 (Admin Order Operations), §25.3 (Operational Queues).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.6 (Multi-Dimension Status Model), §18 (Database & Transaction Integrity).
+- **Affected Security:** Zero client trust (`RULE-SEC-001`, `RULE-SEC-002`); permission `order.view` verified; Salesman role denied from Admin routes with 403 Forbidden; zero exposure of `cost_price` or private cheque/money-order payment evidence (`RULE-PRI-001`, `RULE-PAY-002`).
+- **Affected Frontend:** `resources/js/Pages/Admin/Orders/Index.tsx`, `resources/js/Pages/Admin/Orders/Partials/*` (`AdminOrderQueueTabs.tsx`, `AdminOrderQueueFilters.tsx`, `AdminOrderQueueTable.tsx`, `AdminOrderQueueCard.tsx`), `resources/js/types/order.ts`, `resources/js/Pages/Salesman/Orders/Show.tsx`, `resources/js/Layouts/AppLayout.tsx`.
+- **Affected Tickets:** `FEAT-ORD-010` completed.
+- **Inventory Impact:** None (reservation deferred to FEAT-ORD-012/FEAT-INV-003).
+- **Order Impact:** Standardized 8-partition operational queue engine over the single PostgreSQL order source of truth.
+- **Payment Impact:** Payment status monitored across all queues; private payment evidence withheld from queue payload.
+- **Tax Impact:** None; line tax snapshots displayed immutably.
+- **Accounting Impact:** Accountant granted read-only operational visibility via `order.view`.
+- **Data Migration Impact:** None (existing table schema and indexes fully support all query paths).
+- **Testing Impact:** Added 29 comprehensive automated tests in `AdminOrderQueueTest.php`. Full test suite at 675 tests (4,270 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-010`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

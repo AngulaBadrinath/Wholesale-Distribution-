@@ -24,9 +24,11 @@ import {
 
 interface OrderShowPageProps {
     order: OrderDetail;
+    backUrl?: string;
+    backLabel?: string;
 }
 
-export default function OrderShow({ order }: OrderShowPageProps) {
+export default function OrderShow({ order, backUrl = '/salesman/orders', backLabel = 'Back to Order History' }: OrderShowPageProps) {
     const totalUnits = order.items.reduce((sum, item) => sum + item.ordered_quantity, 0);
     const submittedDate = order.submitted_at ? new Date(order.submitted_at) : new Date(order.created_at);
 
@@ -38,19 +40,19 @@ export default function OrderShow({ order }: OrderShowPageProps) {
                 {/* Navigation Breadcrumb & Actions Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
                     <div className="flex items-center gap-2">
-                        <Link href="/salesman/orders">
+                        <Link href={backUrl}>
                             <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="h-3.5 w-3.5" />
-                                <span>Back to Order History</span>
+                                <span>{backLabel}</span>
                             </Button>
                         </Link>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Link href="/salesman/orders">
+                        <Link href={backUrl}>
                             <Button variant="outline" size="sm" className="gap-1.5 text-xs">
                                 <ListFilter className="h-3.5 w-3.5" />
-                                <span>All Orders</span>
+                                <span>{backUrl === '/admin/orders' ? 'Order Queue' : 'All Orders'}</span>
                             </Button>
                         </Link>
                         <Link href="/salesman/orders/create">

@@ -231,6 +231,75 @@ export interface OrderHistoryFilters {
     date_to?: string;
 }
 
+export interface AdminOrderQueueCounts {
+    new: number;
+    attention: number;
+    processing: number;
+    delivery: number;
+    adjustments: number;
+    completed: number;
+    cancelled: number;
+    all: number;
+}
+
+export interface AdminOrderQueueItem {
+    id: number;
+    order_number: string;
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        status: string;
+        phone: string | null;
+    } | null;
+    salesman: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
+    status: OrderStatus;
+    status_label: string;
+    status_badge_variant: string;
+    fulfillment_status: FulfillmentStatus | null;
+    fulfillment_status_label: string | null;
+    fulfillment_badge_variant: string | null;
+    payment_status: PaymentStatus | null;
+    payment_status_label: string | null;
+    payment_badge_variant: string | null;
+    delivery_status: DeliveryStatus | null;
+    delivery_status_label: string | null;
+    delivery_badge_variant: string | null;
+    adjustment_status: AdjustmentStatus | null;
+    adjustment_status_label: string | null;
+    adjustment_badge_variant: string | null;
+    item_count: number;
+    currency: string;
+    grand_total: string;
+    submitted_at: string | null;
+    submitted_at_formatted: string | null;
+    submitted_at_relative: string | null;
+    created_at: string;
+    attention_flags: string[];
+    notes: string | null;
+}
+
+export interface AdminOrderQueueFilters {
+    queue: string;
+    search?: string;
+    status?: string;
+    fulfillment_status?: string;
+    payment_status?: string;
+    delivery_status?: string;
+    adjustment_status?: string;
+    salesman_id?: string | number;
+    customer_id?: string | number;
+    date_from?: string;
+    date_to?: string;
+    sort_by?: string;
+    sort_direction?: string;
+    per_page?: number;
+}
+
 export interface OrderDraftSummary {
     id: number;
     draft_token: string;

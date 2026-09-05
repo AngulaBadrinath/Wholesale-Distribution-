@@ -108,7 +108,7 @@
 - [x] `FEAT-ORD-006`: Salesman Order History & Multi-State Timeline
 
 ### Admin Order Operations
-- [ ] `FEAT-ORD-010`: Admin Operational Order Queues (`New Orders`, `Active`, `Delivery`, `Adjustments`, `Completed`, `Cancelled`, `All`)
+- [x] `FEAT-ORD-010`: Admin Operational Order Queues (`New Orders`, `Needs Attention`, `Processing`, `Delivery`, `Adjustments`, `Completed`, `Cancelled`, `All Orders`)
 - [ ] `FEAT-ORD-011`: New Order Review Workspace
 - [ ] `FEAT-ORD-012`: Order Approval / Rejection Workflow with Audit
 - [ ] `FEAT-ORD-013`: Order Detail Master Workspace

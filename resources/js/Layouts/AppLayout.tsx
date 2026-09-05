@@ -37,6 +37,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasTaxManage = auth?.user?.permissions?.includes('product.tax.update') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasOrderCreate = auth?.user?.permissions?.includes('order.create') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasOrderView = auth?.user?.permissions?.includes('order.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
+    const hasAdminOrderQueue = (hasOrderView && ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) || false;
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -89,6 +90,15 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                     Orders & Sales
                                 </div>
                                 <nav className="space-y-1 mb-6">
+                                    {hasAdminOrderQueue && (
+                                        <Link
+                                            href="/admin/orders"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Layers className="h-4 w-4 text-primary" />
+                                            <span>Order Queue</span>
+                                        </Link>
+                                    )}
                                     {hasOrderView && (
                                         <Link
                                             href="/salesman/orders"

@@ -523,6 +523,37 @@
 - [x] **Invalid Filter Rejection (422):** Malformed status filter values rejected with 422 validation error (`ORD-HIST-021`).
 - [x] **Bounded Query Execution (No N+1):** History list query executes in bounded database queries using selective column eager loading and `withCount('items')` (`ORD-HIST-022`).
 
+### 1.8.6 Admin Order Queue Framework (`ADMIN ORDER QUEUE` / `FEAT-ORD-010`)
+- [x] **Admin Global Visibility:** Administrator has global operational visibility across all orders, salesmen, and customers (`ORD-QUEUE-001`).
+- [x] **Super Admin Global Visibility:** Super Administrator has unrestricted visibility across all queues (`ORD-QUEUE-002`).
+- [x] **Accountant Read-Only Visibility:** Accountant has read-only access to order queues authorized by `order.view` (`ORD-QUEUE-003`).
+- [x] **Salesman Access Denial (403):** Salesmen are strictly denied access to `/admin/orders` (`ORD-QUEUE-004`).
+- [x] **Unauthenticated Redirection:** Guests accessing `/admin/orders` redirect to login (`ORD-QUEUE-005`).
+- [x] **Draft Segregation Invariant:** Draft orders (`status = DRAFT`) are strictly excluded from all admin operational queues (`ORD-QUEUE-006`).
+- [x] **New Orders Queue Partition:** `new` queue captures unapproved incoming orders (`SUBMITTED`, `PENDING_APPROVAL`) (`ORD-QUEUE-007`).
+- [x] **Needs Attention Queue Partition:** `attention` queue captures on-hold, payment-failed, delivery-failed, and adjustment-requested orders (`ORD-QUEUE-008`).
+- [x] **Processing Queue Partition:** `processing` queue captures approved orders actively in warehouse picking, packing, or reserved state (`ORD-QUEUE-009`).
+- [x] **Delivery Queue Partition:** `delivery` queue captures dispatched orders and active driver assignments (`ORD-QUEUE-010`).
+- [x] **Adjustments Queue Partition:** `adjustments` queue captures orders with pending or applied adjustments (`ORD-QUEUE-011`).
+- [x] **Completed Queue Partition:** `completed` queue captures fully completed or delivered orders (`ORD-QUEUE-012`).
+- [x] **Cancelled Queue Partition:** `cancelled` queue captures cancelled and rejected orders (`ORD-QUEUE-013`).
+- [x] **All Orders Queue:** `all` queue displays all non-draft submitted orders (`ORD-QUEUE-014`).
+- [x] **Single-Query Live Queue Count Aggregation:** Accurate live badge counts for all 8 queues calculated in a single consolidated SQL aggregation query (`ORD-QUEUE-015`).
+- [x] **Search by Order Number:** Case-insensitive search on `order_number` filters queue accurately (`ORD-QUEUE-016`).
+- [x] **Search by Customer Name:** Case-insensitive search on customer `name` filters queue accurately (`ORD-QUEUE-017`).
+- [x] **Search by Customer Code:** Case-insensitive search on customer `code` filters queue accurately (`ORD-QUEUE-018`).
+- [x] **Search by Salesman Name:** Case-insensitive search on salesman `name` filters queue accurately (`ORD-QUEUE-019`).
+- [x] **Independent Status Dimension Filtering:** Direct filtering on `status`, `fulfillment_status`, `payment_status`, `delivery_status`, and `adjustment_status` (`ORD-QUEUE-020`).
+- [x] **Salesman Filtering:** Filter queue by specific `salesman_id` (`ORD-QUEUE-021`).
+- [x] **Customer Filtering:** Filter queue by specific `customer_id` (`ORD-QUEUE-022`).
+- [x] **Date Range Filtering:** Filter queue by `date_from` and `date_to` on `submitted_at` timestamps (`ORD-QUEUE-023`).
+- [x] **Allowlisted Sorting:** Sorting restricted strictly to server allowlist (`submitted_at`, `order_number`, `customer_name`, `grand_total`, `status`) with deterministic secondary ordering (`ORD-QUEUE-024`).
+- [x] **Bounded Pagination:** Bounded 25/page pagination with full query string preservation across page links (`ORD-QUEUE-025`).
+- [x] **Zero Cost Price Leakage:** Neither `cost_price` nor product costs are exposed in queue props or JSON payloads (`ORD-QUEUE-026`).
+- [x] **Zero Payment Evidence Leakage:** Private cheque/money-order photos and signed S3 URLs strictly excluded from queue payload (`ORD-QUEUE-027`).
+- [x] **Admin Order Detail Safe Routing:** Admin can view order details via `/admin/orders/{order}` with safe return navigation, while salesmen are denied (`ORD-QUEUE-028`).
+- [x] **Bounded Query Execution (No N+1):** Queue workspace executes in bounded SQL queries regardless of item count using selective eager loading and count aggregation (`ORD-QUEUE-029`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.
