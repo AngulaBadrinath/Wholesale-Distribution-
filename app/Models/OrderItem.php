@@ -162,5 +162,18 @@ class OrderItem extends Model
 
         return $quantity <= $this->unallocatedQuantity();
     }
+
+    /**
+     * Determine if fulfillable quantity can be reduced by a proposed quantity without violating active allocations.
+     * Invariant: reduction <= unallocated_quantity
+     */
+    public function canReduceFulfillableQuantity(int $reductionQuantity): bool
+    {
+        if ($reductionQuantity <= 0) {
+            return false;
+        }
+
+        return $reductionQuantity <= $this->unallocatedQuantity();
+    }
 }
 

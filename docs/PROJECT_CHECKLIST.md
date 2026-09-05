@@ -119,7 +119,7 @@
 
 ### Quantity Allocation
 - [x] `FEAT-ALLOC-001`: Order Item Quantity Allocation Model (`ordered`, `cancelled`, `reserved`, `delivered`, `returned`)
-- [ ] `FEAT-ALLOC-002`: Quantity Conservation & Allocation Validation Constraints
+- [x] `FEAT-ALLOC-002`: Quantity Conservation & Allocation Validation Constraints
 
 ### Order Adjustments
 - [ ] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)

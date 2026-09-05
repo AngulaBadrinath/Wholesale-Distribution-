@@ -667,7 +667,34 @@
 - [x] **Historical Approved Order Backfill Compatibility:** Idempotent service backfill safely derives missing baseline allocations for historical orders approved prior to FEAT-ALLOC-001 without duplicate generation (`test_backfill_approved_orders_creates_missing_allocations_safely`).
 - [x] **Admin Order Detail Projection & Allocation Summary:** Inertia show payload projects `items.allocations`, `allocated_quantity`, `unallocated_quantity`, and `allocation_summary` with 100% type consistency (`test_admin_order_detail_projects_allocation_data_and_summary`).
 
-### 1.10.1 Order Adjustments (`ADJUSTMENT`)
+### 1.10.1 Allocation Validation & Mathematical Constraints (`ALLOCATION` / `FEAT-ALLOC-002`)
+- [x] **Mathematical Conservation Law:** Line item enforces $\text{ordered} = \text{cancelled} + \text{fulfillable}$ and validates conservation bounds (`AllocationValidationTest::test_conservation_law_ordered_equals_cancelled_plus_fulfillable`).
+- [x] **Conservation Violation Detection:** Modifying item quantities out of sync with allocations triggers domain conservation exception (`test_conservation_law_detects_artificially_violated_quantities`).
+- [x] **Zero Quantity Allocation Rejection (422):** Allocating 0 quantity rejected with `ValidationException` (`test_cannot_allocate_zero_quantity`).
+- [x] **Negative Quantity Allocation Rejection (422):** Allocating negative quantity rejected with `ValidationException` (`test_cannot_allocate_negative_quantity`).
+- [x] **Exceeding Upper Bound Rejection (422):** Allocating $>999,999$ rejected with `ValidationException` (`test_cannot_allocate_quantity_exceeding_system_maximum`).
+- [x] **Boundary Maximum Allocation:** Allocating exact boundary 999,999 units succeeds when fulfillable capacity allows (`test_boundary_extreme_valid_quantity_succeeds_when_fulfillable_allows`).
+- [x] **Single Over-Allocation Guard (422):** Allocating quantity exceeding unallocated capacity rejected (`test_single_allocation_exceeding_fulfillable_is_rejected`).
+- [x] **Cumulative Multi-Step Over-Allocation Guard (422):** Multi-step partial allocations cumulatively exceeding fulfillable capacity rejected (`test_cumulative_partial_allocations_exceeding_fulfillable_are_rejected`).
+- [x] **Non-Destructive Allocation Release:** Releasing allocation transitions status to `RELEASED`, zeroes `reserved_quantity`, restores unallocated pool, and authoritatively updates rollups (`test_release_allocation_restores_unallocated_pool_and_updates_rollups`).
+- [x] **Non-Destructive Allocation Cancellation:** Cancelling allocation transitions status to `CANCELLED`, zeroes `reserved_quantity`, restores unallocated pool, and preserves audit trail (`test_cancel_allocation_restores_unallocated_pool_and_preserves_audit`).
+- [x] **Release Picked Allocation Block (409):** Allocations that have already progressed to picking cannot be released (`test_cannot_release_allocation_that_has_been_picked`).
+- [x] **Cancel Picked Allocation Block (409):** Allocations that have already progressed to picking cannot be cancelled (`test_cannot_cancel_allocation_that_has_been_picked`).
+- [x] **Fulfillment Progression Bounds:** Authoritative progression validator enforces $0 \le \text{returned} \le \text{delivered} \le \text{dispatched} \le \text{picked} \le \text{allocated}$ (`test_fulfillment_progression_validates_strict_unidirectional_bounds`).
+- [x] **Progression Guard - Dispatched > Picked (422):** Dispatched exceeding picked rejected (`test_dispatched_exceeding_picked_fails_progression_validation`).
+- [x] **Progression Guard - Delivered > Dispatched (422):** Delivered exceeding dispatched rejected (`test_delivered_exceeding_dispatched_fails_progression_validation`).
+- [x] **Progression Guard - Returned > Delivered (422):** Returned exceeding delivered rejected (`test_returned_exceeding_delivered_fails_progression_validation`).
+- [x] **Progression Guard - Picked > Allocated (422):** Picked exceeding allocated rejected (`test_picked_exceeding_allocated_fails_progression_validation`).
+- [x] **PostgreSQL Progression Check Constraints:** Database CHECK constraints reject direct SQL violations of `dispatched <= picked` and `delivered <= dispatched` on PostgreSQL (`test_postgresql_dispatched_and_delivered_constraints`).
+- [x] **Collision-Free Sequence Numbering:** Suffix sequence query avoids collision or reuse even when intermediate allocations are cancelled or released (`test_sequence_numbering_avoids_collisions_even_after_release_or_cancellation`).
+- [x] **Authoritative Rollup Drift Detection & Repair:** Detects drift between denormalized rollups and child allocation sums, and authoritatively repairs via `syncOrderItemRollups()` (`test_detects_rollup_drift_and_repairs_via_sync`).
+- [x] **Adjustment Reduction Capacity Pre-Check:** `canReduceFulfillableQuantity()` verifies proposed reduction does not violate active allocations (`test_adjustment_reduction_capacity_enforces_allocation_conservation`).
+- [x] **Financial & Pricing Immutability:** Multi-step allocation, release, and cancellation operations strictly preserve unit prices, taxes, subtotals, and grand totals (`test_allocation_operations_never_mutate_financial_or_order_pricing_fields`).
+- [x] **Pessimistic Concurrency Serialization:** Competing concurrent allocation requests serialize via row locks; exactly one succeeds and one fails cleanly when capacity is exhausted (`AllocationConcurrencyTest::test_competing_allocations_respect_pessimistic_locking_and_prevent_cross_row_over_allocation`).
+- [x] **Capacity Boundary Serialization:** Sequential allocations serialize up to exact fulfillable boundary (`test_serialized_allocations_reach_exact_fulfillable_capacity`).
+- [x] **Deterministic Lock Ordering:** Lock ordering `Order -> OrderItem` verified deterministic without deadlocks (`test_lock_ordering_is_deterministic`).
+
+### 1.10.2 Order Adjustments (`ADJUSTMENT`)
 - [ ] **Happy Path:** Damaged stock reported; Admin creates adjustment cancelling 2 units out of 10 (`FEAT-ADJ-004`).
 - [ ] **Invariant Assertion:** Original `ordered_quantity` remains 10; `cancelled_quantity` becomes 2; `fulfillable_quantity` becomes 8 (`RULE-DOM-001`, `RULE-ALLOC-001`).
 - [ ] **Validation:** Cancelling more units than fulfillable quantity rejected (`EDGE-009`).

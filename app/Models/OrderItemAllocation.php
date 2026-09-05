@@ -123,4 +123,24 @@ class OrderItemAllocation extends Model
     {
         return max(0, $this->allocated_quantity - $this->picked_quantity);
     }
+
+    /**
+     * Determine if this allocation can be released (freed back to unallocated quantity).
+     * Only unpicked allocations in ALLOCATED or RESERVED status can be released.
+     */
+    public function isReleasable(): bool
+    {
+        return in_array($this->status, [AllocationStatus::ALLOCATED, AllocationStatus::RESERVED], true)
+            && $this->picked_quantity === 0;
+    }
+
+    /**
+     * Determine if this allocation can be cancelled.
+     * Allocations can only be cancelled prior to physical picking.
+     */
+    public function isCancellable(): bool
+    {
+        return in_array($this->status, [AllocationStatus::ALLOCATED, AllocationStatus::RESERVED], true)
+            && $this->picked_quantity === 0;
+    }
 }

@@ -271,6 +271,22 @@
 - **Affected Tickets:** `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001..006`, `FEAT-INV-001..004`.
 - **Consequences:** All future fulfillment, picking, dispatching, and adjustment workflows anchor to `order_item_allocations` rows while respecting `order_items` denormalized rollups.
 
+### DEC-017: Allocation Mathematical Constraints, Directional Progression, and Single-Direction Rollup Synchronization
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Enforce strict mathematical conservation laws ($\text{ordered} = \text{cancelled} + \text{fulfillable}$ and $\sum \text{allocated}_{\text{active}} \le \text{fulfillable}$) and strict unidirectional fulfillment progression constraints ($0 \le \text{returned} \le \text{delivered} \le \text{dispatched} \le \text{picked} \le \text{allocated}$ and $0 \le \text{reserved} \le \text{allocated}$) via server-side domain validation in `OrderAllocationValidationService` and PostgreSQL CHECK constraints (`order_item_allocations_dispatched_quantity_check`, `order_item_allocations_delivered_quantity_check`). Centralize all rollup calculations from child allocation rows into `order_items` through a single authoritative synchronization path (`OrderAllocationService::syncOrderItemRollups()`) rather than incremental arithmetic.
+- **Context:** Preventing quantity drift, race conditions, over-allocation, and impossible state transitions (e.g. dispatched > picked, delivered > dispatched) across concurrent fulfillment steps, partial releases, and upcoming order adjustments.
+- **Reason:** Guarantee mathematical correctness and eliminate circular synchronization loops. Non-destructive soft-state operations (`RELEASED`, `CANCELLED`) preserve audit trails while accurately restoring unallocated capacity.
+- **Alternatives Considered:**
+  - *Incremental +/- arithmetic on order_items rollups during status changes:* Rejected because concurrent transactions or partial failures easily cause permanent drift. Centralized authoritative recalculation from child rows is deterministic and self-healing.
+  - *Allowing allocations to be hard-deleted on cancellation or release:* Rejected because it violates non-destructive history (`RULE-DOM-001`) and destroys operational audit trails.
+  - *Relying only on database CHECK constraints without domain service validation:* Rejected because cross-row aggregation cannot be enforced by row-local CHECK constraints and domain validation provides actionable 422 error messages to API consumers.
+- **Chosen Approach:** Dual-layer defense-in-depth: PostgreSQL CHECK constraints for row-local bounds + `OrderAllocationValidationService` for cross-row conservation and progression + `OrderAllocationService::syncOrderItemRollups()` for authoritative rollup synchronization + pessimistic row locking with deterministic lock order (`Order -> OrderItems ASC -> OrderItemAllocations ASC`).
+- **Affected Domains:** Quantity Allocation, Order Management, Fulfillment Progression, Inventory Integrity.
+- **Affected Documents:** PRD §13, §14; Technical Architecture §14, §15, §18; Security & Access §18.
+- **Affected Tickets:** `FEAT-ALLOC-002`, `FEAT-ALLOC-001`, `FEAT-ADJ-001..006`, `FEAT-INV-001..004`.
+- **Consequences:** All future picking, packing, dispatching, delivery, and adjustment operations must use `OrderAllocationService` and pass progression and capacity validation before mutating records.
+
 ---
 
 ## Open Decisions & TBD Register

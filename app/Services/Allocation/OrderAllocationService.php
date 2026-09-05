@@ -17,6 +17,12 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class OrderAllocationService
 {
+    public function __construct(
+        protected ?OrderAllocationValidationService $validator = null
+    ) {
+        $this->validator ??= new OrderAllocationValidationService();
+    }
+
     /**
      * Create baseline initial allocations for all fulfillable items of an approved order.
      * Must be called inside a PostgreSQL transaction (or will start one).
@@ -34,10 +40,7 @@ class OrderAllocationService
             /** @var Order $lockedOrder */
             $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->firstOrFail();
 
-            if (! in_array($lockedOrder->status, [OrderStatus::APPROVED, OrderStatus::PROCESSING], true)) {
-                $statusLabel = $lockedOrder->status instanceof OrderStatus ? $lockedOrder->status->label() : (string) $lockedOrder->status;
-                throw new ConflictHttpException("Order {$lockedOrder->order_number} is in '{$statusLabel}' status and cannot receive allocations.");
-            }
+            $this->validator->validateOrderLifecycleEligibility($lockedOrder);
 
             // Lock order items ordered by ascending ID
             $lockedItems = $lockedOrder->items()->lockForUpdate()->orderBy('id', 'asc')->get();
@@ -101,6 +104,9 @@ class OrderAllocationService
                     'allocated_at' => Carbon::now(),
                 ]);
 
+                // Synchronize line item rollups authoritatively
+                $this->syncOrderItemRollups($item);
+
                 $allocations->push($allocation);
                 $totalAllocatedUnits += $allocationQty;
             }
@@ -135,42 +141,42 @@ class OrderAllocationService
         string $warehouseCode = 'MAIN',
         ?string $notes = null
     ): OrderItemAllocation {
-        if ($quantity <= 0 || $quantity > 999999) {
-            throw ValidationException::withMessages([
-                'quantity' => 'Allocation quantity must be between 1 and 999,999.',
-            ]);
-        }
-
         return DB::transaction(function () use ($item, $quantity, $actor, $warehouseCode, $notes) {
             // Lock Order -> OrderItem -> OrderItemAllocations
             /** @var Order $lockedOrder */
             $lockedOrder = Order::where('id', $item->order_id)->lockForUpdate()->firstOrFail();
 
-            if (! in_array($lockedOrder->status, [OrderStatus::APPROVED, OrderStatus::PROCESSING], true)) {
-                $statusLabel = $lockedOrder->status instanceof OrderStatus ? $lockedOrder->status->label() : (string) $lockedOrder->status;
-                throw new ConflictHttpException("Order {$lockedOrder->order_number} is in '{$statusLabel}' status and cannot receive allocations.");
-            }
+            $this->validator->validateOrderLifecycleEligibility($lockedOrder);
 
             /** @var OrderItem $lockedItem */
             $lockedItem = OrderItem::where('id', $item->id)->lockForUpdate()->firstOrFail();
 
             // Lock existing allocations for item
-            $lockedAllocations = OrderItemAllocation::where('order_item_id', $lockedItem->id)
+            OrderItemAllocation::where('order_item_id', $lockedItem->id)
                 ->orderBy('id', 'asc')
                 ->lockForUpdate()
                 ->get();
 
             $unallocated = $lockedItem->unallocatedQuantity();
 
-            if ($quantity > $unallocated) {
-                throw ValidationException::withMessages([
-                    'quantity' => "Cannot allocate {$quantity} units. Only {$unallocated} fulfillable units remain unallocated.",
-                ]);
-            }
+            // Validate requested quantity against boundary rules and unallocated capacity
+            $this->validator->validateAllocationQuantity($quantity, $unallocated);
 
             $orderNumClean = $lockedOrder->order_number ?: 'ORD-' . $lockedOrder->id;
-            $sequence = sprintf('%02d', $lockedAllocations->count() + 1);
-            $allocationNumber = "ALC-{$orderNumClean}-{$lockedItem->id}-{$sequence}";
+
+            // Deterministic sequence generation: query maximum existing integer suffix across ALL allocations for this item
+            $maxSequence = OrderItemAllocation::where('order_item_id', $lockedItem->id)
+                ->pluck('allocation_number')
+                ->map(function ($num) {
+                    if (preg_match('/-(\d+)$/', (string) $num, $matches)) {
+                        return (int) $matches[1];
+                    }
+                    return 0;
+                })
+                ->max() ?? 0;
+
+            $nextSequence = sprintf('%02d', $maxSequence + 1);
+            $allocationNumber = "ALC-{$orderNumClean}-{$lockedItem->id}-{$nextSequence}";
 
             /** @var OrderItemAllocation $allocation */
             $allocation = OrderItemAllocation::create([
@@ -191,6 +197,9 @@ class OrderAllocationService
                 'allocated_at' => Carbon::now(),
             ]);
 
+            // Centralized authoritative rollup synchronization
+            $this->syncOrderItemRollups($lockedItem);
+
             Log::info('commerce.allocation_event', [
                 'action' => 'ITEM_ALLOCATION_CREATED',
                 'order_id' => $lockedOrder->id,
@@ -205,6 +214,163 @@ class OrderAllocationService
 
             return $allocation;
         }, 3);
+    }
+
+    /**
+     * Release an allocation record, returning its quantity to the unallocated pool.
+     * Preserves non-destructive history by soft-transitioning status to RELEASED.
+     *
+     * @throws ConflictHttpException
+     */
+    public function releaseAllocation(
+        OrderItemAllocation $allocation,
+        ?User $actor = null,
+        ?string $reason = null
+    ): OrderItemAllocation {
+        return DB::transaction(function () use ($allocation, $actor, $reason) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $allocation->order_id)->lockForUpdate()->firstOrFail();
+            $this->validator->validateOrderLifecycleEligibility($lockedOrder);
+
+            /** @var OrderItem $lockedItem */
+            $lockedItem = OrderItem::where('id', $allocation->order_item_id)->lockForUpdate()->firstOrFail();
+
+            /** @var OrderItemAllocation $lockedAllocation */
+            $lockedAllocation = OrderItemAllocation::where('id', $allocation->id)->lockForUpdate()->firstOrFail();
+
+            if (! $lockedAllocation->isReleasable()) {
+                throw new ConflictHttpException("Allocation {$lockedAllocation->allocation_number} in status '{$lockedAllocation->status->value}' cannot be released.");
+            }
+
+            $releasedQty = $lockedAllocation->allocated_quantity;
+
+            $lockedAllocation->status = AllocationStatus::RELEASED;
+            $lockedAllocation->reserved_quantity = 0;
+            if ($reason) {
+                $lockedAllocation->notes = trim(($lockedAllocation->notes ? $lockedAllocation->notes . ' | ' : '') . 'Release reason: ' . $reason);
+            }
+            $lockedAllocation->save();
+
+            // Synchronize line item rollups authoritatively
+            $this->syncOrderItemRollups($lockedItem);
+
+            Log::info('commerce.allocation_event', [
+                'action' => 'ALLOCATION_RELEASED',
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'order_item_id' => $lockedItem->id,
+                'allocation_id' => $lockedAllocation->id,
+                'allocation_number' => $lockedAllocation->allocation_number,
+                'released_quantity' => $releasedQty,
+                'actor_id' => $actor?->id,
+                'reason' => $reason,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+
+            return $lockedAllocation;
+        }, 3);
+    }
+
+    /**
+     * Cancel an allocation record, voiding it prior to physical fulfillment.
+     * Preserves non-destructive history by soft-transitioning status to CANCELLED.
+     *
+     * @throws ConflictHttpException
+     */
+    public function cancelAllocation(
+        OrderItemAllocation $allocation,
+        ?User $actor = null,
+        ?string $reason = null
+    ): OrderItemAllocation {
+        return DB::transaction(function () use ($allocation, $actor, $reason) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $allocation->order_id)->lockForUpdate()->firstOrFail();
+            $this->validator->validateOrderLifecycleEligibility($lockedOrder);
+
+            /** @var OrderItem $lockedItem */
+            $lockedItem = OrderItem::where('id', $allocation->order_item_id)->lockForUpdate()->firstOrFail();
+
+            /** @var OrderItemAllocation $lockedAllocation */
+            $lockedAllocation = OrderItemAllocation::where('id', $allocation->id)->lockForUpdate()->firstOrFail();
+
+            if (! $lockedAllocation->isCancellable()) {
+                throw new ConflictHttpException("Allocation {$lockedAllocation->allocation_number} in status '{$lockedAllocation->status->value}' cannot be cancelled.");
+            }
+
+            $cancelledQty = $lockedAllocation->allocated_quantity;
+
+            $lockedAllocation->status = AllocationStatus::CANCELLED;
+            $lockedAllocation->reserved_quantity = 0;
+            if ($reason) {
+                $lockedAllocation->notes = trim(($lockedAllocation->notes ? $lockedAllocation->notes . ' | ' : '') . 'Cancellation reason: ' . $reason);
+            }
+            $lockedAllocation->save();
+
+            // Synchronize line item rollups authoritatively
+            $this->syncOrderItemRollups($lockedItem);
+
+            Log::info('commerce.allocation_event', [
+                'action' => 'ALLOCATION_CANCELLED',
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'order_item_id' => $lockedItem->id,
+                'allocation_id' => $lockedAllocation->id,
+                'allocation_number' => $lockedAllocation->allocation_number,
+                'cancelled_quantity' => $cancelledQty,
+                'actor_id' => $actor?->id,
+                'reason' => $reason,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+
+            return $lockedAllocation;
+        }, 3);
+    }
+
+    /**
+     * Authoritatively recalculate and synchronize order_items operational rollups from allocation rows.
+     * Ensures single directional authority without circular synchronization loops.
+     */
+    public function syncOrderItemRollups(OrderItem $item): OrderItem
+    {
+        $allocations = OrderItemAllocation::where('order_item_id', $item->id)->get();
+
+        $activeAllocations = $allocations->filter(
+            fn (OrderItemAllocation $a) => ! in_array($a->status, [AllocationStatus::CANCELLED, AllocationStatus::RELEASED], true)
+        );
+
+        $item->reserved_quantity = (int) $activeAllocations->sum('reserved_quantity');
+        $item->picked_quantity = (int) $allocations->sum('picked_quantity');
+        $item->dispatched_quantity = (int) $allocations->sum('dispatched_quantity');
+        $item->delivered_quantity = (int) $allocations->sum('delivered_quantity');
+        $item->returned_quantity = (int) $allocations->sum('returned_quantity');
+        $item->save();
+
+        return $item;
+    }
+
+    /**
+     * Check if a proposed reduction in fulfillable quantity violates active allocations.
+     * Invariant: reduction <= unallocated_quantity
+     */
+    public function canReduceFulfillableQuantity(OrderItem $item, int $reductionQuantity): bool
+    {
+        return $this->validator->canReduceFulfillableQuantity($item, $reductionQuantity);
+    }
+
+    /**
+     * Validate consistency of operational rollups against allocation rows, throwing on drift.
+     *
+     * @throws ValidationException
+     */
+    public function validateRollupConsistency(OrderItem $item): void
+    {
+        $drift = $this->validator->detectRollupDrift($item);
+
+        if ($drift['has_drift']) {
+            throw ValidationException::withMessages([
+                'rollup_drift' => "Rollup drift detected for line item #{$item->id}: " . json_encode($drift['drift_details']),
+            ]);
+        }
     }
 
     /**
@@ -329,6 +495,8 @@ class OrderAllocationService
                     'allocated_by' => $lockedOrder->approved_by,
                     'allocated_at' => $lockedOrder->approved_at ?: Carbon::now(),
                 ]);
+
+                $this->syncOrderItemRollups($item);
 
                 $created->push($allocation);
             }

@@ -434,6 +434,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-015: FEAT-ALLOC-002 Allocation Validation & Mathematical Constraints
+- **Change ID:** `CHANGE-015`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Harden mathematical conservation laws and domain validation constraints on quantity allocation (`FEAT-ALLOC-002`). Implement strict conservation law ($\text{ordered} = \text{cancelled} + \text{fulfillable}$), active allocation sum conservation ($\sum \text{allocated}_{\text{active}} \le \text{fulfillable}$), unallocated capacity calculation ($\max(0, \text{fulfillable} - \sum \text{allocated}_{\text{active}})$), and strict fulfillment progression constraints ($0 \le \text{returned} \le \text{delivered} \le \text{dispatched} \le \text{picked} \le \text{allocated}$ and $0 \le \text{reserved} \le \text{allocated}$). Tighten PostgreSQL database CHECK constraints on `order_item_allocations` (`dispatched <= picked` and `delivered <= dispatched`). Provide non-destructive soft-state operations for releasing and cancelling allocations with unallocated restoration. Provide centralized authoritative rollup synchronization from allocation rows to `order_items`. Implement collision-free sequence generation by deriving max integer suffix under row locks. Introduce pre-adjustment reduction capacity check `canReduceFulfillableQuantity()`.
+- **Reason:** Guarantee mathematical correctness and prevent data drift, race conditions, over-allocation, and financial mutation across all future picking, packing, dispatching, and order adjustment workflows.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (High/Critical Data Integrity)
+- **Affected PRD Requirements:** §13 (Order Processing & Reservation Invariants), §14 (Adjustments & Non-Destructive Quantity Conservation), §39.2 (Central Distribution Warehouse).
+- **Affected Architecture:** §14 (Allocation & Operational Models), §15 (Order State Machine & Reservation Lifecycle), §18 (Pessimistic Row Locking Architecture).
+- **Affected Security:** Zero client authority; server-enforced validation via `OrderAllocationValidationService`; optimistic and pessimistic locking; structured post-commit observability (`commerce.allocation_event`).
+- **Affected Frontend:** Admin Order Detail projection and summary compatibility preserved without UI breakage.
+- **Affected Tickets:** `FEAT-ALLOC-002` completed. Unlocks `UI-003` and Phase 06 adjustment workflows (`FEAT-ADJ-001+`).
+- **Inventory Impact:** Mathematical boundaries locked; physical inventory balances and warehouse ledgers deferred to `FEAT-INV-001..004`.
+- **Order Impact:** Order lifecycle restrictions strictly enforced (`APPROVED`/`PROCESSING` allowed; `DRAFT`/`SUBMITTED`/`REJECTED`/`CANCELLED`/`COMPLETED` blocked 409).
+- **Payment Impact:** None; financial immutability strictly preserved.
+- **Tax Impact:** None; tax snapshots and totals remain immutable.
+- **Accounting Impact:** None; general ledger lines and balances untouched.
+- **Data Migration Impact:** Added migration `2026_09_05_000012_tighten_order_item_allocations_progression_constraints.php` with PostgreSQL CHECK constraints for `dispatched <= picked` and `delivered <= dispatched`.
+- **Testing Impact:** Added 25 comprehensive feature tests across `AllocationValidationTest.php` and `AllocationConcurrencyTest.php`. Full test suite at 798 tests (795 passed, 5,161 assertions, 3 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ALLOC-002`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown
