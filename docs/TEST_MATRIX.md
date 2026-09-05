@@ -582,6 +582,41 @@
 - [x] **Warning Engine - Deactivated Catalog Product:** Products deactivated in catalog master flagged as blockers (`ORD-REV-025`).
 - [x] **Bounded Query Execution (No N+1):** Review workspace queries execute within bounded limits using selective eager loading (`ORD-REV-026`).
 
+### 1.8.8 Order Approval & Rejection Workflow (`ORDER APPROVAL / REJECTION` / `FEAT-ORD-012`)
+- [x] **Admin Authoritative Order Approval:** Admin with `order.approve` approves `SUBMITTED` order; status becomes `APPROVED`, `fulfillment_status` becomes `RESERVED`, `approved_at` and `approved_by` populated (`ORD-APP-001`).
+- [x] **Super Admin Global Approval:** Super Admin authoritatively approves order with full administrative attribution (`ORD-APP-002`).
+- [x] **Pending Approval Transition:** Orders in `PENDING_APPROVAL` status are eligible for approval (`ORD-APP-003`).
+- [x] **Accountant Approval Access Denial (403):** Accountant attempting order approval rejected with 403 Forbidden without state mutation (`ORD-APP-004`).
+- [x] **Salesman Approval Access Denial (403):** Salesman attempting admin approval endpoint rejected with 403 Forbidden (`ORD-APP-005`).
+- [x] **Logistics Roles Approval Denial (403):** Warehouse Manager and Delivery Partner rejected with 403 Forbidden (`ORD-APP-006`).
+- [x] **Unauthenticated Approval Redirection:** Unauthenticated requests redirect to login (`ORD-APP-007`).
+- [x] **Inactive Account Interception:** Suspended or disabled admin accounts rejected and redirected to login (`ORD-APP-008`).
+- [x] **Hard Blocker - Customer On Hold (422):** Order approval blocked with 422 validation error when customer is on hold (`ORD-APP-009`).
+- [x] **Hard Blocker - Customer Inactive (422):** Order approval blocked with 422 validation error when customer is inactive (`ORD-APP-010`).
+- [x] **Hard Blocker - Deactivated Product (422):** Order approval blocked with 422 error citing inactive product names when catalog product deactivated post-submission (`ORD-APP-011`).
+- [x] **Soft Warning - Credit Limit Overrun:** Order exceeding customer credit limit is permitted to be approved via administrative decision (`ORD-APP-012`).
+- [x] **Soft Notice - Price Override Present:** Order containing authorized price overrides is permitted to be approved (`ORD-APP-013`).
+- [x] **Double Approval Concurrency Protection (409):** Repeated approval attempt against already approved order returns 409 Conflict without duplicate reservations (`ORD-APP-014`).
+- [x] **Terminal State Rejection Protection (409):** Attempting to approve an already rejected or cancelled order returns 409 Conflict (`ORD-APP-015`).
+- [x] **Financial Invariant Immutability:** Unit prices, taxes, subtotals, and grand totals strictly immutable before and after approval (`ORD-APP-016`).
+- [x] **Timeline Milestone Integration:** Approved order renders authentic `Order Approved` milestone with approver name and exact timestamp (`ORD-APP-017`).
+- [x] **Admin Authoritative Order Rejection:** Admin with `order.reject` rejects order with mandatory reason; status becomes `REJECTED`, `cancelled_at`/`cancelled_by`/`cancellation_reason` populated (`ORD-REJ-001`).
+- [x] **Super Admin Global Rejection:** Super Admin rejects order with mandatory documented reason (`ORD-REJ-002`).
+- [x] **Pending Approval Rejection Eligibility:** Orders in `PENDING_APPROVAL` status eligible for rejection (`ORD-REJ-003`).
+- [x] **Mandatory Rejection Reason Validation (422):** Missing, empty, or whitespace-only rejection reason rejected with 422 validation error (`ORD-REJ-004`).
+- [x] **Minimum Reason Length Constraint (422):** Rejection reasons < 5 characters rejected with 422 error (`ORD-REJ-005`).
+- [x] **Maximum Reason Length Constraint (422):** Rejection reasons > 1000 characters rejected with 422 error (`ORD-REJ-006`).
+- [x] **Accountant Rejection Access Denial (403):** Accountant attempting order rejection rejected with 403 Forbidden (`ORD-REJ-007`).
+- [x] **Salesman Rejection Access Denial (403):** Salesman attempting order rejection rejected with 403 Forbidden (`ORD-REJ-008`).
+- [x] **Logistics Roles Rejection Denial (403):** Warehouse Manager and Delivery Partner rejected with 403 Forbidden (`ORD-REJ-009`).
+- [x] **Unauthenticated Rejection Redirection:** Unauthenticated rejection requests redirect to login (`ORD-REJ-010`).
+- [x] **Inactive Account Interception:** Suspended or disabled admin accounts rejected from rejection (`ORD-REJ-011`).
+- [x] **Double Rejection Concurrency Protection (409):** Repeated rejection attempt against already rejected order returns 409 Conflict (`ORD-REJ-012`).
+- [x] **Approved Order Rejection Protection (409):** Attempting to reject an already approved order returns 409 Conflict (`ORD-REJ-013`).
+- [x] **Approval vs Rejection Race Resolution (409):** Concurrent approval and rejection resolve to single winner; losing request returns 409 Conflict without state corruption (`ORD-REJ-014`).
+- [x] **Financial & Line Integrity on Rejection:** Rejection preserves line items, prices, and quantities without deletion or mutation (`ORD-REJ-015`).
+- [x] **Rejection Reason Whitespace Normalization:** Rejection reason is trimmed of leading and trailing whitespace before persistence (`ORD-REJ-016`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

@@ -353,6 +353,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-012: FEAT-ORD-012 Order Approval / Rejection Workflow with Audit
+- **Change ID:** `CHANGE-012`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement authoritative order approval and rejection mutations (`POST /admin/orders/{order}/approve`, `POST /admin/orders/{order}/reject`) governed by `OrderWorkflowService`. Enforce pessimistic locking via PostgreSQL row locking (`lockForUpdate()`) using deterministic lock hierarchy (Order -> Customer -> Order Items ordered by ID). Revalidate customer state (`ACTIVE` allowed, `ON_HOLD` / `INACTIVE` rejected with 422), product states (`ACTIVE` allowed, `INACTIVE` rejected with 422), and reviewable order states (`SUBMITTED`, `PENDING_APPROVAL`). On approval: establish order-level reservation (`fulfillment_status = RESERVED`, `reserved_quantity = fulfillableQuantity()`), transition `status = APPROVED`, record `approved_at` and `approved_by`. On rejection: validate mandatory trimmed reason (5-1000 chars), transition `status = REJECTED`, record `cancelled_at`, `cancelled_by`, and `cancellation_reason` in existing schema. Enforce RBAC: `permission:order.approve` and `permission:order.reject` for `ADMIN` and `SUPER_ADMIN`; strictly deny `ACCOUNTANT` (403), `SALESMAN` (403), `WAREHOUSE_MANAGER` (403), and `DELIVERY_PARTNER` (403). Ensure conflict detection (409 Conflict on stale/duplicate mutations). Emit structured post-commit application observability events (`commerce.order_event`) preserving separation between PostgreSQL transactions and application logging. Update `Review.tsx` Action Readiness Deck with accessible approval and rejection modals, soft warning confirmations, and real-time validation.
+- **Reason:** Provide administrators with safe, auditable, and authoritative order approval and rejection capabilities while preventing concurrency races, duplicate mutations, and unverified inventory assumptions.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Critical Business Mutation)
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §13 (Order Lifecycle & Invariants), §25.2 (Admin Order Operations).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.6 (Multi-Dimension Status Model), §18 (Database & Transaction Integrity), §20 (Concurrency & Locking).
+- **Affected Security:** Strict server-side zero-trust security architecture (`RULE-SEC-001`, `RULE-SEC-002`, `RULE-SEC-003`); direct manipulation of order ID prevented by route model binding, authentication, account status verification, and permission checks; non-admin roles denied with 403 Forbidden; zero exposure of `cost_price` or payment evidence.
+- **Affected Frontend:** `resources/js/Pages/Admin/Orders/Review.tsx`, `resources/js/Pages/Admin/Orders/Partials/ApproveOrderModal.tsx`, `resources/js/Pages/Admin/Orders/Partials/RejectOrderModal.tsx`.
+- **Affected Tickets:** `FEAT-ORD-012` completed.
+- **Inventory Impact:** Order-level quantity reservation established (`orders.fulfillment_status = RESERVED`, `order_items.reserved_quantity = fulfillableQuantity()`). Physical stock ledger reservation (balances, movements, warehouse allocations) deferred to Phase 06 (`FEAT-INV-001..004`).
+- **Order Impact:** Order transitions to `APPROVED` or `REJECTED` with audit trails (`approved_at`/`approved_by` or `cancelled_at`/`cancelled_by`/`cancellation_reason`). Lines and historical financial values preserved immutably.
+- **Payment Impact:** None; payment status remains independent dimension (`UNPAID`).
+- **Tax Impact:** None; line item tax snapshots immutable.
+- **Accounting Impact:** No direct general ledger postings (financial settlement and invoice posting deferred to Phase 07).
+- **Data Migration Impact:** None (zero schema migrations required; existing columns used).
+- **Testing Impact:** Added 33 comprehensive automated tests in `AdminOrderApprovalTest.php` (17 tests) and `AdminOrderRejectionTest.php` (16 tests). Full test suite at 734 tests (4,687 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-012`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

@@ -14,13 +14,16 @@ use App\Enums\ProductStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\AdminOrderQueueRequest;
+use App\Http\Requests\Order\RejectOrderRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Order\OrderWorkflowService;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -30,6 +33,7 @@ class AdminOrderController extends Controller
 {
     public function __construct(
         protected PermissionService $permissionService,
+        protected OrderWorkflowService $orderWorkflowService,
     ) {}
 
     /**
@@ -594,6 +598,46 @@ class AdminOrderController extends Controller
             'backUrl' => '/admin/orders?queue=new',
             'backLabel' => 'Back to New Orders Queue',
         ]);
+    }
+
+    /**
+     * Authoritatively approve an eligible order.
+     */
+    public function approve(Order $order, Request $request): RedirectResponse
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_APPROVE);
+
+        if ($actor->role === UserRole::SALESMAN) {
+            throw new AuthorizationException('Salesmen must access orders via their salesman portal.');
+        }
+
+        $approvedOrder = $this->orderWorkflowService->approveOrder($order, $actor);
+
+        return redirect()->route('admin.orders.index', ['queue' => 'new'])
+            ->with('success', "Order {$approvedOrder->order_number} has been authoritatively approved. Quantities are reserved for fulfillment.");
+    }
+
+    /**
+     * Authoritatively reject an eligible order with documented reason.
+     */
+    public function reject(Order $order, RejectOrderRequest $request): RedirectResponse
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::ORDER_REJECT);
+
+        if ($actor->role === UserRole::SALESMAN) {
+            throw new AuthorizationException('Salesmen must access orders via their salesman portal.');
+        }
+
+        $rejectedOrder = $this->orderWorkflowService->rejectOrder(
+            $order,
+            $actor,
+            $request->validated('reason')
+        );
+
+        return redirect()->route('admin.orders.index', ['queue' => 'new'])
+            ->with('success', "Order {$rejectedOrder->order_number} has been rejected.");
     }
 
     /**

@@ -110,7 +110,7 @@
 ### Admin Order Operations
 - [x] `FEAT-ORD-010`: Admin Operational Order Queues (`New Orders`, `Needs Attention`, `Processing`, `Delivery`, `Adjustments`, `Completed`, `Cancelled`, `All Orders`)
 - [x] `FEAT-ORD-011`: New Order Review Workspace
-- [ ] `FEAT-ORD-012`: Order Approval / Rejection Workflow with Audit
+- [x] `FEAT-ORD-012`: Order Approval / Rejection Workflow with Audit
 - [ ] `FEAT-ORD-013`: Order Detail Master Workspace
 
 ---

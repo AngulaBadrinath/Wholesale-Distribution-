@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **28.1%** (36 / 128 tickets) | FEAT-ORD-011 verified complete; 701 automated tests passing (4,557 assertions, 1 skipped) |
+| **Overall Code Completion** | **28.9%** (37 / 128 tickets) | FEAT-ORD-012 verified complete; 734 automated tests passing (733 passed, 4,687 assertions, 1 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 03 — Ordering Workflows** | Status: `IN_PROGRESS` (FEAT-ORD-001 through FEAT-ORD-006, FEAT-ORD-010, FEAT-ORD-011 complete) |
+| **Current Phase** | **Phase 03 — Ordering Workflows** | Status: `IN_PROGRESS` (FEAT-ORD-001 through FEAT-ORD-006, FEAT-ORD-010, FEAT-ORD-011, FEAT-ORD-012 complete) |
 | **Current Milestone Gate** | **GATE B — Commerce Spine** | Status: In progress (Phase 00, Phase 01, Phase 02 complete; Phase 03 in progress) |
-| **Current Active Ticket** | **FEAT-ORD-011** (Complete) | Ready to begin `FEAT-ORD-012: Order Approval / Rejection Workflow with Audit` |
+| **Current Active Ticket** | **FEAT-ORD-012** (Complete) | Ready to begin `FEAT-ORD-013: Order Detail Master Workspace` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001` order model landed; `FEAT-DLV-001` delivery model pending) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **36** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`).
-- Current progress: **28.1%** (36 / 128).
+- Completed tickets: **37** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`).
+- Current progress: **28.9%** (37 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (36):**
+- **Completed Tickets (37):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -69,11 +69,12 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   34. `FEAT-ORD-006`: Salesman Order History & Multi-State Timeline (Server-scoped order history workspace, multi-column search, enum status filters, date range filters, 15/page pagination, deterministic ordering, authentic milestone timeline, independent status dimension badges, zero cost leakage)
   35. `FEAT-ORD-010`: Admin Operational Order Queues (8 operational queues, live single-query badge counts, multi-column search, 5 independent status filters, salesman & customer filters, date range filtering, allowlisted sorting, bounded 25/page pagination with query string preservation, zero cost/evidence leakage, strict RBAC, and responsive mobile card & desktop dense table UX)
   36. `FEAT-ORD-011`: New Order Review Workspace (Dedicated inspection workspace at `/admin/orders/{order}/review`, bounded eager loading, fail-closed draft 404 isolation, post-review redirection, deterministic derived warnings [CUSTOMER_ON_HOLD, CUSTOMER_INACTIVE, CREDIT_LIMIT_EXCEEDED, PRICE_OVERRIDE_PRESENT, AGING_ORDER, PRODUCT_INACTIVE], authorized price override auditing, multi-line tax breakdown, five independent status dimensions, zero cost/evidence leakage, and responsive two-column/card UX)
+  37. `FEAT-ORD-012`: Order Approval / Rejection Workflow with Audit (Authoritative approval and rejection engine, PostgreSQL pessimistic row locking with deterministic lock order, order-level quantity reservations [reserved_quantity = fulfillableQuantity], mandatory rejection reason validation [5-1000 chars], customer & product active state revalidation, soft vs hard blocker enforcement, zero financial mutation, immutable timeline milestones, structured audit logging [commerce.order_event], accessible modal dialogs in Review.tsx, and 33 automated feature tests)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Delivery domain models in Phase 08).
 - **Upcoming Tickets (Phase 03 — Ordering Workflows / Admin Order Operations):**
-  1. `FEAT-ORD-012`: Order Approval / Rejection Workflow with Audit
+  1. `FEAT-ORD-013`: Order Detail Master Workspace
 
 ---
 

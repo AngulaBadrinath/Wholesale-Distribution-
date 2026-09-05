@@ -102,4 +102,37 @@ class OrderPolicy
 
         return true;
     }
+
+    /**
+     * Determine whether the user can approve the order.
+     */
+    public function approve(User $user, Order $order): bool
+    {
+        if (! $this->permissionService->has($user, Permission::ORDER_APPROVE)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            return false;
+        }
+
+        return in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL], true);
+    }
+
+    /**
+     * Determine whether the user can reject the order.
+     */
+    public function reject(User $user, Order $order): bool
+    {
+        if (! $this->permissionService->has($user, Permission::ORDER_REJECT)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            return false;
+        }
+
+        return in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL], true);
+    }
 }
+

@@ -173,6 +173,20 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/admin/orders/{order}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'show'])->whereNumber('order')->name('admin.orders.show');
         Route::get('/admin/orders/{order}/review', [\App\Http\Controllers\Admin\AdminOrderController::class, 'review'])->whereNumber('order')->name('admin.orders.review');
     });
+
+    // Authoritative Admin Order Approval Workflow
+    Route::middleware('permission:order.approve')->group(function () {
+        Route::post('/admin/orders/{order}/approve', [\App\Http\Controllers\Admin\AdminOrderController::class, 'approve'])
+            ->whereNumber('order')
+            ->name('admin.orders.approve');
+    });
+
+    // Authoritative Admin Order Rejection Workflow
+    Route::middleware('permission:order.reject')->group(function () {
+        Route::post('/admin/orders/{order}/reject', [\App\Http\Controllers\Admin\AdminOrderController::class, 'reject'])
+            ->whereNumber('order')
+            ->name('admin.orders.reject');
+    });
 });
 
 
