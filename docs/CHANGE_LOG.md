@@ -380,6 +380,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-013: FEAT-ORD-013 Order Detail Master Workspace
+- **Change ID:** `CHANGE-013`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Upgrade canonical administrative order detail workspace at `GET /admin/orders/{order}` (`admin.orders.show`) into a read-oriented operational inspection command center. Replace the temporary salesman-rendered view with `resources/js/Pages/Admin/Orders/Show.tsx` and modular partials (`OrderDetailHeader.tsx`, `OrderDetailCustomerCard.tsx`, `OrderDetailItemsTable.tsx`, `OrderDetailItemsCards.tsx`, `OrderDetailFinancialSummary.tsx`, `OrderDetailOperationalCards.tsx`). Enforce strict read-only boundary (zero approval, rejection, cancellation, adjustment, payment, delivery, or inventory mutations inside detail page; reviewable orders provide contextual CTA to dedicated review workspace). Support all 8 current lifecycle states (`DRAFT`, `SUBMITTED`, `PENDING_APPROVAL`, `APPROVED`, `PROCESSING`, `COMPLETED`, `CANCELLED`, `REJECTED`) and preserve 5 independent status dimensions (`order`, `fulfillment`, `payment`, `delivery`, `adjustment`). Present immutable historical order-time snapshots (`product_name_snapshot`, `sku_snapshot`, `unit_snapshot`, `unit_price`, line totals, tax profiles) while visually distinguishing contextual current master data. Enforce quantity conservation tracking (`ordered`, `cancelled`, `reserved`, `fulfillable`, `picked`, `dispatched`, `delivered`, `returned`). Provide customer commercial context with formatted current account addresses explicitly labeled. Exclude all sensitive data (`cost_price`, purchase cost, private payment evidence, S3 object keys, presigned URLs, credentials). Enforce safe internal `backUrl` query parameter sanitization (blocking external hosts, protocol-relative URLs, and javascript: schemes). Implement strict server-side RBAC: `ADMIN` and `SUPER_ADMIN` have full detail access, `ACCOUNTANT` has read-only access, while `SALESMAN`, `WAREHOUSE_MANAGER`, and `DELIVERY_PARTNER` are strictly blocked with 403 Forbidden.
+- **Reason:** Provide administrators and accountants with a unified, high-density, auditable operational inspection surface for reviewing orders, financial snapshots, quantity allocations, and lifecycle status across all order stages.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Foundational Operational Surface)
+- **Affected PRD Requirements:** PRD §12 (Ordering Workflow), §13 (Order Lifecycle & Invariants), §25.1 (Admin Order Detail Workspace), §25.2 (Admin Order Operations).
+- **Affected Architecture:** Technical Architecture §5.1 (Ordering Domain Model), §5.6 (Multi-Dimension Status Model), §17 (Security Architecture & Zero Trust), §23 (Data Contracts & DTOs).
+- **Affected Security:** Strict server-side zero-trust security architecture (`RULE-SEC-001`, `RULE-SEC-002`, `RULE-SEC-003`); direct IDOR protection via route model binding, authentication, account status validation, and role scoping; non-admin roles denied with 403 Forbidden; zero exposure of `cost_price` or payment evidence; safe `backUrl` sanitization preventing open redirects.
+- **Affected Frontend:** `resources/js/Pages/Admin/Orders/Show.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailHeader.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailCustomerCard.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailItemsTable.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailItemsCards.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailFinancialSummary.tsx`, `resources/js/Pages/Admin/Orders/Partials/OrderDetailOperationalCards.tsx`, `resources/js/types/order.ts`.
+- **Affected Tickets:** `FEAT-ORD-013` completed.
+- **Inventory Impact:** Read-only inspection of order-level quantity reservations; physical warehouse inventory allocation and stock balance ledgers deferred to Phase 06 (`FEAT-INV-001..004`).
+- **Order Impact:** Canonical administrative inspection surface established across all 8 lifecycle states. Original line quantities, pricing snapshots, and tax profiles preserved immutably.
+- **Payment Impact:** Read-only inspection of payment status and terms; payment capture, cheque/money order verification, and evidence preview deferred to Phase 07 (`FEAT-PAY-001..006`).
+- **Tax Impact:** Read-only multi-line tax profile breakdown aggregated from immutable order item snapshots.
+- **Accounting Impact:** Financial breakdown inspection; double-entry general ledger journal posting deferred to Phase 09.
+- **Data Migration Impact:** None (zero schema migrations required; existing schema fully satisfies requirements).
+- **Testing Impact:** Added 20 comprehensive automated feature tests in `AdminOrderDetailTest.php` (247 assertions). Full test suite at 754 tests (753 passed, 4,934 assertions, 1 skipped) passing 100%.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ORD-013`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

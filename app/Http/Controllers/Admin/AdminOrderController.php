@@ -339,99 +339,233 @@ class AdminOrderController extends Controller
     }
 
     /**
-     * Display the order confirmation and detail breakdown for administrative inspection.
+     * Display the canonical Order Detail Master Workspace for administrative inspection.
      */
     public function show(Order $order, Request $request): Response
     {
         $actor = $request->user();
         $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
 
-        if ($actor->role === UserRole::SALESMAN) {
-            throw new AuthorizationException('Salesmen must access orders via their salesman portal.');
+        if (in_array($actor->role, [UserRole::SALESMAN, UserRole::WAREHOUSE_MANAGER, UserRole::DELIVERY_PARTNER], true)) {
+            throw new AuthorizationException('Access to administrative order details is restricted to authorized administrative personnel.');
         }
 
-        $order->load(['customer', 'salesman', 'creator', 'approver', 'canceller', 'items']);
+        // Validate and sanitize backUrl to prevent open redirects
+        $rawBackUrl = $request->query('backUrl');
+        $backUrl = '/admin/orders';
+        $backLabel = 'Back to Order Queue';
 
-        return Inertia::render('Salesman/Orders/Show', [
-            'order' => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'idempotency_key' => $order->idempotency_key,
-                'draft_token' => $order->draft_token,
-                'status' => $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status,
-                'status_label' => $order->status instanceof OrderStatus ? $order->status->label() : (string) $order->status,
-                'status_badge_variant' => $order->status instanceof OrderStatus ? $order->status->badgeVariant() : 'info',
-                'fulfillment_status' => $order->fulfillment_status?->value,
-                'fulfillment_status_label' => $order->fulfillment_status?->label(),
-                'fulfillment_badge_variant' => $order->fulfillment_status?->badgeVariant(),
-                'payment_status' => $order->payment_status?->value,
-                'payment_status_label' => $order->payment_status?->label(),
-                'payment_badge_variant' => $order->payment_status?->badgeVariant(),
-                'delivery_status' => $order->delivery_status?->value,
-                'delivery_status_label' => $order->delivery_status?->label(),
-                'delivery_badge_variant' => $order->delivery_status?->badgeVariant(),
-                'adjustment_status' => $order->adjustment_status?->value,
-                'adjustment_status_label' => $order->adjustment_status?->label(),
-                'adjustment_badge_variant' => $order->adjustment_status?->badgeVariant(),
-                'currency' => $order->currency,
-                'subtotal' => (string) $order->subtotal,
-                'tax_total' => (string) $order->tax_total,
-                'adjustment_total' => (string) $order->adjustment_total,
-                'grand_total' => (string) $order->grand_total,
-                'notes' => $order->notes,
-                'submitted_at' => $order->submitted_at?->toIso8601String(),
-                'approved_at' => $order->approved_at?->toIso8601String(),
-                'approver' => $order->approver ? [
-                    'id' => $order->approver->id,
-                    'name' => $order->approver->name,
-                ] : null,
-                'cancelled_at' => $order->cancelled_at?->toIso8601String(),
-                'canceller' => $order->canceller ? [
-                    'id' => $order->canceller->id,
-                    'name' => $order->canceller->name,
-                ] : null,
-                'cancellation_reason' => $order->cancellation_reason,
-                'completed_at' => $order->completed_at?->toIso8601String(),
-                'created_at' => $order->created_at->toIso8601String(),
+        if (is_string($rawBackUrl) && (str_starts_with($rawBackUrl, '/admin/orders') || str_starts_with($rawBackUrl, '/customers'))) {
+            $backUrl = $rawBackUrl;
+            if (str_starts_with($rawBackUrl, '/customers')) {
+                $backLabel = 'Back to Customer Profile';
+            }
+        }
+
+        $order->load([
+            'customer',
+            'salesman',
+            'creator',
+            'approver',
+            'canceller',
+            'items' => fn ($q) => $q->orderBy('id', 'asc'),
+            'items.product:id,sku,name,status,default_selling_price,mrp',
+            'items.priceOverrideApprover:id,name',
+        ]);
+
+        $taxBreakdown = $this->buildTaxBreakdown($order);
+        $fulfillmentSummary = $this->buildFulfillmentSummary($order);
+        $timeline = $this->buildOrderTimeline($order);
+
+        $customer = $order->customer;
+        $isReviewable = in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL], true);
+
+        return Inertia::render('Admin/Orders/Show', [
+            'orderData' => [
+                'order' => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'version' => $order->version ?? 1,
+                    'status' => $order->status instanceof OrderStatus ? $order->status->value : (string) $order->status,
+                    'status_label' => $order->status instanceof OrderStatus ? $order->status->label() : (string) $order->status,
+                    'status_badge_variant' => $order->status instanceof OrderStatus ? $order->status->badgeVariant() : 'info',
+                    'fulfillment_status' => $order->fulfillment_status?->value,
+                    'fulfillment_status_label' => $order->fulfillment_status?->label(),
+                    'fulfillment_badge_variant' => $order->fulfillment_status?->badgeVariant(),
+                    'payment_status' => $order->payment_status?->value,
+                    'payment_status_label' => $order->payment_status?->label(),
+                    'payment_badge_variant' => $order->payment_status?->badgeVariant(),
+                    'delivery_status' => $order->delivery_status?->value,
+                    'delivery_status_label' => $order->delivery_status?->label(),
+                    'delivery_badge_variant' => $order->delivery_status?->badgeVariant(),
+                    'adjustment_status' => $order->adjustment_status?->value,
+                    'adjustment_status_label' => $order->adjustment_status?->label(),
+                    'adjustment_badge_variant' => $order->adjustment_status?->badgeVariant(),
+                    'currency' => $order->currency ?? 'USD',
+                    'subtotal' => (string) $order->subtotal,
+                    'tax_total' => (string) $order->tax_total,
+                    'adjustment_total' => (string) $order->adjustment_total,
+                    'grand_total' => (string) $order->grand_total,
+                    'notes' => $order->notes,
+                    'submitted_at' => $order->submitted_at?->toIso8601String(),
+                    'submitted_at_formatted' => $order->submitted_at ? $order->submitted_at->format('M d, Y H:i') : null,
+                    'approved_at' => $order->approved_at?->toIso8601String(),
+                    'approver' => $order->approver ? [
+                        'id' => $order->approver->id,
+                        'name' => $order->approver->name,
+                    ] : null,
+                    'cancelled_at' => $order->cancelled_at?->toIso8601String(),
+                    'canceller' => $order->canceller ? [
+                        'id' => $order->canceller->id,
+                        'name' => $order->canceller->name,
+                    ] : null,
+                    'cancellation_reason' => $order->cancellation_reason,
+                    'completed_at' => $order->completed_at?->toIso8601String(),
+                    'created_at' => $order->created_at->toIso8601String(),
+                    'is_reviewable' => $isReviewable,
+                ],
                 'customer' => [
-                    'id' => $order->customer->id,
-                    'code' => $order->customer->code,
-                    'name' => $order->customer->name,
-                    'contact_name' => $order->customer->contact_name,
-                    'email' => $order->customer->email,
-                    'phone' => $order->customer->phone,
-                    'billing_address' => $order->customer->formatted_billing_address,
-                    'shipping_address' => $order->customer->formatted_shipping_address,
-                    'payment_terms' => $order->customer->payment_terms?->label(),
+                    'id' => $customer->id,
+                    'code' => $customer->code,
+                    'name' => $customer->name,
+                    'contact_name' => $customer->contact_name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                    'billing_address' => $customer->formatted_billing_address,
+                    'shipping_address' => $customer->formatted_shipping_address,
+                    'payment_terms' => $customer->payment_terms?->label(),
+                    'credit_limit' => (float) $customer->credit_limit,
+                    'status' => $customer->status->value,
+                    'status_label' => $customer->status->label(),
+                    'is_active' => $customer->status === CustomerStatus::ACTIVE,
                 ],
                 'salesman' => [
                     'id' => $order->salesman->id,
                     'name' => $order->salesman->name,
                     'email' => $order->salesman->email,
                 ],
-                'items' => $order->items->map(fn (OrderItem $item) => [
-                    'id' => $item->id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product_name_snapshot,
-                    'sku' => $item->sku_snapshot,
-                    'unit' => $item->unit_snapshot,
-                    'ordered_quantity' => $item->ordered_quantity,
-                    'fulfillable_quantity' => $item->fulfillableQuantity(),
-                    'unit_price' => (string) $item->unit_price,
-                    'is_price_overridden' => $item->is_price_overridden,
-                    'tax_profile_code' => $item->tax_profile_code_snapshot,
-                    'tax_profile_name' => $item->tax_profile_name_snapshot,
-                    'tax_rate' => (string) $item->tax_rate_snapshot,
-                    'formatted_tax_rate' => rtrim(rtrim((string) $item->tax_rate_snapshot, '0'), '.').'%',
-                    'taxable_amount' => (string) $item->taxable_amount,
-                    'tax_amount' => (string) $item->tax_amount,
-                    'line_total' => (string) $item->line_total,
-                ]),
-                'timeline' => $this->buildOrderTimeline($order),
+                'creator' => $order->creator ? [
+                    'id' => $order->creator->id,
+                    'name' => $order->creator->name,
+                ] : null,
+                'items' => $order->items->map(function (OrderItem $item) {
+                    $catalogProduct = $item->product;
+
+                    return [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name_snapshot,
+                        'sku' => $item->sku_snapshot,
+                        'unit' => $item->unit_snapshot,
+                        'ordered_quantity' => $item->ordered_quantity,
+                        'cancelled_quantity' => $item->cancelled_quantity,
+                        'reserved_quantity' => $item->reserved_quantity,
+                        'fulfillable_quantity' => $item->fulfillableQuantity(),
+                        'picked_quantity' => $item->picked_quantity,
+                        'dispatched_quantity' => $item->dispatched_quantity,
+                        'delivered_quantity' => $item->delivered_quantity,
+                        'returned_quantity' => $item->returned_quantity,
+                        'unit_price' => (string) $item->unit_price,
+                        'is_price_overridden' => (bool) $item->is_price_overridden,
+                        'price_override_reason' => $item->price_override_reason,
+                        'price_override_approver' => $item->priceOverrideApprover ? [
+                            'id' => $item->priceOverrideApprover->id,
+                            'name' => $item->priceOverrideApprover->name,
+                        ] : null,
+                        'tax_profile_code' => $item->tax_profile_code_snapshot,
+                        'tax_profile_name' => $item->tax_profile_name_snapshot,
+                        'tax_rate' => number_format((float) $item->tax_rate_snapshot, 2, '.', ''),
+                        'formatted_tax_rate' => rtrim(rtrim((string) $item->tax_rate_snapshot, '0'), '.') . '%',
+                        'taxable_amount' => (string) $item->taxable_amount,
+                        'tax_amount' => (string) $item->tax_amount,
+                        'line_total' => (string) $item->line_total,
+                        'catalog_product' => $catalogProduct ? [
+                            'status' => $catalogProduct->status->value,
+                            'is_active' => $catalogProduct->status === ProductStatus::ACTIVE,
+                            'default_selling_price' => (string) $catalogProduct->default_selling_price,
+                            'mrp' => (string) $catalogProduct->mrp,
+                        ] : null,
+                    ];
+                }),
+                'tax_breakdown' => $taxBreakdown,
+                'fulfillment_summary' => $fulfillmentSummary,
+                'timeline' => $timeline,
+                'can' => [
+                    'review' => $isReviewable && ($this->permissionService->has($actor, Permission::ORDER_APPROVE) || $this->permissionService->has($actor, Permission::ORDER_REJECT)),
+                    'print' => true,
+                ],
+                'backUrl' => $backUrl,
+                'backLabel' => $backLabel,
             ],
-            'backUrl' => '/admin/orders',
-            'backLabel' => 'Back to Order Queue',
+            'backUrl' => $backUrl,
+            'backLabel' => $backLabel,
         ]);
+    }
+
+    /**
+     * Compute aggregated multi-line tax breakdown.
+     *
+     * @return array<int, array<string, string>>
+     */
+    protected function buildTaxBreakdown(Order $order): array
+    {
+        $taxBreakdown = [];
+        foreach ($order->items as $item) {
+            $code = $item->tax_profile_code_snapshot ?: 'EXEMPT';
+            if (! isset($taxBreakdown[$code])) {
+                $taxBreakdown[$code] = [
+                    'code' => $code,
+                    'name' => $item->tax_profile_name_snapshot ?: 'Tax Exempt',
+                    'rate' => number_format((float) $item->tax_rate_snapshot, 2, '.', ''),
+                    'formatted_rate' => rtrim(rtrim((string) $item->tax_rate_snapshot, '0'), '.') . '%',
+                    'taxable_amount' => '0.00',
+                    'tax_amount' => '0.00',
+                ];
+            }
+            $taxBreakdown[$code]['taxable_amount'] = bcadd($taxBreakdown[$code]['taxable_amount'], (string) $item->taxable_amount, 2);
+            $taxBreakdown[$code]['tax_amount'] = bcadd($taxBreakdown[$code]['tax_amount'], (string) $item->tax_amount, 2);
+        }
+
+        return array_values($taxBreakdown);
+    }
+
+    /**
+     * Compute aggregate fulfillment summary quantities.
+     *
+     * @return array<string, int>
+     */
+    protected function buildFulfillmentSummary(Order $order): array
+    {
+        $totalOrdered = 0;
+        $totalReserved = 0;
+        $totalFulfillable = 0;
+        $totalCancelled = 0;
+        $totalPicked = 0;
+        $totalDispatched = 0;
+        $totalDelivered = 0;
+        $totalReturned = 0;
+
+        foreach ($order->items as $item) {
+            $totalOrdered += (int) $item->ordered_quantity;
+            $totalReserved += (int) $item->reserved_quantity;
+            $totalFulfillable += (int) $item->fulfillableQuantity();
+            $totalCancelled += (int) $item->cancelled_quantity;
+            $totalPicked += (int) $item->picked_quantity;
+            $totalDispatched += (int) $item->dispatched_quantity;
+            $totalDelivered += (int) $item->delivered_quantity;
+            $totalReturned += (int) $item->returned_quantity;
+        }
+
+        return [
+            'total_ordered' => $totalOrdered,
+            'total_reserved' => $totalReserved,
+            'total_fulfillable' => $totalFulfillable,
+            'total_cancelled' => $totalCancelled,
+            'total_picked' => $totalPicked,
+            'total_dispatched' => $totalDispatched,
+            'total_delivered' => $totalDelivered,
+            'total_returned' => $totalReturned,
+        ];
     }
 
     /**

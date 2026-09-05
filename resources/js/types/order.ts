@@ -482,3 +482,134 @@ export interface AdminOrderReviewData {
     };
 }
 
+export interface AdminOrderDetailItem {
+    id: number;
+    product_id: number;
+    product_name: string;
+    sku: string;
+    unit: string;
+    ordered_quantity: number;
+    cancelled_quantity: number;
+    reserved_quantity: number;
+    fulfillable_quantity: number;
+    picked_quantity: number;
+    dispatched_quantity: number;
+    delivered_quantity: number;
+    returned_quantity: number;
+    unit_price: string;
+    is_price_overridden: boolean;
+    price_override_reason: string | null;
+    price_override_approver: {
+        id: number;
+        name: string;
+    } | null;
+    tax_profile_code: string;
+    tax_profile_name: string;
+    tax_rate: string;
+    formatted_tax_rate: string;
+    taxable_amount: string;
+    tax_amount: string;
+    line_total: string;
+    catalog_product: {
+        status: string;
+        is_active: boolean;
+        default_selling_price?: string;
+        mrp?: string;
+    } | null;
+}
+
+export interface AdminOrderDetailData {
+    order: {
+        id: number;
+        order_number: string;
+        version: number;
+        status: OrderStatus;
+        status_label: string;
+        status_badge_variant: string;
+        fulfillment_status: FulfillmentStatus | null;
+        fulfillment_status_label: string | null;
+        fulfillment_badge_variant: string | null;
+        payment_status: PaymentStatus | null;
+        payment_status_label: string | null;
+        payment_badge_variant: string | null;
+        delivery_status: DeliveryStatus | null;
+        delivery_status_label: string | null;
+        delivery_badge_variant: string | null;
+        adjustment_status: AdjustmentStatus | null;
+        adjustment_status_label: string | null;
+        adjustment_badge_variant: string | null;
+        currency: string;
+        subtotal: string;
+        tax_total: string;
+        adjustment_total: string;
+        grand_total: string;
+        notes: string | null;
+        submitted_at: string | null;
+        submitted_at_formatted: string | null;
+        approved_at: string | null;
+        approver: {
+            id: number;
+            name: string;
+        } | null;
+        cancelled_at: string | null;
+        canceller: {
+            id: number;
+            name: string;
+        } | null;
+        cancellation_reason: string | null;
+        completed_at: string | null;
+        created_at: string;
+        is_reviewable: boolean;
+    };
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        contact_name: string | null;
+        email: string | null;
+        phone: string | null;
+        billing_address: string;
+        shipping_address: string;
+        payment_terms: string | null;
+        credit_limit: number;
+        status: string;
+        status_label: string;
+        is_active: boolean;
+    };
+    salesman: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    creator: {
+        id: number;
+        name: string;
+    } | null;
+    items: AdminOrderDetailItem[];
+    tax_breakdown: Array<{
+        code: string;
+        name: string;
+        rate: string;
+        formatted_rate: string;
+        taxable_amount: string;
+        tax_amount: string;
+    }>;
+    fulfillment_summary: {
+        total_ordered: number;
+        total_reserved: number;
+        total_fulfillable: number;
+        total_cancelled: number;
+        total_picked: number;
+        total_dispatched: number;
+        total_delivered: number;
+        total_returned: number;
+    };
+    timeline: OrderTimelineEvent[];
+    can: {
+        review: boolean;
+        print: boolean;
+    };
+    backUrl: string;
+    backLabel: string;
+}
+

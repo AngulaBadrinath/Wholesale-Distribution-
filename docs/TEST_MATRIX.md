@@ -617,6 +617,28 @@
 - [x] **Financial & Line Integrity on Rejection:** Rejection preserves line items, prices, and quantities without deletion or mutation (`ORD-REJ-015`).
 - [x] **Rejection Reason Whitespace Normalization:** Rejection reason is trimmed of leading and trailing whitespace before persistence (`ORD-REJ-016`).
 
+### 1.8.9 Order Detail Master Workspace (`ORDER DETAIL` / `FEAT-ORD-013`)
+- [x] **Admin Full Detail Inspection Access:** Administrator views canonical order detail workspace at `/admin/orders/{order}` with complete projection data (`ORD-DTL-001`).
+- [x] **Super Admin Global Detail Inspection Access:** Super Admin views order details with full operational attribution (`ORD-DTL-002`).
+- [x] **Accountant Read-Only Operational & Financial Access:** Accountant accesses detail workspace in strict read-only mode (`can.review = false`, `ORD-DTL-003`).
+- [x] **Salesman Strict Access Denial (403):** Salesmen attempting to access admin order detail route are blocked with 403 Forbidden without order leakage (`ORD-DTL-004`).
+- [x] **Warehouse Manager Strict Portal Denial (403):** Warehouse Manager role blocked with 403 Forbidden from admin order detail route (`ORD-DTL-005`).
+- [x] **Delivery Partner Strict Portal Denial (403):** Delivery Partner role blocked with 403 Forbidden from admin order detail route (`ORD-DTL-006`).
+- [x] **Unauthenticated Redirection to Login:** Unauthenticated guests attempting to access admin order detail are redirected to login (`ORD-DTL-007`).
+- [x] **Inactive Account Interception:** Inactive or suspended admin accounts blocked from detail inspection (`ORD-DTL-008`).
+- [x] **Non-Existent Order IDOR Protection (404):** Direct URL manipulation with non-existent order ID returns 404 Not Found (`ORD-DTL-009`).
+- [x] **Full Lifecycle State Coverage:** All 8 canonical lifecycle states (`DRAFT`, `SUBMITTED`, `PENDING_APPROVAL`, `APPROVED`, `PROCESSING`, `COMPLETED`, `CANCELLED`, `REJECTED`) supported with accurate state banners and badges (`ORD-DTL-010`).
+- [x] **Five Independent Status Dimensions Preservation:** Order status, fulfillment status, payment status, delivery status, and adjustment status presented independently without collapsing (`ORD-DTL-011`).
+- [x] **Quantity Conservation & Allocation Tracking:** Ordered, cancelled, reserved, fulfillable, picked, dispatched, delivered, and returned quantities tracked accurately across items (`ORD-DTL-012`).
+- [x] **Immutable Historical Order & Item Snapshots:** Product master edits and tax profile alterations do not alter historical order line names, SKUs, units, prices, or line totals (`ORD-DTL-013`).
+- [x] **Deterministic Multi-Line Tax Breakdown Aggregation:** Multi-line order taxes aggregated into distinct tax profiles with code, rate, taxable amount, and tax amount (`ORD-DTL-014`).
+- [x] **Customer Commercial Profile & Current Account Address Labeling:** Displays customer code, contact details, payment terms, credit limit, account status, and formatted addresses clearly labeled as current account addresses (`ORD-DTL-015`).
+- [x] **Historical Salesman Relationship Attribution:** Order displays creator/salesman attribution preserved from order creation (`ORD-DTL-016`).
+- [x] **Authentic Timeline Milestone Tracing:** Displays persisted timestamps and actors for created, submitted, approved, and cancelled/rejected milestones without fabricated visits (`ORD-DTL-017`).
+- [x] **Zero Cost Price or Financial Secret Leakage:** Cost price, supplier costs, private S3 keys, and internal secrets strictly excluded from JSON payload (`ORD-DTL-018`).
+- [x] **Safe Back URL Query Parameter Sanitization:** Valid internal return URLs preserved; external hosts, protocol-relative URLs, and javascript: URIs safely rejected to `/admin/orders` (`ORD-DTL-019`).
+- [x] **Bounded Query Execution & Large Order Scalability:** Executes in bounded SQL queries with selective eager loading; scales cleanly for 100+ line items without N+1 queries (`ORD-DTL-020`).
+
 ### 1.9 Admin Order Processing (`ORDER PROCESSING`)
 - [ ] **Happy Path:** Submitted order appears in `New Orders` queue with correct badge count; Admin approves order.
 - [ ] **State Transition:** Approved order moves from `New Orders` to `Active Orders`; status changes to `APPROVED`.

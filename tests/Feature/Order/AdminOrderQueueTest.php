@@ -723,8 +723,8 @@ class AdminOrderQueueTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Salesman/Orders/Show')
-            ->where('order.order_number', 'ORD-DET-001')
+            ->component('Admin/Orders/Show')
+            ->where('orderData.order.order_number', 'ORD-DET-001')
             ->where('backUrl', '/admin/orders')
             ->where('backLabel', 'Back to Order Queue')
         );
