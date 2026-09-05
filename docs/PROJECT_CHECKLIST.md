@@ -122,7 +122,7 @@
 - [x] `FEAT-ALLOC-002`: Quantity Conservation & Allocation Validation Constraints
 
 ### Order Adjustments
-- [ ] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)
+- [x] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)
 - [ ] `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
 - [ ] `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow
 - [ ] `FEAT-ADJ-004`: Atomic Adjustment Application Engine

@@ -101,7 +101,15 @@ export interface OrderItemDetail {
     sku: string;
     unit: string;
     ordered_quantity: number;
+    cancelled_quantity?: number;
+    reserved_quantity?: number;
     fulfillable_quantity: number;
+    allocated_quantity?: number;
+    unallocated_quantity?: number;
+    picked_quantity?: number;
+    dispatched_quantity?: number;
+    delivered_quantity?: number;
+    returned_quantity?: number;
     unit_price: string;
     is_price_overridden: boolean;
     tax_profile_code: string | null;
@@ -183,6 +191,10 @@ export interface OrderDetail {
     };
     items: OrderItemDetail[];
     timeline?: OrderTimelineEvent[];
+    active_adjustment?: ActiveAdjustmentData | null;
+    can?: {
+        request_adjustment?: boolean;
+    };
 }
 
 export interface OrderHistoryItem {
@@ -643,12 +655,50 @@ export interface AdminOrderDetailData {
         has_allocations: boolean;
     };
     timeline: OrderTimelineEvent[];
+    active_adjustment?: ActiveAdjustmentData | null;
     can: {
         review: boolean;
         print: boolean;
+        request_adjustment?: boolean;
     };
     backUrl: string;
     backLabel: string;
 }
+
+export type AdjustmentReasonCode =
+    | 'CUSTOMER_REQUEST'
+    | 'WAREHOUSE_DAMAGE'
+    | 'STOCKOUT_DEFECT'
+    | 'PRICING_DISPUTE'
+    | 'OTHER';
+
+export interface OrderAdjustmentItemData {
+    order_item_id: number;
+    product_name: string;
+    sku: string;
+    requested_quantity_reduction: number;
+    affected_allocation_quantity: number;
+    is_case_b: boolean;
+    projected_line_total_reduction: string;
+}
+
+export interface ActiveAdjustmentData {
+    id: number;
+    adjustment_number: string;
+    status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'APPLIED' | 'CANCELLED' | 'REVERSED';
+    status_label: string;
+    reason_code: AdjustmentReasonCode;
+    reason_label: string;
+    notes: string | null;
+    requested_by: string | null;
+    requested_by_id: number;
+    requested_at: string | null;
+    can_withdraw: boolean;
+    projected_subtotal_reduction: string;
+    projected_tax_reduction: string;
+    projected_grand_total_reduction: string;
+    items: OrderAdjustmentItemData[];
+}
+
 
 

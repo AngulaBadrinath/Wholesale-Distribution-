@@ -187,6 +187,18 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('order')
             ->name('admin.orders.reject');
     });
+
+    // Authoritative Order Adjustment Request & Withdrawal Workflows (FEAT-ADJ-001)
+    Route::middleware('permission:order.adjust.request')->group(function () {
+        Route::post('/orders/{order}/adjustments', [\App\Http\Controllers\Order\OrderAdjustmentRequestController::class, 'store'])
+            ->whereNumber('order')
+            ->name('orders.adjustments.store');
+
+        Route::post('/orders/{order}/adjustments/{adjustment}/withdraw', [\App\Http\Controllers\Order\OrderAdjustmentRequestController::class, 'withdraw'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('orders.adjustments.withdraw');
+    });
 });
 
 

@@ -488,7 +488,17 @@ class SalesmanOrderController extends Controller
             throw new AuthorizationException('You are not authorized to view orders for other salesmen.');
         }
 
-        $order->load(['customer', 'salesman', 'creator', 'approver', 'canceller', 'items']);
+        $order->load([
+            'customer',
+            'salesman',
+            'creator',
+            'approver',
+            'canceller',
+            'activeAdjustment.requester:id,name',
+            'activeAdjustment.items' => fn ($q) => $q->orderBy('id', 'asc'),
+            'items' => fn ($q) => $q->orderBy('id', 'asc'),
+            'items.allocations' => fn ($q) => $q->orderBy('id', 'asc'),
+        ]);
 
         return Inertia::render('Salesman/Orders/Show', [
             'order' => [
@@ -554,7 +564,15 @@ class SalesmanOrderController extends Controller
                     'sku' => $item->sku_snapshot,
                     'unit' => $item->unit_snapshot,
                     'ordered_quantity' => $item->ordered_quantity,
+                    'cancelled_quantity' => $item->cancelled_quantity,
+                    'reserved_quantity' => $item->reserved_quantity,
                     'fulfillable_quantity' => $item->fulfillableQuantity(),
+                    'allocated_quantity' => $item->allocatedQuantity(),
+                    'unallocated_quantity' => $item->unallocatedQuantity(),
+                    'picked_quantity' => $item->picked_quantity,
+                    'dispatched_quantity' => $item->dispatched_quantity,
+                    'delivered_quantity' => $item->delivered_quantity,
+                    'returned_quantity' => $item->returned_quantity,
                     'unit_price' => (string) $item->unit_price,
                     'is_price_overridden' => $item->is_price_overridden,
                     'tax_profile_code' => $item->tax_profile_code_snapshot,
@@ -565,7 +583,35 @@ class SalesmanOrderController extends Controller
                     'tax_amount' => (string) $item->tax_amount,
                     'line_total' => (string) $item->line_total,
                 ]),
+                'active_adjustment' => $order->hasActiveAdjustment() && $order->activeAdjustment ? [
+                    'id' => $order->activeAdjustment->id,
+                    'adjustment_number' => $order->activeAdjustment->adjustment_number,
+                    'status' => $order->activeAdjustment->status->value,
+                    'status_label' => $order->activeAdjustment->status->label(),
+                    'reason_code' => $order->activeAdjustment->reason_code->value,
+                    'reason_label' => $order->activeAdjustment->reason_code->label(),
+                    'notes' => $order->activeAdjustment->notes,
+                    'requested_by' => $order->activeAdjustment->requester?->name,
+                    'requested_by_id' => $order->activeAdjustment->requested_by,
+                    'requested_at' => $order->activeAdjustment->requested_at?->toIso8601String(),
+                    'can_withdraw' => ($actor->id === $order->activeAdjustment->requested_by || in_array($actor->role, [UserRole::SUPER_ADMIN, UserRole::ADMIN], true)),
+                    'projected_subtotal_reduction' => (string) $order->activeAdjustment->projected_subtotal_reduction,
+                    'projected_tax_reduction' => (string) $order->activeAdjustment->projected_tax_reduction,
+                    'projected_grand_total_reduction' => (string) $order->activeAdjustment->projected_grand_total_reduction,
+                    'items' => $order->activeAdjustment->items->map(fn ($ai) => [
+                        'order_item_id' => $ai->order_item_id,
+                        'product_name' => $ai->product_name_snapshot,
+                        'sku' => $ai->sku_snapshot,
+                        'requested_quantity_reduction' => $ai->requested_quantity_reduction,
+                        'affected_allocation_quantity' => $ai->affected_allocation_quantity,
+                        'is_case_b' => $ai->affected_allocation_quantity > 0,
+                        'projected_line_total_reduction' => (string) $ai->projected_line_total_reduction,
+                    ]),
+                ] : null,
                 'timeline' => $this->buildOrderTimeline($order),
+                'can' => [
+                    'request_adjustment' => $actor->can('requestAdjustment', $order),
+                ],
             ],
         ]);
     }

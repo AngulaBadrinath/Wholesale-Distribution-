@@ -118,6 +118,16 @@ class OrderItem extends Model
     }
 
     /**
+     * Get all adjustment item records referencing this order line.
+     *
+     * @return HasMany<OrderAdjustmentItem, $this>
+     */
+    public function adjustmentItems(): HasMany
+    {
+        return $this->hasMany(OrderAdjustmentItem::class, 'order_item_id')->orderBy('id', 'asc');
+    }
+
+    /**
      * Calculate current fulfillable quantity adhering to conservation rule.
      * ordered_quantity = cancelled_quantity + fulfillable_quantity
      */

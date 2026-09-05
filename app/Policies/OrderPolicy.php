@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\AdjustmentStatus;
+use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Models\Order;
@@ -133,6 +135,30 @@ class OrderPolicy
         }
 
         return in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL], true);
+    }
+
+    /**
+     * Determine whether the user can request an adjustment on the order.
+     */
+    public function requestAdjustment(User $user, Order $order): bool
+    {
+        if (! $this->permissionService->has($user, Permission::ORDER_ADJUST_REQUEST)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN && $order->salesman_id !== $user->id) {
+            return false;
+        }
+
+        if ($user->role === UserRole::WAREHOUSE_MANAGER && ! in_array($order->status, [OrderStatus::APPROVED, OrderStatus::PROCESSING], true)) {
+            return false;
+        }
+
+        if (! in_array($order->status, [OrderStatus::SUBMITTED, OrderStatus::PENDING_APPROVAL, OrderStatus::APPROVED, OrderStatus::PROCESSING], true)) {
+            return false;
+        }
+
+        return $order->adjustment_status !== AdjustmentStatus::REQUESTED;
     }
 }
 

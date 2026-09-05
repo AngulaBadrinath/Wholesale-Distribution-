@@ -173,6 +173,34 @@ class Order extends Model
     }
 
     /**
+     * Get all order adjustments for this order.
+     *
+     * @return HasMany<OrderAdjustment, $this>
+     */
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(OrderAdjustment::class, 'order_id')->orderBy('id', 'asc');
+    }
+
+    /**
+     * Get the active submitted adjustment request for this order, if any.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<OrderAdjustment, $this>
+     */
+    public function activeAdjustment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(OrderAdjustment::class, 'order_id')->where('status', \App\Enums\OrderAdjustmentStatus::SUBMITTED);
+    }
+
+    /**
+     * Determine if this order currently has a pending adjustment request.
+     */
+    public function hasActiveAdjustment(): bool
+    {
+        return $this->adjustment_status === AdjustmentStatus::REQUESTED;
+    }
+
+    /**
      * Scope query based on the authenticated actor's resource scope.
      * Salesmen can only access orders for their assigned accounts.
      */

@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **31.3%** (40 / 128 tickets) | FEAT-ALLOC-002 verified complete; 798 automated tests passing (795 passed, 5,161 assertions, 3 skipped) |
+| **Overall Code Completion** | **32.0%** (41 / 128 tickets) | FEAT-ADJ-001 verified complete; 828 automated tests passing (821 passed, 5,260 assertions, 7 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 06 — Allocation, Adjustment & Inventory Integrity** | Status: `IN_PROGRESS` (FEAT-ALLOC-001 & FEAT-ALLOC-002 complete; allocation mathematical validation and progression landed) |
+| **Current Phase** | **Phase 06 — Allocation, Adjustment & Inventory Integrity** | Status: `IN_PROGRESS` (FEAT-ALLOC-001, FEAT-ALLOC-002 & FEAT-ADJ-001 complete; allocation mathematical validation and order adjustment request flow landed) |
 | **Current Milestone Gate** | **GATE C — Operations & Inventory Integrity** | Status: In progress (Phase 00, 01, 02 complete; Phase 03/05 complete; Phase 06 in progress) |
-| **Current Active Ticket** | **FEAT-ALLOC-002** (Complete) | Ready to begin `UI-003: Admin Application Shell` / `FEAT-ADJ-001: Order Adjustment Request Flow` |
+| **Current Active Ticket** | **FEAT-ADJ-001** (Complete) | Ready to begin `FEAT-ADJ-002: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview` / `UI-003: Admin Application Shell` |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
 | **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001` order model landed; `FEAT-DLV-001` delivery model pending) |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **40** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`).
-- Current progress: **31.3%** (40 / 128).
+- Completed tickets: **41** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`).
+- Current progress: **32.0%** (41 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (39):**
+- **Completed Tickets (41):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -73,12 +73,14 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   38. `FEAT-ORD-013`: Order Detail Master Workspace (Canonical administrative detail inspection workspace at `GET /admin/orders/{order}`, read-only operational command center, comprehensive lifecycle state support, 5 independent status dimensions, non-destructive quantity conservation [ordered, cancelled, reserved, fulfillable, picked, dispatched, delivered, returned], immutable historical pricing & tax snapshots vs contextual current master data, multi-line tax profile breakdown table, customer commercial context with current address labeling, historical salesman relationship attribution, authentic milestone timeline, zero cost_price/payment evidence/secret leakage, safe backUrl sanitization, strict RBAC [Admin/Super Admin/Accountant read-only; Salesman/Warehouse/Delivery denied 403], responsive 12-column layout and mobile card UX with touch targets >= 44px, and 20 automated feature tests)
   39. `FEAT-ALLOC-001`: Order Item Quantity Allocation Model (Dedicated canonical `order_item_allocations` table and `OrderItemAllocation` model, preservation of authoritative denormalized quantity rollups on `order_items`, atomic baseline allocation integration inside `OrderWorkflowService::approveOrder()`, cross-row conservation enforcement $\sum \text{allocated} \le \text{fulfillable}$, partial allocation and residual unallocated computation, row-local PostgreSQL CHECK constraints, deterministic lock ordering, lifecycle gating [APPROVED/PROCESSING allowed; DRAFT/SUBMITTED/REJECTED/CANCELLED/COMPLETED blocked 409], idempotent historical approved order backfill service, Admin Order Detail allocation breakdown and summary projection, and 19 automated feature tests)
   40. `FEAT-ALLOC-002`: Allocation Validation & Mathematical Constraints (Mathematical conservation laws $\text{ordered} = \text{cancelled} + \text{fulfillable}$, active allocation sum constraint $\sum \text{allocated}_{\text{active}} \le \text{fulfillable}$, unallocated capacity calculation $\max(0, \text{fulfillable} - \sum \text{allocated}_{\text{active}})$, strict fulfillment progression constraints $0 \le \text{returned} \le \text{delivered} \le \text{dispatched} \le \text{picked} \le \text{allocated}$ and $0 \le \text{reserved} \le \text{allocated}$, migration `2026_09_05_000012` tightening PostgreSQL progression check constraints, non-destructive soft-states for `RELEASED` and `CANCELLED` allocations restoring unallocated pool, single-direction authoritative rollup synchronization via `OrderAllocationService::syncOrderItemRollups()`, collision-free max sequence calculation `ALC-{order}-{item}-{seq}`, adjustment reduction capacity pre-check `canReduceFulfillableQuantity()`, rollup drift detection `OrderAllocationValidationService::detectRollupDrift()`, pessimistic row locking and concurrency serialization, 25 new automated feature tests across `AllocationValidationTest.php` and `AllocationConcurrencyTest.php`, 798 total tests passing 100%)
+  41. `FEAT-ADJ-001`: Order Adjustment Request Flow (Authoritative non-destructive post-submission quantity reduction request workflow, migration `2026_09_05_000013` creating `order_adjustments` and `order_adjustment_items` with `RESTRICT` deletion semantics, single-open-request invariant enforced via PostgreSQL partial unique index `idx_order_adjustments_single_open` and row lock, deterministic sequence generation `ADJ-{order}-{seq}`, Case A [unallocated only] vs Case B [allocation-impacting] classification, informational financial projections using BCMath and `TaxCalculationService::roundHalfUp`, deterministic idempotency replay vs 409 payload conflict detection, requester cancellation/withdrawal restoring order status, full server-side scoping [Salesman assigned orders; Warehouse Manager approved/processing orders; Admin broad scope], lifecycle gating [SUBMITTED/PENDING_APPROVAL/APPROVED/PROCESSING allowed; DRAFT/COMPLETED/CANCELLED/REJECTED blocked 409], minimal responsive UI modal and pending adjustment banner, 30 automated feature and concurrency tests, 828 total repository tests passing 100%)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (1):**
   1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Delivery domain models in Phase 08).
 - **Upcoming Tickets (Phase 06 — Allocation, Adjustment & Inventory Integrity):**
-  1. `UI-003`: Admin Application Shell
-  2. `FEAT-ADJ-001`: Order Adjustment Request Flow
+  1. `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
+  2. `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow
+  3. `UI-003`: Admin Application Shell
 
 ---
 

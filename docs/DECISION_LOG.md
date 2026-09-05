@@ -287,6 +287,23 @@
 - **Affected Tickets:** `FEAT-ALLOC-002`, `FEAT-ALLOC-001`, `FEAT-ADJ-001..006`, `FEAT-INV-001..004`.
 - **Consequences:** All future picking, packing, dispatching, delivery, and adjustment operations must use `OrderAllocationService` and pass progression and capacity validation before mutating records.
 
+### DEC-018: Order Adjustment Request Architecture, Non-Destructive History, Single Open Request Invariant & Self-Approval Policy
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Establish `order_adjustments` and `order_adjustment_items` as the authoritative persistence aggregate for post-submission quantity reduction requests (`FEAT-ADJ-001`). Enforce non-destructive history by using `restrictOnDelete()` on `order_adjustment_items.adjustment_id -> order_adjustments` (preventing cascading deletion of historical request lines). Enforce the single-open-request invariant ($ \le 1 $ `SUBMITTED` request per order) via dual controls: pessimistic row lock in `OrderAdjustmentService` and PostgreSQL partial unique index `idx_order_adjustments_single_open ON order_adjustments (order_id) WHERE status = 'SUBMITTED'`. Generate collision-free monotonic sequential identifiers (`ADJ-{order_number}-{seq}`) without sequence reuse. Enforce deterministic idempotency through canonical payload fingerprinting (SHA-256 over order ID, reason code, notes, and sorted item IDs + reductions): identical requests return replay (200), conflicting payloads return 409 Conflict. Classify reductions into Case A (unallocated units only) and Case B (allocation-impacting with `affected_allocation_quantity`). Financial projections and Case A/B metrics are informational snapshots and MUST NOT mutate baseline order financials, pricing snapshots, or active inventory allocations.
+- **Future Approval Policy & Self-Approval Rule (for FEAT-ADJ-003):** `requested_by` is persisted permanently on `order_adjustments`. For future review/approval (`FEAT-ADJ-003`), dual-control segregation of duties applies: a user cannot approve an adjustment they personally requested, EXCEPT for `SUPER_ADMIN` emergency override when documented with explicit audit reason. Admins who did not request the adjustment may approve salesman or warehouse requests.
+- **Context:** Wholesale distribution orders frequently require post-submission quantity cancellations due to customer request, warehouse damage, or inventory shortages. These must be recorded as explicit audit adjustments without rewriting history, mutating active allocations before approval, or creating conflicting concurrent adjustments.
+- **Reason:** Satisfies `RULE-DOM-001` (Non-Destructive History), `RULE-ORD-002` (Order Adjustment Framework), `RULE-PRI-001` (Price Immutability), and `RULE-TAX-002` (Tax Snapshot Immutability). Prevents race conditions and double-reduction errors under concurrent operations.
+- **Alternatives Considered:**
+  - *Hard-deleting withdrawn adjustment requests:* Rejected because submitted adjustments are historical transactional records; cancellation transitions to `CANCELLED` status with cancellation reason.
+  - *Cascading deletion on child lines (`cascadeOnDelete`):* Rejected to prevent accidental loss of adjustment history; `restrictOnDelete` is required.
+  - *Relying solely on idempotency key without payload fingerprint:* Rejected because retries with different payloads would return false replays rather than catching conflicting parameters (409).
+- **Chosen Approach:** Dedicated schema with PostgreSQL partial unique index and check constraints; `OrderAdjustmentService` with deterministic lock order (`Order -> Items ASC -> Allocations ASC -> Adjustments`); `TaxCalculationService::roundHalfUp` financial projections; FormRequest validation; requester withdrawal capability; and Vue/React Inertia Show integration.
+- **Affected Domains:** Order Adjustments, Quantity Allocation, Inventory Integrity, Salesman Portal, Admin Portal.
+- **Affected Documents:** PRD §14, §15, §16; Technical Architecture §14, §15, §18; Security & Access §18, §23.
+- **Affected Tickets:** `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`.
+- **Consequences:** All future order adjustment review, approval, and application workflows (`FEAT-ADJ-002..006`) must operate over this aggregate, respecting the immutability of baseline order data until atomic application in `FEAT-ADJ-004`.
+
 ---
 
 ## Open Decisions & TBD Register

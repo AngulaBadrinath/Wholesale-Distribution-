@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
@@ -10,6 +10,8 @@ import OrderDetailItemsTable from './Partials/OrderDetailItemsTable';
 import OrderDetailItemsCards from './Partials/OrderDetailItemsCards';
 import OrderDetailFinancialSummary from './Partials/OrderDetailFinancialSummary';
 import OrderDetailOperationalCards from './Partials/OrderDetailOperationalCards';
+import PendingAdjustmentBanner from './Partials/PendingAdjustmentBanner';
+import RequestAdjustmentModal from './Partials/RequestAdjustmentModal';
 import { MessageSquare, ShieldCheck, Clock } from 'lucide-react';
 
 interface AdminOrderShowPageProps {
@@ -23,6 +25,8 @@ export default function Show({
     backUrl = '/admin/orders',
     backLabel = 'Back to Order Queue',
 }: AdminOrderShowPageProps) {
+    const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+
     const {
         order,
         customer,
@@ -32,6 +36,7 @@ export default function Show({
         tax_breakdown,
         fulfillment_summary,
         timeline,
+        active_adjustment,
         can,
     } = orderData;
 
@@ -49,6 +54,25 @@ export default function Show({
                     can={can}
                     backUrl={orderData.backUrl || backUrl}
                     backLabel={orderData.backLabel || backLabel}
+                    onRequestAdjustment={() => setIsAdjustmentModalOpen(true)}
+                />
+
+                {/* Pending Adjustment Banner (When an active submitted adjustment exists) */}
+                {active_adjustment && (
+                    <PendingAdjustmentBanner
+                        orderId={order.id}
+                        orderNumber={order.order_number}
+                        activeAdjustment={active_adjustment}
+                    />
+                )}
+
+                {/* Request Adjustment Modal */}
+                <RequestAdjustmentModal
+                    isOpen={isAdjustmentModalOpen}
+                    orderId={order.id}
+                    orderNumber={order.order_number}
+                    items={items}
+                    onClose={() => setIsAdjustmentModalOpen(false)}
                 />
 
                 {/* 12-Column Responsive Command Layout */}

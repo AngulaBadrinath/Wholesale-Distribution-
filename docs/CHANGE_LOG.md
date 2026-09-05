@@ -459,6 +459,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ALLOC-002`.
 
+### CHANGE-016: FEAT-ADJ-001 Order Adjustment Request Flow
+- **Change ID:** `CHANGE-016`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the authoritative post-submission order adjustment request flow (`FEAT-ADJ-001`). Allow authorized roles (`SUPER_ADMIN`, `ADMIN`, `SALESMAN`, `WAREHOUSE_MANAGER`) to initiate non-destructive quantity reduction requests on orders in `SUBMITTED`, `PENDING_APPROVAL`, `APPROVED`, `PROCESSING` statuses. Enforce non-destructive transactional history (`order_adjustment_items.adjustment_id -> order_adjustments` uses `restrictOnDelete()`). Enforce single open request per order via PostgreSQL partial unique index `idx_order_adjustments_single_open` and row locking. Classify line reductions into Case A (unallocated only) and Case B (allocation-impacting with `affected_allocation_quantity`). Persist immutable request snapshots, compute financial projections using BCMath and `TaxCalculationService::roundHalfUp` without mutating baseline order/item financials or inventory allocations. Support deterministic idempotency replay (same payload => replay; conflicting payload => 409). Provide requester cancellation/withdrawal restoring `orders.adjustment_status = 'NONE'`. Implement responsive Request Adjustment modal and Pending Adjustment banner.
+- **Reason:** Guarantee commercial history preservation (`RULE-DOM-001`, `RULE-ORD-002`), allocation conservation, and transactional concurrency safety for wholesale order modifications before administrative approval.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (High/Critical Transactional Workflow)
+- **Affected PRD Requirements:** §14 (Order Adjustment Framework & Non-Destructive History), §15 (Single Open Request Invariant), §16 (Snapshot Immutability).
+- **Affected Architecture:** §14 (Allocations & Adjustments), §15 (Order State Machine & Adjustment Status), §18 (Deterministic Lock Hierarchy: Order -> Items ASC -> Allocations ASC -> Adjustments).
+- **Affected Security:** Strict server-side RBAC (`Permission::ORDER_ADJUST_REQUEST`); resource scoping (Salesmen restricted to assigned accounts; Warehouse Managers restricted to approved/processing orders); withdrawal authorization; structured post-commit event logging (`commerce.order_adjustment_event`).
+- **Affected Frontend:** `RequestAdjustmentModal.tsx`, `PendingAdjustmentBanner.tsx`, `OrderDetailHeader.tsx`, `Admin/Orders/Show.tsx`, `Salesman/Orders/Show.tsx`.
+- **Affected Tickets:** `FEAT-ADJ-001` completed. Unlocks `FEAT-ADJ-002: Adjustment Review Workspace`.
+- **Inventory Impact:** Zero physical inventory or allocation mutation during request creation or withdrawal (`releaseAllocation`/`cancelAllocation` strictly not invoked).
+- **Order Impact:** Orders update `adjustment_status = 'REQUESTED'` upon submission and reset to `NONE` (or `APPLIED`) upon withdrawal. Financial totals and line item quantities remain 100% unmutated.
+- **Payment Impact:** None; actual credit notes and invoice adjustments deferred to `FEAT-ADJ-004`.
+- **Tax Impact:** Projected tax reduction calculated using authoritative rounding semantics; original order tax totals remain permanently immutable.
+- **Accounting Impact:** None; general ledger adjustments strictly deferred to adjustment application in `FEAT-ADJ-004`.
+- **Data Migration Impact:** Added migration `2026_09_05_000013_create_order_adjustments_tables.php` creating `order_adjustments` and `order_adjustment_items` with PostgreSQL partial unique index and check constraints.
+- **Testing Impact:** Added 30 automated tests across `OrderAdjustmentRequestTest.php`, `OrderAdjustmentConcurrencyTest.php`, and `OrderAdjustmentPostgresConstraintTest.php`. Full test suite at 828 tests (821 passed, 5,260 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-001`.
+
 ---
 
 ## 3. Template for Future Change Requests

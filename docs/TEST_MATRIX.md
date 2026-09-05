@@ -694,14 +694,37 @@
 - [x] **Capacity Boundary Serialization:** Sequential allocations serialize up to exact fulfillable boundary (`test_serialized_allocations_reach_exact_fulfillable_capacity`).
 - [x] **Deterministic Lock Ordering:** Lock ordering `Order -> OrderItem` verified deterministic without deadlocks (`test_lock_ordering_is_deterministic`).
 
-### 1.10.2 Order Adjustments (`ADJUSTMENT`)
-- [ ] **Happy Path:** Damaged stock reported; Admin creates adjustment cancelling 2 units out of 10 (`FEAT-ADJ-004`).
-- [ ] **Invariant Assertion:** Original `ordered_quantity` remains 10; `cancelled_quantity` becomes 2; `fulfillable_quantity` becomes 8 (`RULE-DOM-001`, `RULE-ALLOC-001`).
-- [ ] **Validation:** Cancelling more units than fulfillable quantity rejected (`EDGE-009`).
-- [ ] **Recalculation:** Subtotal, line tax, and grand total recalculated authoritatively for 8 fulfillable units (`FEAT-ADJ-002`).
-- [ ] **Concurrency:** Two admins approving conflicting adjustments concurrently handled via row locks (`EDGE-010`).
-- [ ] **Reversal:** Adjustment reversal restores fulfillable allocation and updates financial balance via reversing record (`FEAT-ADJ-005`).
-- [ ] **Audit:** Full before/after adjustment snapshot recorded in `order_adjustments`.
+### 1.10.2 Order Adjustment Request Flow (`ADJUSTMENT REQUEST` / `FEAT-ADJ-001`)
+- [x] **Admin Adjustment Request Creation (Case A):** Admin creates valid adjustment request on submitted order; verified status `SUBMITTED`, `affected_allocation_quantity = 0`, `is_case_b = false`, sequence `ADJ-{order}-01`, and `orders.adjustment_status = 'REQUESTED'` (`OrderAdjustmentRequestTest::test_admin_can_create_valid_adjustment_request_case_a`).
+- [x] **Multi-Line Adjustment with Mixed Tax Rates:** Multi-line adjustment accurately projects subtotal, tax reduction using authoritative rounding (`roundHalfUp`), and grand total without mutating baseline orders (`test_multi_line_adjustment_request_with_mixed_tax`).
+- [x] **Case B Classification (Allocation-Impacting):** When reduction > unallocated quantity, flags `affected_allocation_quantity = reduction - unallocated` and `is_case_b = true` without mutating active allocations (`test_case_b_classification_when_reduction_exceeds_unallocated`).
+- [x] **Salesman Resource Scoping (Own Orders):** Salesman can request adjustment on orders within their assigned customer portfolio (`test_salesman_can_request_adjustment_for_their_own_order`).
+- [x] **Salesman IDOR Isolation (403):** Salesman attempting to request adjustment for another salesman's order is rejected with 403 Forbidden (`test_salesman_cannot_request_adjustment_for_another_salesman_order`).
+- [x] **Warehouse Manager Scope (Approved / Processing):** Warehouse Manager can request adjustments on `APPROVED` and `PROCESSING` orders (`test_warehouse_manager_can_request_adjustment_on_approved_or_processing_orders`).
+- [x] **Warehouse Manager Scope Restriction (403):** Warehouse Manager cannot request adjustments on `SUBMITTED` orders prior to warehouse handoff (`test_warehouse_manager_cannot_request_adjustment_on_submitted_order`).
+- [x] **Unauthorized Roles Denied (403):** Accountant and Delivery Partner denied adjustment request access with 403 Forbidden (`test_unauthorized_roles_are_rejected`).
+- [x] **Order Lifecycle Eligibility Gating (409):** Adjustment requests rejected for orders in `DRAFT`, `COMPLETED`, `CANCELLED`, `REJECTED` status (`test_order_lifecycle_validation_rejects_disallowed_states`).
+- [x] **Zero and Negative Quantities Rejected (422):** Reduction quantities <= 0 rejected with 422 Unprocessable Content (`test_zero_or_negative_quantity_is_rejected`).
+- [x] **Reduction Exceeding Fulfillable Rejected (422):** Requesting reduction greater than line item fulfillable quantity rejected with 422 (`test_reduction_exceeding_fulfillable_quantity_is_rejected`).
+- [x] **Exact Full Line Reduction Permitted:** Exact cancellation of 100% fulfillable units succeeds without error (`test_exact_full_line_reduction_is_permitted`).
+- [x] **Single Open Request Invariant (409):** Second concurrent adjustment request against an order with an active `SUBMITTED` request is rejected (`test_single_open_request_invariant_rejects_second_concurrent_submission`).
+- [x] **Idempotent Replay Resolution:** Re-submitting identical payload with same idempotency key and actor returns 200 replay without duplicate rows (`test_idempotent_replay_returns_same_adjustment`).
+- [x] **Idempotency Payload Mismatch Conflict (409):** Re-submitting same idempotency key with modified payload rejected with 409 Conflict (`test_idempotency_conflict_rejects_mismatched_payload`).
+- [x] **Idempotency Actor Conflict (409):** Re-submitting same idempotency key from different actor rejected with 409 Conflict (`test_idempotency_conflict_rejects_different_actor`).
+- [x] **Monotonic Sequence Numbering:** Withdrawing first adjustment and submitting a second generates `ADJ-{order}-02` without sequence reuse (`test_adjustment_number_sequence_increments_monotonically`).
+- [x] **Requester Withdrawal Flow:** Original requester can withdraw unreviewed `SUBMITTED` request; transitions to `CANCELLED` and resets `orders.adjustment_status` to `NONE` (`test_requester_can_withdraw_submitted_adjustment_request`).
+- [x] **Admin Withdrawal Authority:** Admin can withdraw adjustments submitted by salesmen (`test_admin_can_withdraw_adjustment_requested_by_salesman`).
+- [x] **Cross-Requester Withdrawal Denied (403):** Salesmen cannot withdraw adjustment requests submitted by other users (`test_non_requester_salesman_cannot_withdraw_adjustment`).
+- [x] **Terminal State Withdrawal Denied (409):** Attempting to withdraw already cancelled or reviewed adjustment rejected with 409 Conflict (`test_cannot_withdraw_non_submitted_adjustment`).
+- [x] **Concurrent Submission Race Resolution:** Two simultaneous adjustment submissions serialize via row lock; exactly one succeeds and one receives 409 (`OrderAdjustmentConcurrencyTest::test_concurrent_adjustment_submissions_on_same_order_ensures_single_open_request`).
+- [x] **Concurrent Duplicate Idempotency Key:** Concurrent retries with same idempotency key return idempotent replay without unique constraint violation (`test_concurrent_submissions_with_identical_idempotency_key_returns_replay`).
+- [x] **Concurrent Competing Idempotency Conflict:** Conflicting payload under same key rejected (`test_same_idempotency_key_with_different_payload_is_rejected`).
+- [x] **Concurrent Withdrawal Serialization:** Competing concurrent withdrawals serialize safely; one succeeds and one receives 409 (`test_concurrent_withdrawal_operations_serialize_safely`).
+- [x] **Adjustment Creation vs Allocation Progression Race:** Adjustment creation serialized alongside active allocation progression (picking); conservation laws preserved and allocations remain unmutated (`test_adjustment_request_creation_races_with_allocation_progression`).
+- [x] **PostgreSQL Partial Unique Index (`idx_order_adjustments_single_open`):** Database engine rejects direct duplicate `SUBMITTED` insertions for same `order_id` (`OrderAdjustmentPostgresConstraintTest::test_postgresql_partial_unique_index_single_open_request`).
+- [x] **PostgreSQL Unique Constraints (`adjustment_number`, `idempotency_key`):** Database enforces uniqueness on both identifiers (`test_postgresql_unique_constraints_on_adjustment_number_and_idempotency_key`).
+- [x] **PostgreSQL Check Constraints (Quantities & Projected Reductions):** Database rejects negative amounts or zero quantity reductions (`test_postgresql_check_constraints_on_quantities_and_amounts`).
+- [x] **PostgreSQL Non-Destructive Foreign Keys (`RESTRICT` on delete):** Deleting parent `order_adjustments` blocked when child `order_adjustment_items` exist (`test_postgresql_non_destructive_foreign_keys_prevent_cascading_loss`).
 
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).

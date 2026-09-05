@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { OrderDetail } from '@/types/order';
@@ -7,6 +7,8 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import OrderStatusBadge from './Partials/OrderStatusBadge';
 import OrderTimeline from './Partials/OrderTimeline';
+import PendingAdjustmentBanner from '@/Pages/Admin/Orders/Partials/PendingAdjustmentBanner';
+import RequestAdjustmentModal from '@/Pages/Admin/Orders/Partials/RequestAdjustmentModal';
 import {
     CheckCircle2,
     Building,
@@ -20,6 +22,7 @@ import {
     FileText,
     ArrowLeft,
     ListFilter,
+    SlidersHorizontal,
 } from 'lucide-react';
 
 interface OrderShowPageProps {
@@ -29,6 +32,7 @@ interface OrderShowPageProps {
 }
 
 export default function OrderShow({ order, backUrl = '/salesman/orders', backLabel = 'Back to Order History' }: OrderShowPageProps) {
+    const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
     const totalUnits = order.items.reduce((sum, item) => sum + item.ordered_quantity, 0);
     const submittedDate = order.submitted_at ? new Date(order.submitted_at) : new Date(order.created_at);
 
@@ -49,6 +53,17 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {order.can?.request_adjustment && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsAdjustmentModalOpen(true)}
+                                className="gap-1.5 text-xs text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/60"
+                            >
+                                <SlidersHorizontal className="h-3.5 w-3.5 text-amber-600" />
+                                <span>Request Adjustment</span>
+                            </Button>
+                        )}
                         <Link href={backUrl}>
                             <Button variant="outline" size="sm" className="gap-1.5 text-xs">
                                 <ListFilter className="h-3.5 w-3.5" />
@@ -63,6 +78,24 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
                         </Link>
                     </div>
                 </div>
+
+                {/* Pending Adjustment Banner */}
+                {order.active_adjustment && (
+                    <PendingAdjustmentBanner
+                        orderId={order.id}
+                        orderNumber={order.order_number}
+                        activeAdjustment={order.active_adjustment}
+                    />
+                )}
+
+                {/* Request Adjustment Modal */}
+                <RequestAdjustmentModal
+                    isOpen={isAdjustmentModalOpen}
+                    orderId={order.id}
+                    orderNumber={order.order_number}
+                    items={order.items}
+                    onClose={() => setIsAdjustmentModalOpen(false)}
+                />
 
                 {/* Status Notice Banner (When freshly submitted or active) */}
                 <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

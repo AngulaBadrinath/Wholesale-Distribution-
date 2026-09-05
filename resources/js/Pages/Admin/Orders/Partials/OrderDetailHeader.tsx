@@ -15,6 +15,7 @@ import {
     Calendar,
     User,
     ListFilter,
+    SlidersHorizontal,
 } from 'lucide-react';
 
 interface OrderDetailHeaderProps {
@@ -25,6 +26,7 @@ interface OrderDetailHeaderProps {
     can: AdminOrderDetailData['can'];
     backUrl: string;
     backLabel: string;
+    onRequestAdjustment?: () => void;
 }
 
 export default function OrderDetailHeader({
@@ -35,6 +37,7 @@ export default function OrderDetailHeader({
     can,
     backUrl,
     backLabel,
+    onRequestAdjustment,
 }: OrderDetailHeaderProps) {
     const handlePrint = () => {
         window.print();
@@ -70,6 +73,18 @@ export default function OrderDetailHeader({
                                 <span>Open Review Workspace</span>
                             </Button>
                         </Link>
+                    )}
+
+                    {can.request_adjustment && onRequestAdjustment && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onRequestAdjustment}
+                            className="gap-1.5 text-xs text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/60"
+                        >
+                            <SlidersHorizontal className="h-3.5 w-3.5 text-amber-600" />
+                            <span>Request Adjustment</span>
+                        </Button>
                     )}
 
                     <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs">
