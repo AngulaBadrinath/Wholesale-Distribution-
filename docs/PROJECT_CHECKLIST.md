@@ -118,7 +118,7 @@
 ## 7. OPERATIONS: ALLOCATION, ADJUSTMENTS & INVENTORY
 
 ### Quantity Allocation
-- [ ] `FEAT-ALLOC-001`: Order Item Quantity Allocation Model (`ordered`, `cancelled`, `reserved`, `delivered`, `returned`)
+- [x] `FEAT-ALLOC-001`: Order Item Quantity Allocation Model (`ordered`, `cancelled`, `reserved`, `delivered`, `returned`)
 - [ ] `FEAT-ALLOC-002`: Quantity Conservation & Allocation Validation Constraints
 
 ### Order Adjustments

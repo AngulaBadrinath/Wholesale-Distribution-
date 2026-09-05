@@ -87,6 +87,16 @@ export default function OrderDetailItemsCards({ items }: OrderDetailItemsCardsPr
                                 </div>
                             </div>
 
+                            {/* Discrete Allocation Rollup */}
+                            {item.allocations && item.allocations.length > 0 && (
+                                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground px-1">
+                                    <span className="text-primary font-semibold">Allocated: {item.allocated_quantity ?? item.fulfillable_quantity}</span>
+                                    {item.unallocated_quantity !== undefined && item.unallocated_quantity > 0 && (
+                                        <span className="text-amber-600 dark:text-amber-400 font-semibold">Unallocated: {item.unallocated_quantity}</span>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Pricing & Tax Details */}
                             <div className="flex items-center justify-between pt-1 border-t border-border/60 text-[11px] font-mono">
                                 <div className="text-muted-foreground">

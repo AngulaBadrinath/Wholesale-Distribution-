@@ -646,7 +646,28 @@
 - [ ] **Security:** Non-admin roles attempting to approve orders receive `403 Forbidden`.
 - [ ] **Audit:** Approval and rejection events recorded with actor ID and timestamp.
 
-### 1.10 Quantity Allocation & Adjustments (`ALLOCATION` & `ADJUSTMENT`)
+### 1.10 Order Item Quantity Allocation Model (`ALLOCATION` / `FEAT-ALLOC-001`)
+- [x] **Schema Migration & Index Integrity:** Migration creates `order_item_allocations` table with all authoritative fields, foreign keys (`orders`, `order_items`, `products`, `users`), and indexes (`OrderItemAllocationModelTest::test_schema_migration_creates_allocations_table_with_expected_columns`).
+- [x] **Model Relationships & Enum Casts:** `OrderItemAllocation` casts `status` to `AllocationStatus`, casts `allocated_at` to Carbon, and resolves relationships to `order`, `orderItem`, `product`, and `allocatedBy` (`test_model_relationships_and_casts`).
+- [x] **Quantity Conservation Law:** Enforces $\text{ordered} = \text{cancelled} + \text{fulfillable}$ across line items without destructive quantity overwrites (`test_quantity_conservation_law_fulfillable_quantity`).
+- [x] **Partial Allocation & Residual Unallocated Math:** Line item with 8 fulfillable units allocated partially (6 units) correctly computes `allocatedQuantity() = 6`, `unallocatedQuantity() = 2`, `canAllocate(2) = true`, `canAllocate(3) = false`, and allows subsequent residual allocation (`test_partial_allocation_calculates_allocated_and_unallocated_quantities`).
+- [x] **Single Over-Allocation Rejection (422):** Allocating quantity greater than unallocated fulfillable units rejected with `ValidationException` (`test_over_allocation_beyond_fulfillable_fails_validation`).
+- [x] **Cumulative Multi-Row Over-Allocation Rejection (422):** Sum of multiple allocations exceeding fulfillable quantity rejected with `ValidationException` (`test_sum_of_multiple_allocations_exceeding_fulfillable_fails_validation`).
+- [x] **Quantity Range Bounds Validation (422):** Zero, negative, or quantities exceeding 999,999 rejected with `ValidationException` (`test_zero_or_negative_allocation_quantity_fails_validation`).
+- [x] **PostgreSQL Row-Local CHECK Constraints:** Database-level check constraints enforce `allocated_quantity > 0`, `reserved_quantity <= allocated_quantity`, `picked_quantity <= allocated_quantity`, `dispatched_quantity <= allocated_quantity`, `delivered_quantity <= allocated_quantity`, and `returned_quantity <= delivered_quantity` (`test_database_check_constraints_enforce_row_local_invariants`).
+- [x] **Atomic Order Approval Integration:** Approving order atomically creates canonical baseline allocations (`ALC-{order_number}-{item_id}-01`) for all fulfillable items with status `ALLOCATED`, warehouse `MAIN`, and reserved units matching fulfillable quantity without doubling `order_items.reserved_quantity` (`test_approving_order_creates_canonical_baseline_allocations_atomically`).
+- [x] **Baseline Allocation Idempotency:** Duplicate baseline allocation attempts on retry or re-read safely return existing allocations without inserting duplicate rows (`test_approval_allocation_creation_is_idempotent_on_retry`).
+- [x] **Lifecycle State Restriction - Draft (409):** Allocations blocked for orders in `DRAFT` status with `ConflictHttpException` (`test_cannot_create_allocations_for_draft_orders`).
+- [x] **Lifecycle State Restriction - Submitted (409):** Allocations blocked for orders in `SUBMITTED` status with `ConflictHttpException` (`test_cannot_create_allocations_for_submitted_orders`).
+- [x] **Lifecycle State Restriction - Rejected (409):** Allocations blocked for orders in `REJECTED` status with `ConflictHttpException` (`test_cannot_create_allocations_for_rejected_orders`).
+- [x] **Lifecycle State Restriction - Cancelled (409):** Allocations blocked for orders in `CANCELLED` status with `ConflictHttpException` (`test_cannot_create_allocations_for_cancelled_orders`).
+- [x] **Lifecycle State Restriction - Completed (409):** Allocations blocked for orders in `COMPLETED` status with `ConflictHttpException` (`test_cannot_create_allocations_for_completed_orders`).
+- [x] **Financial & Ordered Quantity Immutability:** Creating allocations never alters original `ordered_quantity`, `cancelled_quantity`, `unit_price`, line tax, subtotal, or grand total (`test_financial_snapshots_and_order_totals_are_immutable_during_allocation`).
+- [x] **Historical Product Snapshot Preservation:** Line item snapshots (`sku_snapshot`, `product_name_snapshot`, `unit_snapshot`) preserved even when catalog product is deactivated (`test_historical_product_snapshots_preserved_even_if_catalog_product_is_deactivated`).
+- [x] **Historical Approved Order Backfill Compatibility:** Idempotent service backfill safely derives missing baseline allocations for historical orders approved prior to FEAT-ALLOC-001 without duplicate generation (`test_backfill_approved_orders_creates_missing_allocations_safely`).
+- [x] **Admin Order Detail Projection & Allocation Summary:** Inertia show payload projects `items.allocations`, `allocated_quantity`, `unallocated_quantity`, and `allocation_summary` with 100% type consistency (`test_admin_order_detail_projects_allocation_data_and_summary`).
+
+### 1.10.1 Order Adjustments (`ADJUSTMENT`)
 - [ ] **Happy Path:** Damaged stock reported; Admin creates adjustment cancelling 2 units out of 10 (`FEAT-ADJ-004`).
 - [ ] **Invariant Assertion:** Original `ordered_quantity` remains 10; `cancelled_quantity` becomes 2; `fulfillable_quantity` becomes 8 (`RULE-DOM-001`, `RULE-ALLOC-001`).
 - [ ] **Validation:** Cancelling more units than fulfillable quantity rejected (`EDGE-009`).

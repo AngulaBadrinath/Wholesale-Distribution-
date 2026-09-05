@@ -255,6 +255,22 @@
 - **Affected Tickets:** `FEAT-SYS-002`, `FEAT-DOC-001`, `FEAT-ACC-001`.
 - **Consequences:** All invoices, dispatch manifests, and customer statements query `CompanyInformationService` for official legal entity and tax registration metadata.
 
+### DEC-016: Order Item Quantity Allocation Model & Operational Reservation Boundaries
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** Establish `order_item_allocations` as a dedicated operational entity and `App\Models\OrderItemAllocation` as the canonical model for tracking discrete allocations against order lines, while preserving denormalized operational rollups on `order_items` as authoritative order-level buckets.
+- **Context:** Transitioning to Phase 06 requires supporting partial fulfillment, discrete allocations, and future post-order adjustments without overwriting commercial history (`ordered_quantity`), price snapshots, or tax snapshots.
+- **Reason:** Separates the commercial order contract (`order_items`) from operational fulfillment units (`order_item_allocations`). Ensures cross-row conservation laws ($\sum \text{allocated} \le \text{fulfillable}$) and row-local PostgreSQL CHECK constraints without circular rollup loops or premature physical inventory dependencies.
+- **Alternatives Considered:**
+  - *Mutating existing order_items columns directly:* Rejected because it cannot represent split/partial allocations or discrete fulfillment allocations per warehouse unit.
+  - *Premature physical warehouse inventory table binding:* Rejected because physical warehouse ledgering (`inventory_balances`, `inventory_movements`) belongs to Phase 06 (`FEAT-INV-001..004`).
+  - *Enforcing cross-row summation solely via DB check constraints:* Architecturally impossible in PostgreSQL without triggers; resolved via deterministic row locking, domain service validation, and atomic transaction boundaries.
+- **Chosen Approach:** Dedicated table with foreign keys to `orders`, `order_items`, `products`, `users`; canonical baseline allocation creation inside `OrderWorkflowService::approveOrder()` atomic transaction; `OrderAllocationService` domain service with deterministic lock ordering (Order -> OrderItems ASC -> OrderItemAllocations ASC); and backward-compatible idempotent backfill support.
+- **Affected Domains:** Orders, Quantity Allocation, Inventory Integrity, Operational Admin.
+- **Affected Documents:** PRD §13; Technical Architecture §14, §15; Security & Access §18.
+- **Affected Tickets:** `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001..006`, `FEAT-INV-001..004`.
+- **Consequences:** All future fulfillment, picking, dispatching, and adjustment workflows anchor to `order_item_allocations` rows while respecting `order_items` denormalized rollups.
+
 ---
 
 ## Open Decisions & TBD Register

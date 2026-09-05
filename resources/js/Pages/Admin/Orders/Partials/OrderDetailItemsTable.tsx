@@ -116,6 +116,16 @@ export default function OrderDetailItemsTable({ items }: OrderDetailItemsTablePr
                                                 </div>
                                             </div>
 
+                                            {/* Discrete allocation rollup if allocations exist */}
+                                            {item.allocations && item.allocations.length > 0 && (
+                                                <div className="flex items-center justify-center gap-1.5 mt-1 text-[9px] text-muted-foreground font-mono">
+                                                    <span className="text-primary font-semibold">Alloc: {item.allocated_quantity ?? item.fulfillable_quantity}</span>
+                                                    {item.unallocated_quantity !== undefined && item.unallocated_quantity > 0 && (
+                                                        <span className="text-amber-600 dark:text-amber-400 font-semibold">(Unalloc: {item.unallocated_quantity})</span>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* Operational fulfillment progress if any picked/delivered */}
                                             {(item.picked_quantity > 0 || item.dispatched_quantity > 0 || item.delivered_quantity > 0 || item.returned_quantity > 0) && (
                                                 <div className="flex justify-center gap-2 mt-1 text-[9px] text-muted-foreground font-mono">

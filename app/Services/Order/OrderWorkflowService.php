@@ -2,6 +2,7 @@
 
 namespace App\Services\Order;
 
+use App\Enums\AllocationStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
@@ -9,6 +10,7 @@ use App\Enums\ProductStatus;
 use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItemAllocation;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -122,6 +124,39 @@ class OrderWorkflowService
             $lockedOrder->approved_at = Carbon::now();
             $lockedOrder->approved_by = $actor->id;
             $lockedOrder->save();
+
+            // Create baseline order item allocations atomically within the same transaction (FEAT-ALLOC-001)
+            $orderNumClean = $lockedOrder->order_number ?: 'ORD-' . $lockedOrder->id;
+            foreach ($lockedItems as $item) {
+                $fulfillable = $item->fulfillableQuantity();
+                if ($fulfillable <= 0) {
+                    continue;
+                }
+
+                $allocationNumber = "ALC-{$orderNumClean}-{$item->id}-01";
+
+                OrderItemAllocation::firstOrCreate(
+                    [
+                        'order_item_id' => $item->id,
+                        'allocation_number' => $allocationNumber,
+                    ],
+                    [
+                        'order_id' => $lockedOrder->id,
+                        'product_id' => $item->product_id,
+                        'allocated_quantity' => $fulfillable,
+                        'reserved_quantity' => $fulfillable,
+                        'picked_quantity' => 0,
+                        'dispatched_quantity' => 0,
+                        'delivered_quantity' => 0,
+                        'returned_quantity' => 0,
+                        'status' => AllocationStatus::ALLOCATED,
+                        'warehouse_code' => 'MAIN',
+                        'notes' => 'Initial baseline order allocation upon approval',
+                        'allocated_by' => $actor->id,
+                        'allocated_at' => Carbon::now(),
+                    ]
+                );
+            }
 
             $reservedItemsCount = $lockedItems->count();
 

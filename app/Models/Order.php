@@ -163,6 +163,16 @@ class Order extends Model
     }
 
     /**
+     * Get all discrete item allocations for this order.
+     *
+     * @return HasMany<OrderItemAllocation, $this>
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(OrderItemAllocation::class, 'order_id')->orderBy('id', 'asc');
+    }
+
+    /**
      * Scope query based on the authenticated actor's resource scope.
      * Salesmen can only access orders for their assigned accounts.
      */

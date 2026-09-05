@@ -407,6 +407,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-014: FEAT-ALLOC-001 Order Item Quantity Allocation Model
+- **Change ID:** `CHANGE-014`
+- **Date:** September 5, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement canonical Order Item Quantity Allocation model and persistence architecture for Phase 06 (`Operations: Allocation, Adjustments & Inventory`). Create dedicated `order_item_allocations` table and `App\Models\OrderItemAllocation` model while preserving existing denormalized operational rollups on `order_items`. Integrate canonical baseline allocation creation into `OrderWorkflowService::approveOrder()` inside existing atomic transactions without double-counting reservations. Provide `App\Services\Allocation\OrderAllocationService` with deterministic lock ordering (Order -> OrderItems ASC -> OrderItemAllocations ASC), cross-row conservation enforcement ($\sum \text{allocated} \le \text{fulfillable}$), unallocated calculations, and safe backfill for historical approved orders.
+- **Reason:** Core operational capability to support partial allocations, post-order adjustments, and fulfillment tracking without mutating original commercial order quantities, price snapshots, or tax snapshots.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Phase 06 Foundation)
+- **Affected PRD Requirements:** §13 (Order Processing & Reservation Invariants), §14 (Adjustments & Non-Destructive Quantity Conservation), §39.2 (Central Distribution Warehouse).
+- **Affected Architecture:** §14 (Allocation & Operational Models), §15 (Order State Machine & Reservation Lifecycle), §18 (Pessimistic Row Locking Architecture).
+- **Affected Security:** Strict server authority; all calculations server-side; zero public CRUD endpoints; RBAC-gated inspection; structured post-commit observability (`commerce.allocation_event`) excluding secrets and cost prices.
+- **Affected Frontend:** Admin Order Detail (`OrderDetailItemsTable.tsx`, `OrderDetailItemsCards.tsx`, `order.ts`) enriched with discrete allocation data, allocated/unallocated metrics, and allocation summary.
+- **Affected Tickets:** `FEAT-ALLOC-001` completed. Unlocks `FEAT-ALLOC-002` and Phase 06 adjustment workflows.
+- **Inventory Impact:** Operational order allocation model established; physical warehouse inventory balances and stock movement ledgers deferred to `FEAT-INV-001..004`.
+- **Order Impact:** Orders in `APPROVED` and `PROCESSING` states support allocations; `DRAFT`, `SUBMITTED`, `REJECTED`, `CANCELLED`, `COMPLETED` strictly blocked. Baseline allocations created atomically upon order approval.
+- **Payment Impact:** None; financial immutability strictly preserved.
+- **Tax Impact:** None; tax snapshots and totals remain immutable.
+- **Accounting Impact:** None; financial balances and GL lines untouched.
+- **Data Migration Impact:** Added migration `2026_09_05_000011_create_order_item_allocations_table.php` with foreign keys to `orders`, `order_items`, `products`, `users`, indexes, and row-local PostgreSQL CHECK constraints.
+- **Testing Impact:** Added 19 comprehensive feature tests in `OrderItemAllocationModelTest.php` (123 assertions). Full test suite at 773 tests (771 passed, 5,057 assertions, 2 skipped) passing 100%. Clean TypeScript and Vite builds.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ALLOC-001`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

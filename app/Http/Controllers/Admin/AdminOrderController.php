@@ -17,6 +17,7 @@ use App\Http\Requests\Order\AdminOrderQueueRequest;
 use App\Http\Requests\Order\RejectOrderRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderItemAllocation;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
 use App\Services\Order\OrderWorkflowService;
@@ -369,6 +370,7 @@ class AdminOrderController extends Controller
             'approver',
             'canceller',
             'items' => fn ($q) => $q->orderBy('id', 'asc'),
+            'items.allocations' => fn ($q) => $q->orderBy('id', 'asc'),
             'items.product:id,sku,name,status,default_selling_price,mrp',
             'items.priceOverrideApprover:id,name',
         ]);
@@ -461,10 +463,28 @@ class AdminOrderController extends Controller
                         'cancelled_quantity' => $item->cancelled_quantity,
                         'reserved_quantity' => $item->reserved_quantity,
                         'fulfillable_quantity' => $item->fulfillableQuantity(),
+                        'allocated_quantity' => $item->allocatedQuantity(),
+                        'unallocated_quantity' => $item->unallocatedQuantity(),
                         'picked_quantity' => $item->picked_quantity,
                         'dispatched_quantity' => $item->dispatched_quantity,
                         'delivered_quantity' => $item->delivered_quantity,
                         'returned_quantity' => $item->returned_quantity,
+                        'allocations' => $item->allocations->map(fn (OrderItemAllocation $alc) => [
+                            'id' => $alc->id,
+                            'allocation_number' => $alc->allocation_number,
+                            'allocated_quantity' => $alc->allocated_quantity,
+                            'reserved_quantity' => $alc->reserved_quantity,
+                            'picked_quantity' => $alc->picked_quantity,
+                            'dispatched_quantity' => $alc->dispatched_quantity,
+                            'delivered_quantity' => $alc->delivered_quantity,
+                            'returned_quantity' => $alc->returned_quantity,
+                            'status' => $alc->status->value,
+                            'status_label' => $alc->status->label(),
+                            'status_badge_variant' => $alc->status->badgeVariant(),
+                            'warehouse_code' => $alc->warehouse_code,
+                            'allocated_at' => $alc->allocated_at?->toIso8601String(),
+                            'notes' => $alc->notes,
+                        ]),
                         'unit_price' => (string) $item->unit_price,
                         'is_price_overridden' => (bool) $item->is_price_overridden,
                         'price_override_reason' => $item->price_override_reason,
@@ -489,6 +509,13 @@ class AdminOrderController extends Controller
                 }),
                 'tax_breakdown' => $taxBreakdown,
                 'fulfillment_summary' => $fulfillmentSummary,
+                'allocation_summary' => [
+                    'total_allocated_units' => $order->items->sum(fn ($i) => $i->allocatedQuantity()),
+                    'total_fulfillable_units' => $order->items->sum(fn ($i) => $i->fulfillableQuantity()),
+                    'total_unallocated_units' => $order->items->sum(fn ($i) => $i->unallocatedQuantity()),
+                    'allocations_count' => $order->items->sum(fn ($i) => $i->allocations->count()),
+                    'has_allocations' => $order->items->some(fn ($i) => $i->allocations->isNotEmpty()),
+                ],
                 'timeline' => $timeline,
                 'can' => [
                     'review' => $isReviewable && ($this->permissionService->has($actor, Permission::ORDER_APPROVE) || $this->permissionService->has($actor, Permission::ORDER_REJECT)),

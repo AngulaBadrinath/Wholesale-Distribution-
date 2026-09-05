@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderItem extends Model
 {
@@ -107,6 +108,16 @@ class OrderItem extends Model
     }
 
     /**
+     * Get the discrete allocations for this line item.
+     *
+     * @return HasMany<OrderItemAllocation, $this>
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(OrderItemAllocation::class, 'order_item_id')->orderBy('id', 'asc');
+    }
+
+    /**
      * Calculate current fulfillable quantity adhering to conservation rule.
      * ordered_quantity = cancelled_quantity + fulfillable_quantity
      */
@@ -114,4 +125,42 @@ class OrderItem extends Model
     {
         return max(0, $this->ordered_quantity - $this->cancelled_quantity);
     }
+
+    /**
+     * Calculate total quantity currently allocated across non-cancelled allocation records.
+     */
+    public function allocatedQuantity(): int
+    {
+        if ($this->relationLoaded('allocations')) {
+            return (int) $this->allocations
+                ->filter(fn (OrderItemAllocation $a) => $a->status !== \App\Enums\AllocationStatus::CANCELLED && $a->status !== \App\Enums\AllocationStatus::RELEASED)
+                ->sum('allocated_quantity');
+        }
+
+        return (int) $this->allocations()
+            ->whereNotIn('status', [\App\Enums\AllocationStatus::CANCELLED, \App\Enums\AllocationStatus::RELEASED])
+            ->sum('allocated_quantity');
+    }
+
+    /**
+     * Calculate unallocated fulfillable quantity remaining for this item.
+     * Invariant: unallocated_quantity = fulfillable_quantity - allocated_quantity
+     */
+    public function unallocatedQuantity(): int
+    {
+        return max(0, $this->fulfillableQuantity() - $this->allocatedQuantity());
+    }
+
+    /**
+     * Determine if an additional quantity can be legally allocated without exceeding fulfillable quantity.
+     */
+    public function canAllocate(int $quantity): bool
+    {
+        if ($quantity <= 0) {
+            return false;
+        }
+
+        return $quantity <= $this->unallocatedQuantity();
+    }
 }
+

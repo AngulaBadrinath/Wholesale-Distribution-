@@ -482,6 +482,34 @@ export interface AdminOrderReviewData {
     };
 }
 
+export type AllocationStatus =
+    | 'ALLOCATED'
+    | 'RESERVED'
+    | 'PICKED'
+    | 'PACKED'
+    | 'DISPATCHED'
+    | 'DELIVERED'
+    | 'PARTIALLY_DELIVERED'
+    | 'CANCELLED'
+    | 'RELEASED';
+
+export interface OrderItemAllocationData {
+    id: number;
+    allocation_number: string;
+    allocated_quantity: number;
+    reserved_quantity: number;
+    picked_quantity: number;
+    dispatched_quantity: number;
+    delivered_quantity: number;
+    returned_quantity: number;
+    status: AllocationStatus;
+    status_label: string;
+    status_badge_variant: string;
+    warehouse_code: string;
+    allocated_at: string | null;
+    notes: string | null;
+}
+
 export interface AdminOrderDetailItem {
     id: number;
     product_id: number;
@@ -492,6 +520,8 @@ export interface AdminOrderDetailItem {
     cancelled_quantity: number;
     reserved_quantity: number;
     fulfillable_quantity: number;
+    allocated_quantity?: number;
+    unallocated_quantity?: number;
     picked_quantity: number;
     dispatched_quantity: number;
     delivered_quantity: number;
@@ -516,6 +546,7 @@ export interface AdminOrderDetailItem {
         default_selling_price?: string;
         mrp?: string;
     } | null;
+    allocations?: OrderItemAllocationData[];
 }
 
 export interface AdminOrderDetailData {
@@ -604,6 +635,13 @@ export interface AdminOrderDetailData {
         total_delivered: number;
         total_returned: number;
     };
+    allocation_summary?: {
+        total_allocated_units: number;
+        total_fulfillable_units: number;
+        total_unallocated_units: number;
+        allocations_count: number;
+        has_allocations: boolean;
+    };
     timeline: OrderTimelineEvent[];
     can: {
         review: boolean;
@@ -612,4 +650,5 @@ export interface AdminOrderDetailData {
     backUrl: string;
     backLabel: string;
 }
+
 
