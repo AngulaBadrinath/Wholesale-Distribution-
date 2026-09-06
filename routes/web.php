@@ -271,8 +271,11 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.inventory.exceptions.dismiss');
     });
 
-    // Payments & Payment Evidence Preview (FEAT-PAY-005 / FEAT-PAY-006)
+    // Payments & Payment Evidence Preview (FEAT-PAY-005 / FEAT-PAY-006 / FEAT-PAY-007)
     Route::middleware('permission:payment.view')->group(function () {
+        Route::get('/admin/payments', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'index'])
+            ->name('admin.payments.index');
+
         Route::get('/admin/payments/{payment}/evidence-url', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'evidenceUrl'])
             ->whereNumber('payment')
             ->name('admin.payments.evidence.url');
@@ -301,6 +304,13 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.payments.money-order.store');
         Route::post('/salesman/payments/money-order', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeMoneyOrder'])
             ->name('salesman.payments.money-order.store');
+    });
+
+    // Payment Verification Engine (FEAT-PAY-007)
+    Route::middleware('permission:payment.verify')->group(function () {
+        Route::post('/admin/payments/{payment}/verify', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'verify'])
+            ->whereNumber('payment')
+            ->name('admin.payments.verify');
     });
 });
 

@@ -2,21 +2,28 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTransactionStatus;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\Payment;
+use App\Http\Requests\Payment\AdminPaymentIndexRequest;
 use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Http\Requests\Payment\CreateChequePaymentRequest;
 use App\Http\Requests\Payment\CreateMoneyOrderPaymentRequest;
+use App\Models\Customer;
+use App\Models\Payment;
 use App\Services\Auth\PermissionService;
 use App\Services\Payment\PaymentEvidenceService;
 use App\Services\Payment\PaymentService;
+use App\Services\Payment\PaymentVerificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminPaymentController extends Controller
@@ -25,7 +32,95 @@ class AdminPaymentController extends Controller
         protected PermissionService $permissionService,
         protected PaymentEvidenceService $evidenceService,
         protected PaymentService $paymentService,
+        protected PaymentVerificationService $verificationService,
     ) {}
+
+    /**
+     * Display the Admin Payments Workspace.
+     *
+     * @throws AuthorizationException
+     */
+    public function index(AdminPaymentIndexRequest $request): Response|JsonResponse
+    {
+        $actor = $request->user();
+        $this->permissionService->authorize($actor, Permission::PAYMENT_VIEW);
+
+        $badgeCounts = PaymentVerificationService::getBadgeCounts();
+        $activeTab = $request->validated('tab', 'all');
+        $statusFilter = $request->validated('status');
+        $methodFilter = $request->validated('method');
+        $searchTerm = $request->validated('search');
+        $customerId = $request->validated('customer_id');
+        $perPage = (int) $request->validated('per_page', 15);
+
+        $query = Payment::with([
+            'customer:id,name,code,contact_name,phone,email',
+            'order:id,order_number,grand_total,payment_status',
+            'recordedBy:id,name,role',
+            'verifiedBy:id,name,role',
+            'rejectedBy:id,name,role',
+            'reversedBy:id,name,role',
+        ]);
+
+        // 1. Tab-based status filtering
+        if ($activeTab === 'pending_verification') {
+            $query->pending();
+        } elseif ($activeTab === 'verified') {
+            $query->verified();
+        } elseif ($activeTab === 'rejected') {
+            $query->rejected();
+        } elseif ($activeTab === 'reversed') {
+            $query->reversed();
+        } elseif (! empty($statusFilter)) {
+            $query->filterByStatus($statusFilter);
+        }
+
+        // 2. Method filtering
+        if (! empty($methodFilter) && $methodFilter !== 'ALL') {
+            $query->filterByMethod($methodFilter);
+        }
+
+        // 3. Customer filtering
+        if (! empty($customerId)) {
+            $query->forCustomer((int) $customerId);
+        }
+
+        // 4. Search query
+        if (! empty($searchTerm)) {
+            $query->search($searchTerm);
+        }
+
+        // 5. Anti-IDOR scoping for salesman role
+        $query->forUser($actor);
+
+        $payments = $query->orderBy('payment_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'payments' => $payments,
+                'counts' => $badgeCounts,
+                'active_tab' => $activeTab,
+            ]);
+        }
+
+        return Inertia::render('Admin/Payments/Index', [
+            'payments' => $payments,
+            'counts' => $badgeCounts,
+            'filters' => [
+                'tab' => $activeTab,
+                'status' => $statusFilter,
+                'method' => $methodFilter,
+                'search' => $searchTerm,
+                'customer_id' => $customerId,
+                'per_page' => $perPage,
+            ],
+            'customers' => Customer::active()->select('id', 'name', 'code')->orderBy('name')->get(),
+            'userPermissions' => $this->permissionService->getPermissionsForUser($actor),
+        ]);
+    }
 
     /**
      * Store a new cash payment entry from admin workspace.
@@ -84,6 +179,26 @@ class AdminPaymentController extends Controller
     }
 
     /**
+     * Verify and reconcile an incoming payment entry.
+     *
+     * @throws AuthorizationException
+     */
+    public function verify(Request $request, Payment $payment): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $verifiedPayment = $this->verificationService->verifyPayment($payment, $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Payment {$verifiedPayment->payment_number} successfully verified.",
+                'payment' => $verifiedPayment,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Payment {$verifiedPayment->payment_number} verified and reconciled.");
+    }
+
+    /**
      * Get a secure, temporary presigned URL for payment evidence preview.
      *
      * @throws AuthorizationException
@@ -91,11 +206,8 @@ class AdminPaymentController extends Controller
     public function evidenceUrl(Request $request, Payment $payment): JsonResponse
     {
         $actor = $request->user();
-
-        // 1. Authorize payment.view permission
         $this->permissionService->authorize($actor, Permission::PAYMENT_VIEW);
 
-        // 2. Anti-IDOR Scope Check
         if ($actor->role === UserRole::SALESMAN) {
             $isAssigned = $payment->customer && $payment->customer->salesman_id === $actor->id;
             $isRecorder = $payment->recorded_by === $actor->id;
@@ -105,7 +217,6 @@ class AdminPaymentController extends Controller
             }
         }
 
-        // 3. Ensure evidence exists on record
         if (! $payment->hasEvidence() || empty($payment->evidence_object_key)) {
             return response()->json([
                 'message' => 'This payment record has no visual evidence attached.',

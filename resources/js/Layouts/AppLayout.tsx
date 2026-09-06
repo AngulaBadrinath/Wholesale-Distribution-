@@ -40,6 +40,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasOrderView = auth?.user?.permissions?.includes('order.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasAdminOrderQueue = (hasOrderView && ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) || false;
     const hasAdjustReview = auth?.user?.permissions?.includes('order.adjust.review') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
+    const hasPaymentView = auth?.user?.permissions?.includes('payment.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -108,6 +109,15 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                         >
                                             <FileText className="h-4 w-4 text-primary" />
                                             <span>Adjustment Queue</span>
+                                        </Link>
+                                    )}
+                                    {hasPaymentView && (
+                                        <Link
+                                            href="/admin/payments"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Receipt className="h-4 w-4 text-primary" />
+                                            <span>Payments & Collections</span>
                                         </Link>
                                     )}
                                     {hasOrderView && (
