@@ -25,6 +25,14 @@ class PermissionService
      * - User must hold an authoritative UserRole.
      * - Permission must be registered and explicitly mapped.
      */
+    /**
+     * Alias for has() to maintain expressive syntactic parity.
+     */
+    public function hasPermission(User $user, Permission|string $permission): bool
+    {
+        return $this->has($user, $permission);
+    }
+
     public function has(User $user, Permission|string $permission): bool
     {
         // 1. Unauthenticated or non-persisted user check
@@ -204,6 +212,7 @@ class PermissionService
                 // Inventory
                 Permission::INVENTORY_VIEW,
                 Permission::INVENTORY_ADJUST,
+                Permission::INVENTORY_EXCEPTION_REPORT,
 
                 // Delivery
                 Permission::DELIVERY_VIEW,

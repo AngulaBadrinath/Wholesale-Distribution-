@@ -247,6 +247,25 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/admin/inventory/{inventoryBalance}', [\App\Http\Controllers\Admin\AdminInventoryController::class, 'show'])
             ->whereNumber('inventoryBalance')
             ->name('admin.inventory.show');
+        Route::get('/admin/inventory-exceptions', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'index'])
+            ->name('admin.inventory.exceptions.index');
+    });
+
+    // Warehouse Stock Exception Reporting & Damage Quarantine (FEAT-INV-005)
+    Route::middleware('permission:inventory.exception.report')->group(function () {
+        Route::post('/admin/inventory-exceptions', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'store'])
+            ->name('admin.inventory.exceptions.store');
+    });
+
+    // Stock Exception Resolution & Dismissal (FEAT-INV-005 - Mutation requires inventory.adjust)
+    Route::middleware('permission:inventory.adjust')->group(function () {
+        Route::post('/admin/inventory-exceptions/{stockException}/resolve', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'resolve'])
+            ->whereNumber('stockException')
+            ->name('admin.inventory.exceptions.resolve');
+
+        Route::post('/admin/inventory-exceptions/{stockException}/dismiss', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'dismiss'])
+            ->whereNumber('stockException')
+            ->name('admin.inventory.exceptions.dismiss');
     });
 });
 
