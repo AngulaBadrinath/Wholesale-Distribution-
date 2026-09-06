@@ -289,6 +289,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.payments.cash.store');
         Route::post('/salesman/payments/cash', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeCash'])
             ->name('salesman.payments.cash.store');
+
+        // Cheque Payment Entry (FEAT-PAY-003)
+        Route::post('/admin/payments/cheque', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'storeCheque'])
+            ->name('admin.payments.cheque.store');
+        Route::post('/salesman/payments/cheque', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeCheque'])
+            ->name('salesman.payments.cheque.store');
     });
 });
 
