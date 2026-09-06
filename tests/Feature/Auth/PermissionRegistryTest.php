@@ -121,12 +121,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 41 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 42 permissions.
      */
-    public function test_admin_has_exactly_the_intended_41_permissions(): void
+    public function test_admin_has_exactly_the_intended_42_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(41, $permissions);
+        $this->assertCount(42, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 
@@ -135,7 +135,6 @@ class PermissionRegistryTest extends TestCase
         $this->assertNotContains(Permission::PAYMENT_REVERSE->value, $permissionValues);
         $this->assertNotContains(Permission::ACCOUNTING_POST->value, $permissionValues);
         $this->assertNotContains(Permission::ACCOUNTING_REVERSE->value, $permissionValues);
-        $this->assertNotContains(Permission::RETURN_REQUEST->value, $permissionValues);
         $this->assertNotContains(Permission::REFUND_REQUEST->value, $permissionValues);
         $this->assertNotContains(Permission::INVENTORY_EXCEPTION_REPORT->value, $permissionValues);
 
@@ -147,20 +146,24 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains(Permission::PAYMENT_VERIFY->value, $permissionValues);
         $this->assertContains(Permission::USER_SUSPEND->value, $permissionValues);
         $this->assertContains(Permission::PRICING_OVERRIDE->value, $permissionValues);
+        $this->assertContains(Permission::RETURN_REQUEST->value, $permissionValues);
+        $this->assertContains(Permission::RETURN_REVIEW->value, $permissionValues);
+        $this->assertContains(Permission::RETURN_APPROVE->value, $permissionValues);
     }
 
     /**
-     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 15 permissions.
+     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 16 permissions.
      */
-    public function test_accountant_has_exactly_the_intended_15_permissions(): void
+    public function test_accountant_has_exactly_the_intended_16_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ACCOUNTANT);
-        $this->assertCount(15, $permissions);
+        $this->assertCount(16, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
             Permission::ORDER_VIEW,
             Permission::ORDER_ADJUST_REVIEW,
+            Permission::RETURN_REVIEW,
             Permission::PAYMENT_VIEW,
             Permission::PAYMENT_CREATE,
             Permission::PAYMENT_VERIFY,
@@ -179,12 +182,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-009: SALESMAN has exactly the intended 10 permissions.
+     * RBAC-PERM-009: SALESMAN has exactly the intended 11 permissions.
      */
-    public function test_salesman_has_exactly_the_intended_10_permissions(): void
+    public function test_salesman_has_exactly_the_intended_11_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SALESMAN);
-        $this->assertCount(10, $permissions);
+        $this->assertCount(11, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
@@ -193,6 +196,7 @@ class PermissionRegistryTest extends TestCase
             Permission::ORDER_CREATE,
             Permission::ORDER_SUBMIT,
             Permission::ORDER_ADJUST_REQUEST,
+            Permission::RETURN_REQUEST,
             Permission::PAYMENT_VIEW,
             Permission::PAYMENT_CREATE,
             Permission::INVOICE_VIEW,
@@ -203,12 +207,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-010: WAREHOUSE_MANAGER has exactly the intended 7 permissions.
+     * RBAC-PERM-010: WAREHOUSE_MANAGER has exactly the intended 8 permissions.
      */
-    public function test_warehouse_manager_has_exactly_the_intended_7_permissions(): void
+    public function test_warehouse_manager_has_exactly_the_intended_8_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::WAREHOUSE_MANAGER);
-        $this->assertCount(7, $permissions);
+        $this->assertCount(8, $permissions);
 
         $expected = [
             Permission::PRODUCT_VIEW,
@@ -218,6 +222,7 @@ class PermissionRegistryTest extends TestCase
             Permission::INVENTORY_EXCEPTION_REPORT,
             Permission::ORDER_ADJUST_REQUEST,
             Permission::DELIVERY_VIEW,
+            Permission::RETURN_REVIEW,
         ];
 
         $this->assertEqualsCanonicalizing($expected, $permissions);
@@ -497,7 +502,7 @@ class PermissionRegistryTest extends TestCase
 
         $permissions = $this->permissionService->getPermissionsForUser($salesman);
         $this->assertIsArray($permissions);
-        $this->assertCount(10, $permissions);
+        $this->assertCount(11, $permissions);
         $this->assertContains('customer.view', $permissions);
         $this->assertContains('payment.view', $permissions);
         $this->assertNotContains('order.approve', $permissions);

@@ -213,6 +213,16 @@ class Order extends Model
     }
 
     /**
+     * Get all return requests for this order.
+     *
+     * @return HasMany<ReturnRequest, $this>
+     */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class, 'order_id')->orderBy('id', 'desc');
+    }
+
+    /**
      * Get the active submitted adjustment request for this order, if any.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne<OrderAdjustment, $this>

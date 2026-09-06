@@ -408,6 +408,51 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('invoice')
             ->name('invoices.pdf');
     });
+
+    // Returns & Warehouse Return Operations (FEAT-RET-001 through FEAT-RET-004)
+    Route::middleware('permission:return.review')->group(function () {
+        Route::get('/admin/returns', [\App\Http\Controllers\Admin\AdminReturnController::class, 'index'])
+            ->name('admin.returns.index');
+        Route::get('/admin/returns/{returnRequest}', [\App\Http\Controllers\Admin\AdminReturnController::class, 'show'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.show');
+        Route::get('/admin/orders/{order}/returnable-items', [\App\Http\Controllers\Admin\AdminReturnController::class, 'getReturnableItems'])
+            ->whereNumber('order')
+            ->name('admin.orders.returnable-items');
+        Route::post('/admin/returns/{returnRequest}/inspect', [\App\Http\Controllers\Admin\AdminReturnInspectionController::class, 'store'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.inspect');
+    });
+
+    Route::middleware('permission:return.request')->group(function () {
+        Route::get('/admin/returns/create', [\App\Http\Controllers\Admin\AdminReturnController::class, 'create'])
+            ->name('admin.returns.create');
+        Route::post('/admin/returns', [\App\Http\Controllers\Admin\AdminReturnController::class, 'store'])
+            ->name('admin.returns.store');
+        Route::post('/admin/returns/{returnRequest}/cancel', [\App\Http\Controllers\Admin\AdminReturnWorkflowController::class, 'cancel'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.cancel');
+
+        // Salesman scoped return routes
+        Route::get('/salesman/returns', [\App\Http\Controllers\Salesman\SalesmanReturnController::class, 'index'])
+            ->name('salesman.returns.index');
+        Route::get('/salesman/returns/create', [\App\Http\Controllers\Salesman\SalesmanReturnController::class, 'create'])
+            ->name('salesman.returns.create');
+        Route::post('/salesman/returns', [\App\Http\Controllers\Salesman\SalesmanReturnController::class, 'store'])
+            ->name('salesman.returns.store');
+        Route::get('/salesman/returns/{returnRequest}', [\App\Http\Controllers\Salesman\SalesmanReturnController::class, 'show'])
+            ->whereNumber('returnRequest')
+            ->name('salesman.returns.show');
+    });
+
+    Route::middleware('permission:return.approve')->group(function () {
+        Route::post('/admin/returns/{returnRequest}/approve', [\App\Http\Controllers\Admin\AdminReturnWorkflowController::class, 'approve'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.approve');
+        Route::post('/admin/returns/{returnRequest}/reject', [\App\Http\Controllers\Admin\AdminReturnWorkflowController::class, 'reject'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.reject');
+    });
 });
 
 

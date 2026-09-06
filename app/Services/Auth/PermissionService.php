@@ -219,6 +219,7 @@ class PermissionService
                 Permission::DELIVERY_UPDATE,
 
                 // Return
+                Permission::RETURN_REQUEST,
                 Permission::RETURN_REVIEW,
                 Permission::RETURN_APPROVE,
 
@@ -244,11 +245,12 @@ class PermissionService
                 Permission::ROLE_MANAGE,
             ],
 
-            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (15 permissions)
+            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (16 permissions)
             UserRole::ACCOUNTANT->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::ORDER_VIEW,
                 Permission::ORDER_ADJUST_REVIEW,
+                Permission::RETURN_REVIEW,
                 Permission::PAYMENT_VIEW,
                 Permission::PAYMENT_CREATE,
                 Permission::PAYMENT_VERIFY,
@@ -263,7 +265,7 @@ class PermissionService
                 Permission::ACCOUNTING_REVERSE,
             ],
 
-            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (10 permissions)
+            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (11 permissions)
             UserRole::SALESMAN->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::PRODUCT_VIEW,
@@ -271,13 +273,14 @@ class PermissionService
                 Permission::ORDER_CREATE,
                 Permission::ORDER_SUBMIT,
                 Permission::ORDER_ADJUST_REQUEST,
+                Permission::RETURN_REQUEST,
                 Permission::PAYMENT_VIEW,
                 Permission::PAYMENT_CREATE,
                 Permission::INVOICE_VIEW,
                 Permission::INVOICE_PRINT,
             ],
 
-            // WAREHOUSE_MANAGER: Stock levels, fulfillment, picking, and warehouse exceptions (7 permissions)
+            // WAREHOUSE_MANAGER: Stock levels, fulfillment, picking, and warehouse exceptions (8 permissions)
             UserRole::WAREHOUSE_MANAGER->value => [
                 Permission::PRODUCT_VIEW,
                 Permission::ORDER_VIEW,
@@ -286,6 +289,7 @@ class PermissionService
                 Permission::INVENTORY_EXCEPTION_REPORT,
                 Permission::ORDER_ADJUST_REQUEST,
                 Permission::DELIVERY_VIEW,
+                Permission::RETURN_REVIEW,
             ],
 
             // DELIVERY_PARTNER: Logistics dispatch, assigned delivery execution, and proof of delivery (3 permissions)
