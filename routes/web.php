@@ -396,6 +396,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('order')
             ->name('admin.orders.invoice.generate');
     });
+
+    Route::middleware('permission:invoice.print')->group(function () {
+        Route::get('/invoices/{invoice}/print', [\App\Http\Controllers\Invoices\InvoicePrintController::class, 'show'])
+            ->whereNumber('invoice')
+            ->name('invoices.print');
+    });
 });
 
 
