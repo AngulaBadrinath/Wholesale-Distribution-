@@ -1,0 +1,264 @@
+<?php
+
+namespace Tests\Feature\Document;
+
+use App\Enums\InvoiceStatus;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\PaymentTerms;
+use App\Enums\UserRole;
+use App\Models\CompanyInformation;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\TaxProfile;
+use App\Models\User;
+use App\Services\Invoices\InvoiceGeneratorService;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class InvoiceImmutabilityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected User $admin;
+    protected User $salesman;
+    protected Customer $customer;
+    protected TaxProfile $taxProfile;
+    protected Product $product;
+    protected Order $order;
+    protected Invoice $invoice;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->admin = User::factory()->create([
+            'role' => UserRole::ADMIN,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->salesman = User::factory()->create([
+            'role' => UserRole::SALESMAN,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->customer = Customer::create([
+            'code' => 'CUST-IMMUT-01',
+            'name' => 'Original Customer Name Corp',
+            'contact_name' => 'Original Contact',
+            'email' => 'original@customer.com',
+            'phone' => '+1 555-0100',
+            'billing_address_line1' => '100 Original Street',
+            'billing_city' => 'Original City',
+            'billing_state' => 'GA',
+            'billing_postal_code' => '30301',
+            'billing_country' => 'US',
+            'shipping_address_line1' => '100 Original Shipping Dock',
+            'shipping_city' => 'Original City',
+            'shipping_state' => 'GA',
+            'shipping_postal_code' => '30301',
+            'shipping_country' => 'US',
+            'payment_terms' => PaymentTerms::NET_30,
+            'salesman_id' => $this->salesman->id,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->taxProfile = TaxProfile::create([
+            'code' => 'STD_TAX',
+            'name' => 'Original Tax Profile',
+            'rate' => 0.0800,
+            'is_active' => true,
+        ]);
+
+        $this->product = Product::create([
+            'sku' => 'SKU-IMMUT-01',
+            'name' => 'Original Product Name',
+            'unit' => 'box',
+            'cost_price' => 50.00,
+            'minimum_allowed_price' => 80.00,
+            'default_selling_price' => 100.00,
+            'mrp' => 120.00,
+            'tax_profile_id' => $this->taxProfile->id,
+            'status' => 'ACTIVE',
+        ]);
+
+        CompanyInformation::updateOrCreate(
+            ['is_singleton' => true],
+            [
+                'legal_name' => 'Original Apex Inc',
+                'dba_name' => 'Apex',
+                'address_line1' => '100 Original Blvd',
+                'city' => 'Atlanta',
+                'state' => 'GA',
+                'postal_code' => '30301',
+                'country' => 'US',
+                'phone' => '+1 800-555-0100',
+                'email' => 'billing@apex.com',
+                'tax_id' => 'EIN-001122',
+                'currency' => 'USD',
+                'timezone' => 'America/New_York',
+                'invoice_footer_note' => 'Original invoice note.',
+            ]
+        );
+
+        $this->order = Order::create([
+            'order_number' => 'ORD-2026-IMMUT-01',
+            'idempotency_key' => (string) Str::uuid(),
+            'customer_id' => $this->customer->id,
+            'salesman_id' => $this->salesman->id,
+            'created_by' => $this->admin->id,
+            'status' => OrderStatus::APPROVED,
+            'currency' => 'USD',
+            'subtotal' => 200.00,
+            'tax_total' => 16.00,
+            'adjustment_total' => 0.00,
+            'grand_total' => 216.00,
+            'submitted_at' => Carbon::now(),
+            'approved_at' => Carbon::now(),
+            'approved_by' => $this->admin->id,
+        ]);
+
+        OrderItem::create([
+            'order_id' => $this->order->id,
+            'product_id' => $this->product->id,
+            'product_name_snapshot' => 'Original Product Name',
+            'sku_snapshot' => 'SKU-IMMUT-01',
+            'unit_snapshot' => 'box',
+            'ordered_quantity' => 2,
+            'cancelled_quantity' => 0,
+            'reserved_quantity' => 2,
+            'unit_price' => 100.00,
+            'tax_profile_id' => $this->taxProfile->id,
+            'tax_profile_code_snapshot' => 'STD_TAX',
+            'tax_profile_name_snapshot' => 'Original Tax Profile',
+            'tax_rate_snapshot' => 0.0800,
+            'taxable_amount' => 200.00,
+            'tax_amount' => 16.00,
+            'line_total' => 216.00,
+        ]);
+
+        $generator = app(InvoiceGeneratorService::class);
+        $this->invoice = $generator->generateForOrder($this->order, $this->admin);
+    }
+
+    public function test_catalog_product_price_edit_does_not_alter_historical_invoice(): void
+    {
+        // Alter product master price in database
+        $this->product->update([
+            'name' => 'MUTATED Product Name V2',
+            'default_selling_price' => 999.00,
+            'minimum_allowed_price' => 800.00,
+        ]);
+
+        $freshInvoice = Invoice::with('items')->find($this->invoice->id);
+
+        $this->assertSame('200.00', (string) $freshInvoice->subtotal);
+        $this->assertSame('216.00', (string) $freshInvoice->grand_total);
+        $this->assertSame('Original Product Name', $freshInvoice->items->first()->product_name_snapshot);
+        $this->assertSame('100.00', (string) $freshInvoice->items->first()->unit_price);
+        $this->assertSame('216.00', (string) $freshInvoice->items->first()->line_total);
+    }
+
+    public function test_catalog_tax_rate_edit_does_not_alter_historical_invoice(): void
+    {
+        // Alter tax profile in database
+        $this->taxProfile->update([
+            'code' => 'NEW_RATE',
+            'rate' => 0.2500, // 25% tax
+        ]);
+
+        $freshInvoice = Invoice::with('items')->find($this->invoice->id);
+
+        $this->assertSame('16.00', (string) $freshInvoice->tax_total);
+        $this->assertSame('0.0800', (string) $freshInvoice->items->first()->tax_rate_snapshot);
+        $this->assertSame('16.00', (string) $freshInvoice->items->first()->tax_amount);
+    }
+
+    public function test_customer_address_edit_does_not_alter_historical_invoice(): void
+    {
+        // Alter customer profile and address in database
+        $this->customer->update([
+            'name' => 'NEW Customer Brand LLC',
+            'billing_address_line1' => '999 Completely Different St',
+            'billing_city' => 'Los Angeles',
+            'billing_state' => 'CA',
+        ]);
+
+        $freshInvoice = Invoice::find($this->invoice->id);
+
+        $this->assertSame('Original Customer Name Corp', $freshInvoice->customer_name_snapshot);
+        $this->assertSame('100 Original Street', $freshInvoice->billing_address_line1_snapshot);
+        $this->assertSame('Original City', $freshInvoice->billing_city_snapshot);
+        $this->assertSame('GA', $freshInvoice->billing_state_snapshot);
+    }
+
+    public function test_eloquent_blocks_commercial_field_updates_on_issued_invoice(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Issued invoices are immutable financial records.');
+
+        $this->invoice->update([
+            'grand_total' => 5000.00,
+        ]);
+    }
+
+    public function test_eloquent_blocks_deletion_of_issued_invoice(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Issued invoices are permanent financial records and cannot be deleted.');
+
+        $this->invoice->delete();
+    }
+
+    public function test_eloquent_blocks_update_and_deletion_of_invoice_items(): void
+    {
+        $item = $this->invoice->items->first();
+
+        // 1. Attempt update
+        try {
+            $item->update(['unit_price' => 999.00]);
+            $this->fail('Expected LogicException on invoice item update.');
+        } catch (\LogicException $e) {
+            $this->assertStringContainsString('Invoice items are immutable historical records', $e->getMessage());
+        }
+
+        // 2. Attempt delete
+        try {
+            $item->delete();
+            $this->fail('Expected LogicException on invoice item delete.');
+        } catch (\LogicException $e) {
+            $this->assertStringContainsString('Invoice items are permanent financial records', $e->getMessage());
+        }
+    }
+
+    public function test_allowed_operational_fields_can_be_updated_without_exception(): void
+    {
+        $this->invoice->update([
+            'pdf_path' => 'invoices/INV-2026-IMMUT-01.pdf',
+            'pdf_generated_at' => Carbon::now(),
+            'amount_paid' => 100.00,
+            'amount_due' => 116.00,
+            'payment_status' => PaymentStatus::PARTIALLY_PAID,
+        ]);
+
+        $fresh = Invoice::find($this->invoice->id);
+        $this->assertSame('invoices/INV-2026-IMMUT-01.pdf', $fresh->pdf_path);
+        $this->assertSame(PaymentStatus::PARTIALLY_PAID, $fresh->payment_status);
+        $this->assertSame('100.00', (string) $fresh->amount_paid);
+    }
+
+    public function test_foreign_key_prevents_deletion_of_order_with_existing_invoice(): void
+    {
+        $this->expectException(QueryException::class);
+
+        // Attempting to delete order when invoice exists must violate foreign key ON DELETE RESTRICT
+        $this->order->delete();
+    }
+}

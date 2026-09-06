@@ -11,6 +11,20 @@ class InvoiceItem extends Model
     use HasFactory;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function () {
+            throw new \LogicException('Invoice items are immutable historical records and cannot be modified.');
+        });
+
+        static::deleting(function () {
+            throw new \LogicException('Invoice items are permanent financial records and cannot be deleted.');
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>

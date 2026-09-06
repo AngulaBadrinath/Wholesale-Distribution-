@@ -17,6 +17,38 @@ class Invoice extends Model
     use HasFactory;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (Invoice $invoice) {
+            $dirty = array_keys($invoice->getDirty());
+            $allowedOperationalFields = [
+                'status',
+                'amount_paid',
+                'amount_due',
+                'payment_status',
+                'pdf_path',
+                'pdf_generated_at',
+                'updated_at',
+            ];
+
+            $disallowed = array_diff($dirty, $allowedOperationalFields);
+
+            if (! empty($disallowed)) {
+                throw new \LogicException(sprintf(
+                    'Issued invoices are immutable financial records. Cannot modify fields: [%s].',
+                    implode(', ', $disallowed)
+                ));
+            }
+        });
+
+        static::deleting(function () {
+            throw new \LogicException('Issued invoices are permanent financial records and cannot be deleted.');
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
