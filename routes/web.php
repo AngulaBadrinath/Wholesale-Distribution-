@@ -257,8 +257,11 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.inventory.exceptions.store');
     });
 
-    // Stock Exception Resolution & Dismissal (FEAT-INV-005 - Mutation requires inventory.adjust)
+    // Direct Physical Inventory Adjustments & Exception Resolution (FEAT-INV-005 / FEAT-INV-006)
     Route::middleware('permission:inventory.adjust')->group(function () {
+        Route::post('/admin/inventory-adjustments', [\App\Http\Controllers\Admin\AdminInventoryAdjustmentController::class, 'store'])
+            ->name('admin.inventory.adjustments.store');
+
         Route::post('/admin/inventory-exceptions/{stockException}/resolve', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'resolve'])
             ->whereNumber('stockException')
             ->name('admin.inventory.exceptions.resolve');

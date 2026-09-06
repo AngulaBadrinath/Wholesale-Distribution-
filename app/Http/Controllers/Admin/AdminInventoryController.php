@@ -71,6 +71,10 @@ class AdminInventoryController extends Controller
 
         return Inertia::render('Admin/Inventory/Show', [
             'detail' => $detail,
+            'can_adjust' => $this->permissionService->hasPermission($actor, Permission::INVENTORY_ADJUST),
+            'can_report_exception' => $this->permissionService->hasPermission($actor, Permission::INVENTORY_EXCEPTION_REPORT) || $this->permissionService->hasPermission($actor, Permission::INVENTORY_ADJUST),
+            'adjustment_types' => array_map(fn ($t) => ['value' => $t->value, 'label' => $t->label()], \App\Enums\InventoryAdjustmentType::cases()),
+            'adjustment_reasons' => array_map(fn ($r) => ['value' => $r->value, 'label' => $r->label()], \App\Enums\InventoryAdjustmentReason::cases()),
         ]);
     }
 }

@@ -1,8 +1,9 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { InventoryDetailPayload } from '@/types/inventory';
 import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
 import { Badge } from '@/Components/ui/badge';
 import {
     Boxes,
@@ -20,14 +21,41 @@ import {
     TrendingUp,
     TrendingDown,
     FileText,
+    Sliders,
+    PlusCircle,
+    X,
 } from 'lucide-react';
 
 interface InventoryShowProps {
     detail: InventoryDetailPayload;
+    can_adjust?: boolean;
+    can_report_exception?: boolean;
+    adjustment_types?: { value: string; label: string }[];
+    adjustment_reasons?: { value: string; label: string }[];
 }
 
-export default function InventoryShow({ detail }: InventoryShowProps) {
+export default function InventoryShow({
+    detail,
+    can_adjust = false,
+    can_report_exception = false,
+    adjustment_types = [],
+    adjustment_reasons = [],
+}: InventoryShowProps) {
     const { balance, commercial_summary, composition_proportions, active_allocations } = detail;
+    const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+
+    const defaultAdjustmentType = adjustment_types[0]?.value || 'INCREASE_ON_HAND';
+    const defaultReasonCode = adjustment_reasons[0]?.value || 'CYCLE_COUNT_DISCREPANCY';
+
+    const adjustForm = useForm({
+        warehouse_id: balance.warehouse_id,
+        product_id: balance.product_id,
+        adjustment_type: defaultAdjustmentType,
+        reason_code: defaultReasonCode,
+        quantity: 1,
+        expected_version: balance.version,
+        notes: '',
+    });
 
     const getStockStatusBadge = () => {
         switch (balance.stock_status) {
@@ -55,6 +83,56 @@ export default function InventoryShow({ detail }: InventoryShowProps) {
             default:
                 return <Badge variant="outline">{balance.stock_status_label}</Badge>;
         }
+    };
+
+    // Calculate live preview deltas
+    const previewQuantity = Math.max(1, Number(adjustForm.data.quantity) || 1);
+    let previewOnHand = balance.on_hand_quantity;
+    let previewAvailable = balance.available_quantity;
+    let previewDamaged = balance.damaged_quantity;
+    let isInvalidPreview = false;
+    let validationErrorMessage = '';
+
+    switch (adjustForm.data.adjustment_type) {
+        case 'INCREASE_ON_HAND':
+            previewOnHand += previewQuantity;
+            previewAvailable += previewQuantity;
+            break;
+        case 'DECREASE_ON_HAND':
+            if (balance.available_quantity < previewQuantity) {
+                isInvalidPreview = true;
+                validationErrorMessage = `Cannot write off ${previewQuantity} units; only ${balance.available_quantity} available.`;
+            }
+            previewOnHand = Math.max(0, previewOnHand - previewQuantity);
+            previewAvailable = Math.max(0, previewAvailable - previewQuantity);
+            break;
+        case 'TRANSFER_TO_DAMAGED':
+            if (balance.available_quantity < previewQuantity) {
+                isInvalidPreview = true;
+                validationErrorMessage = `Cannot transfer ${previewQuantity} units; only ${balance.available_quantity} available.`;
+            }
+            previewAvailable = Math.max(0, previewAvailable - previewQuantity);
+            previewDamaged += previewQuantity;
+            break;
+        case 'DAMAGE_DISPOSAL':
+            if (balance.damaged_quantity < previewQuantity) {
+                isInvalidPreview = true;
+                validationErrorMessage = `Cannot dispose ${previewQuantity} units; only ${balance.damaged_quantity} damaged in stock.`;
+            }
+            previewDamaged = Math.max(0, previewDamaged - previewQuantity);
+            previewOnHand = Math.max(0, previewOnHand - previewQuantity);
+            break;
+    }
+
+    const handleAdjustSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        adjustForm.post('/admin/inventory-adjustments', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAdjustModalOpen(false);
+                adjustForm.reset('notes', 'quantity');
+            },
+        });
     };
 
     return (
@@ -95,8 +173,39 @@ export default function InventoryShow({ detail }: InventoryShowProps) {
                             </div>
                         </div>
 
-                        {/* Warehouse & Bin Badges */}
-                        <div className="flex items-center gap-2">
+                        {/* Action Buttons & Warehouse Badges */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {can_adjust && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        adjustForm.setData({
+                                            warehouse_id: balance.warehouse_id,
+                                            product_id: balance.product_id,
+                                            adjustment_type: defaultAdjustmentType,
+                                            reason_code: defaultReasonCode,
+                                            quantity: 1,
+                                            expected_version: balance.version,
+                                            notes: '',
+                                        });
+                                        setIsAdjustModalOpen(true);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                >
+                                    <Sliders className="h-4 w-4" />
+                                    <span>Adjust Stock</span>
+                                </Button>
+                            )}
+
+                            {can_report_exception && (
+                                <Link href="/admin/inventory-exceptions">
+                                    <Button size="sm" variant="outline" className="inline-flex items-center gap-1.5">
+                                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                        <span>Exceptions Queue</span>
+                                    </Button>
+                                </Link>
+                            )}
+
                             <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium shadow-sm">
                                 <WarehouseIcon className="h-4 w-4 text-muted-foreground" />
                                 <span>{balance.warehouse_name}</span>
@@ -308,7 +417,7 @@ export default function InventoryShow({ detail }: InventoryShowProps) {
                                 <tbody className="divide-y divide-border">
                                     {active_allocations.map((alloc) => (
                                         <tr key={alloc.id} className="transition-colors hover:bg-muted/30">
-                                            <td className="px-4 py-3 font-mono text-xs font-medium text-foreground">
+                                             <td className="px-4 py-3 font-mono text-xs font-medium text-foreground">
                                                 {alloc.allocation_number}
                                             </td>
                                             <td className="px-4 py-3">
@@ -420,6 +529,168 @@ export default function InventoryShow({ detail }: InventoryShowProps) {
                     )}
                 </div>
             </div>
+
+            {/* Direct Physical Inventory Adjustment Modal */}
+            {isAdjustModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl animate-in fade-in zoom-in-95">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-foreground">
+                                    Direct Stock Adjustment
+                                </h3>
+                                <p className="text-xs text-muted-foreground">
+                                    {balance.product_name} ({balance.sku}) • {balance.warehouse_name}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsAdjustModalOpen(false)}
+                                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* Current Balance Bar */}
+                        <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-2.5 text-center text-xs font-mono">
+                            <div>
+                                <span className="text-[10px] uppercase text-muted-foreground block">Available</span>
+                                <span className="font-bold text-emerald-600">{balance.available_quantity}</span>
+                            </div>
+                            <div>
+                                <span className="text-[10px] uppercase text-muted-foreground block">Physical Hold</span>
+                                <span className="font-bold text-amber-600">{balance.reserved_quantity}</span>
+                            </div>
+                            <div>
+                                <span className="text-[10px] uppercase text-muted-foreground block">Damaged</span>
+                                <span className="font-bold text-rose-600">{balance.damaged_quantity}</span>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleAdjustSubmit} className="mt-4 space-y-4">
+                            <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                    Adjustment Action
+                                </label>
+                                <select
+                                    value={adjustForm.data.adjustment_type}
+                                    onChange={(e) => adjustForm.setData('adjustment_type', e.target.value)}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                                >
+                                    {adjustment_types.map((type) => (
+                                        <option key={type.value} value={type.value}>
+                                            {type.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {adjustForm.errors.adjustment_type && (
+                                    <p className="mt-1 text-xs text-destructive">{adjustForm.errors.adjustment_type}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                    Reason Code
+                                </label>
+                                <select
+                                    value={adjustForm.data.reason_code}
+                                    onChange={(e) => adjustForm.setData('reason_code', e.target.value)}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                                >
+                                    {adjustment_reasons.map((reason) => (
+                                        <option key={reason.value} value={reason.value}>
+                                            {reason.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {adjustForm.errors.reason_code && (
+                                    <p className="mt-1 text-xs text-destructive">{adjustForm.errors.reason_code}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                    Adjustment Quantity
+                                </label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="1000000"
+                                    value={adjustForm.data.quantity}
+                                    onChange={(e) => adjustForm.setData('quantity', Number(e.target.value))}
+                                    className="text-sm font-mono"
+                                    required
+                                />
+                                {adjustForm.errors.quantity && (
+                                    <p className="mt-1 text-xs text-destructive">{adjustForm.errors.quantity}</p>
+                                )}
+                            </div>
+
+                            {/* Live Preview Projection */}
+                            <div className={`rounded-lg border p-3 text-xs space-y-1 ${
+                                isInvalidPreview
+                                    ? 'border-destructive/40 bg-destructive/5'
+                                    : 'border-border bg-card'
+                            }`}>
+                                <div className="font-semibold text-foreground flex items-center justify-between">
+                                    <span>Projected Stock After Adjustment</span>
+                                    {isInvalidPreview && (
+                                        <span className="text-[11px] font-normal text-destructive flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> Exceeds stock limit
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground pt-1">
+                                    <span>On-Hand: <strong>{balance.on_hand_quantity}</strong> → <strong className="text-foreground">{previewOnHand}</strong></span>
+                                    <span>Avail: <strong>{balance.available_quantity}</strong> → <strong className="text-foreground">{previewAvailable}</strong></span>
+                                    <span>Damaged: <strong>{balance.damaged_quantity}</strong> → <strong className="text-foreground">{previewDamaged}</strong></span>
+                                </div>
+                                {isInvalidPreview && (
+                                    <p className="text-[11px] text-destructive pt-1 font-medium">{validationErrorMessage}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-foreground block mb-1">
+                                    Administrative Justification Notes (Mandatory, min 5 chars)
+                                </label>
+                                <textarea
+                                    value={adjustForm.data.notes}
+                                    onChange={(e) => adjustForm.setData('notes', e.target.value)}
+                                    placeholder="Provide detailed explanation for this inventory adjustment..."
+                                    rows={3}
+                                    className="w-full rounded-md border border-input bg-background p-2.5 text-xs shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                                    required
+                                />
+                                {adjustForm.errors.notes && (
+                                    <p className="mt-1 text-xs text-destructive">{adjustForm.errors.notes}</p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsAdjustModalOpen(false)}
+                                    disabled={adjustForm.processing}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    disabled={adjustForm.processing || isInvalidPreview || adjustForm.data.notes.trim().length < 5}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                >
+                                    {adjustForm.processing ? 'Posting...' : 'Apply Stock Adjustment'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }
