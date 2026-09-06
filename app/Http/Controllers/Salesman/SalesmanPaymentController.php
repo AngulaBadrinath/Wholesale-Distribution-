@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Salesman;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Http\Requests\Payment\CreateChequePaymentRequest;
+use App\Http\Requests\Payment\CreateMoneyOrderPaymentRequest;
 use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -50,5 +51,24 @@ class SalesmanPaymentController extends Controller
         }
 
         return redirect()->back()->with('success', "Cheque payment {$payment->payment_number} recorded successfully.");
+    }
+
+    /**
+     * Store a money order payment collected by a salesman for an assigned customer.
+     */
+    public function storeMoneyOrder(CreateMoneyOrderPaymentRequest $request): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $evidenceFile = $request->file('evidence');
+        $payment = $this->paymentService->recordMoneyOrderPayment($request->validated(), $evidenceFile, $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Money order payment {$payment->payment_number} recorded successfully.",
+                'payment' => $payment->load(['customer', 'order']),
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', "Money order payment {$payment->payment_number} recorded successfully.");
     }
 }

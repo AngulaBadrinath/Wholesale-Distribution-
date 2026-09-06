@@ -295,6 +295,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.payments.cheque.store');
         Route::post('/salesman/payments/cheque', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeCheque'])
             ->name('salesman.payments.cheque.store');
+
+        // Money Order Payment Entry (FEAT-PAY-004)
+        Route::post('/admin/payments/money-order', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'storeMoneyOrder'])
+            ->name('admin.payments.money-order.store');
+        Route::post('/salesman/payments/money-order', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeMoneyOrder'])
+            ->name('salesman.payments.money-order.store');
     });
 });
 
