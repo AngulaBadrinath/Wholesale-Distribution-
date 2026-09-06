@@ -204,4 +204,26 @@ class DeliveryPartnerController extends Controller
 
         return back()->with('success', "Delivery {$updatedDelivery->delivery_number} is now out for delivery.");
     }
+
+    /**
+     * Complete delivery mission with proof of delivery (FEAT-DEL-005).
+     */
+    public function complete(\App\Http\Requests\Delivery\CompleteDeliveryRequest $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->completeDelivery(
+            $delivery,
+            $request->user(),
+            $request->validated()
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} successfully completed.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('success', "Delivery {$updatedDelivery->delivery_number} successfully completed.");
+    }
 }
