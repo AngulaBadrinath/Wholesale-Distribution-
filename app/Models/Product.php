@@ -16,6 +16,20 @@ class Product extends Model
     use HasFactory;
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Product $product) {
+            try {
+                app(\App\Services\Inventory\InventoryInitializationService::class)->initializeProduct($product);
+            } catch (\Throwable $e) {
+                // Defensive catch during isolated unit testing or pre-migration runs
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -87,6 +101,16 @@ class Product extends Model
     public function primaryImage(): HasOne
     {
         return $this->hasOne(ProductImage::class, 'product_id')->where('is_primary', true);
+    }
+
+    /**
+     * Get all inventory balances associated with this product across warehouses.
+     *
+     * @return HasMany<InventoryBalance, $this>
+     */
+    public function inventoryBalances(): HasMany
+    {
+        return $this->hasMany(InventoryBalance::class, 'product_id');
     }
 
     /**

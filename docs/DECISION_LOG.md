@@ -423,6 +423,56 @@
 - **Affected Tickets:** `FEAT-ADJ-006`.
 - **Consequences:** Administrators now have an operational command center for triaging, evaluating, and applying adjustments with live exception detection and zero query scaling.
 
+### DEC-018: Physical Inventory Balance Foundation, Canonical Warehouse Entity & Mathematical Invariants
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Strict Architectural Separation (Physical Inventory vs Order Allocations):**
+     - **Order/Allocation Domain (`order_item_allocations`):** Tracks commercial fulfillment commitments (`ordered`, `cancelled`, `allocated`, `reserved`, `picked`, `dispatched`, `delivered`, `returned`) bound to specific order items and customer deliveries.
+     - **Physical Inventory Domain (`inventory_balances`):** Tracks aggregate physical units resting on warehouse shelves for a product (`on_hand`, `reserved`, `available`, `damaged`) independent of customer identities.
+     - Physical inventory and order allocations are separate domains. `FEAT-INV-001` provides the authoritative physical balance aggregate and models without prematurely synchronizing them (order reservation bridge belongs strictly to `FEAT-INV-003`).
+  2. **Canonical Warehouse Entity (`warehouses`) & Single Central Warehouse V1:**
+     - In accordance with PRD §39.2, V1 operates with a single default warehouse (`code: 'MAIN'`, `name: 'Main Distribution Center'`, `is_default: true`).
+     - Rather than hardcoding warehouse strings, a canonical `warehouses` table is established with partial unique indexing enforcing exactly one default warehouse (`idx_warehouses_single_default`).
+     - Extensible database design guarantees multi-warehouse schema readiness without introducing premature multi-warehouse orchestration or transfer complexity.
+  3. **Composite Identity & Foreign Key Integrity:**
+     - Physical inventory balance is keyed on `UNIQUE (warehouse_id, product_id)`.
+     - Foreign keys to `warehouses` and `products` use `ON DELETE RESTRICT` semantics to protect historical warehouse records and stock balances from accidental cascading drops.
+  4. **PostgreSQL Database-Enforced Mathematical Invariants:**
+     - Non-negativity constraint (`chk_inventory_balances_quantities`):
+       $$\text{on\_hand} \ge 0 \land \text{reserved} \ge 0 \land \text{available} \ge 0 \land \text{damaged} \ge 0 \land \text{reorder\_point} \ge 0 \land \text{safety\_stock} \ge 0$$
+     - Physical quantity conservation bound (`chk_inventory_balances_bounds`):
+       $$\text{reserved\_quantity} + \text{damaged\_quantity} \le \text{on\_hand\_quantity}$$
+     - Authoritative available stock derivation formula (`chk_inventory_balances_math`):
+       $$\text{available\_quantity} = \text{on\_hand\_quantity} - \text{reserved\_quantity} - \text{damaged\_quantity}$$
+  5. **Product Relationship Discipline:**
+     - `Product` exposes only `inventoryBalances(): HasMany`.
+     - Generic `Product::hasOne(InventoryBalance)` tied to a fixed warehouse is forbidden. Warehouse-specific lookups must be explicit via scopes (`forWarehouse($warehouseId)`) or service/repository queries.
+  6. **Idempotent Automatic Stock Initialization & Catalog Backfill:**
+     - Creating a `Product` auto-initializes a default zero-quantity `InventoryBalance` row at the canonical default warehouse (`MAIN`), protected by `insertOrIgnore` against `UNIQUE (warehouse_id, product_id)`.
+     - Artisan command `php artisan inventory:initialize` (`InitializeInventoryBalancesCommand` + `InventoryInitializationService`) provides idempotent catalog backfill that preserves all existing non-zero balances and never resets inventory counts.
+  7. **Foundational Concurrency & Deadlock Prevention:**
+     - Optimistic concurrency column `version` (initialized to 1) provides infrastructure for future stock mutation workflows.
+     - `InventoryService::lockBalancesForUpdate` enforces deterministic row locking in ascending primary key ID order (`ORDER BY id ASC`), eliminating intra-table deadlocks.
+  8. **Stock Status Interpretation:**
+     - `OUT_OF_STOCK`: $\text{available\_quantity} \le 0$
+     - `LOW_STOCK`: $\text{available\_quantity} > 0 \land \text{reorder\_point} > 0 \land \text{available\_quantity} \le \text{reorder\_point}$
+     - `IN_STOCK`: $\text{available\_quantity} > \text{reorder\_point} \lor (\text{available\_quantity} > 0 \land \text{reorder\_point} \le 0)$
+  9. **Administrative Visibility & RBAC:**
+     - Canonical read-only index endpoint `GET /admin/inventory` protected by `Permission::INVENTORY_VIEW` (`inventory.view`).
+     - Authorized: `SUPER_ADMIN`, `ADMIN`, `WAREHOUSE_MANAGER`.
+     - Forbidden: `SALESMAN`, `ACCOUNTANT`, `DELIVERY_PARTNER` (HTTP 403 Forbidden).
+     - Responsive UI with high-density table for desktop/tablet and purpose-built cards for mobile.
+- **Context:** Establishing the operational physical stock storage aggregate before introducing order reservations (`FEAT-INV-003`), movement ledgers (`FEAT-INV-004`), exception reporting (`FEAT-INV-005`), and manual adjustments (`FEAT-INV-006`).
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-INV-001` (Atomic Inventory Reservation), `RULE-SEC-001` (Server Authority), and `RULE-SEC-002` (Zero Client Trust).
+- **Alternatives Considered:**
+  - *Deriving stock solely from order allocations:* Rejected because allocations represent commercial shipping commitments, not physical goods on warehouse shelves.
+  - *Hardcoding 'MAIN' string inside product models:* Rejected because multi-warehouse extensibility requires explicit entity relationships.
+- **Affected Domains:** Inventory, Products, Warehouses, Orders & Allocations, Security/RBAC.
+- **Affected Documents:** PRD §39.2; Technical Architecture §14, §15, §18; Security & Access §18; Frontend Specification §14; Feature Ticket List §19.
+- **Affected Tickets:** `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`.
+- **Consequences:** The system now possesses an authoritative, mathematically enforced physical stock model and administrative workspace.
+
 ---
 
 ## Open Decisions & TBD Register

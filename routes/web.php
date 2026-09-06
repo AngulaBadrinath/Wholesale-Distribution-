@@ -239,6 +239,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('adjustment')
             ->name('admin.orders.adjustments.reverse');
     });
+
+    // Physical Inventory Foundation & Operational Workspace (FEAT-INV-001)
+    Route::middleware('permission:inventory.view')->group(function () {
+        Route::get('/admin/inventory', [\App\Http\Controllers\Admin\AdminInventoryController::class, 'index'])
+            ->name('admin.inventory.index');
+    });
 });
 
 

@@ -866,13 +866,29 @@
 - [x] **Bounded Pagination & Query Preservation:** 15/page bounded pagination preserving all active filter query string parameters (`test_queue_bounded_pagination_and_query_string_preservation`).
 - [x] **Query Budget & Zero N+1 Scaling:** Constant 10-query execution budget regardless of record count using selective eager loading and single-trip aggregate counts (`test_queue_query_budget_and_no_n_plus_one_scaling`).
 
-### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
-- [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
+### 1.11 Physical Inventory Foundation & Warehouse Master (`INVENTORY FOUNDATION` / `FEAT-INV-001`)
+- [x] **Canonical Default Warehouse Seeded & Unique:** Migration creates canonical `warehouses` table, seeds default `MAIN` warehouse (`is_default = true`), and enforces uniqueness of warehouse code and partial unique index on `is_default = true` (`InventoryFoundationTest::test_main_default_warehouse_exists_and_is_unique`, `test_duplicate_warehouse_code_is_rejected`).
+- [x] **Automatic Product Stock Initialization:** Creating a new product automatically initializes a zero-quantity baseline balance record at `MAIN` warehouse (`test_product_creation_automatically_initializes_baseline_stock_balance`).
+- [x] **Composite Unique (Warehouse, Product):** Composite uniqueness on `(warehouse_id, product_id)` strictly prevents duplicate balance entries for the same warehouse-product pair (`test_composite_unique_warehouse_and_product_prevents_duplicate_balances`).
+- [x] **PostgreSQL Non-Negativity CHECK Constraint:** `chk_inventory_balances_quantities` rejects negative `on_hand_quantity`, `reserved_quantity`, `available_quantity`, `damaged_quantity`, `reorder_point`, or `safety_stock` at database layer (`test_postgresql_check_constraint_rejects_negative_quantities`).
+- [x] **PostgreSQL Quantity Conservation Bound CHECK Constraint:** `chk_inventory_balances_bounds` rejects any row where $\text{reserved\_quantity} + \text{damaged\_quantity} > \text{on\_hand\_quantity}$ (`test_postgresql_check_constraint_rejects_reserved_plus_damaged_exceeding_on_hand`).
+- [x] **PostgreSQL Available Stock Formula CHECK Constraint:** `chk_inventory_balances_math` enforces $\text{available\_quantity} = \text{on\_hand\_quantity} - \text{reserved\_quantity} - \text{damaged\_quantity}$ and rejects unsynchronized mutation (`test_postgresql_check_constraint_rejects_unsynchronized_available_formula`).
+- [x] **Model Relationships & Scopes:** `Product->inventoryBalances()` HasMany relation, `Warehouse->inventoryBalances()` HasMany relation, `InventoryBalance->warehouse()` and `->product()` BelongsTo relations resolve accurately. Scopes `inStock()`, `lowStock()`, `outOfStock()`, `forWarehouse()`, and `search()` filter records correctly (`test_model_relationships_and_stock_status_interpretation`).
+- [x] **Stock Status Interpretation:** Accurate classification of `IN_STOCK`, `LOW_STOCK` ($\text{available} \le \text{reorder\_point}$), and `OUT_OF_STOCK` ($\text{available} \le 0$) (`test_model_relationships_and_stock_status_interpretation`).
+- [x] **Idempotent Initialization & Catalog Backfill:** `InventoryInitializationService::initializeCatalog()` and artisan command `php artisan inventory:initialize` backfill missing balance rows without duplicating or resetting existing non-zero stock balances (`test_inventory_initialization_service_and_artisan_command_are_idempotent`).
+- [x] **Deterministic Pessimistic Lock Ordering:** `InventoryService::lockBalancesForUpdate` locks records in ascending primary key ID order (`ORDER BY id ASC`), eliminating deadlocks (`test_inventory_service_locks_balances_in_ascending_id_order`).
+- [x] **RBAC Authorization:** Super Admin, Admin, and Warehouse Manager authorized to view `/admin/inventory` workspace (200 OK); Salesman, Accountant, and Delivery Partner strictly denied with 403 Forbidden (`test_super_admin_admin_and_warehouse_manager_can_access_inventory_workspace`, `test_salesman_accountant_and_delivery_partner_are_denied_with_403`).
+- [x] **Inactive Account Interception:** Suspended or inactive administrator accounts blocked and redirected to login (`test_inactive_accounts_and_unauthenticated_requests_are_rejected`).
+- [x] **Filtering, Multi-Column Search, and Sorting:** Search by SKU, product name, and bin location; filter by warehouse and stock status; allowlisted sorting with bounded pagination (`test_inventory_workspace_search_and_stock_status_filters`).
+- [x] **Query Stability & Zero N+1 Scaling:** Constant query count regardless of page size (2 vs 10 items) using selective eager loading (`test_inventory_workspace_query_count_remains_stable_without_n_plus_one`).
+
+### 1.11.1 Inventory Reservation & Warehouse Operations (Future Phase 06 Scope)
+- [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`, `FEAT-INV-003`).
 - [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).
 - [ ] **Constraint Assertion:** Normal reservation never allows `available < 0` (`RULE-INV-002`).
-- [ ] **Movement Ledger:** Stock movement record created (`AVAILABLE` → `RESERVED`) in `inventory_movements`.
-- [ ] **Damaged Stock:** Warehouse stock exception moves stock from `RESERVED` to `DAMAGED` (`RULE-INV-004`).
-- [ ] **Security:** Direct manual editing of available stock via API prohibited.
+- [ ] **Movement Ledger:** Stock movement record created (`AVAILABLE` → `RESERVED`) in `inventory_movements` (`FEAT-INV-004`).
+- [ ] **Damaged Stock:** Warehouse stock exception moves stock from `RESERVED` to `DAMAGED` (`RULE-INV-004`, `FEAT-INV-005`).
+- [ ] **Security:** Direct manual editing of available stock via API prohibited (`FEAT-INV-006`).
 
 ### 1.12 Payment Entry & Verification (`PAYMENT`)
 - [ ] **Happy Path (Cash):** Cash payment recorded; customer outstanding balance decreases.

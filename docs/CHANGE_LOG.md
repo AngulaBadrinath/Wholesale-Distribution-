@@ -615,6 +615,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ADJ-006`.
 
+### CHANGE-018: Physical Inventory Balance Foundation, Canonical Warehouse Master & Mathematical Constraints (FEAT-INV-001)
+- **Change ID:** `CHANGE-018`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Establish the physical warehouse inventory foundation (`FEAT-INV-001`). Create canonical `warehouses` table seeded with default `MAIN` warehouse and partial unique default index (`2026_09_06_000002_create_warehouses_table.php`); create canonical `inventory_balances` table (`2026_09_06_000003_create_inventory_balances_table.php`) keyed on `UNIQUE (warehouse_id, product_id)` with RESTRICT foreign keys and PostgreSQL database-level CHECK constraints (`chk_inventory_balances_quantities`, `chk_inventory_balances_bounds`, `chk_inventory_balances_math`); add `Product->inventoryBalances(): HasMany` relationship; establish automatic idempotent stock initialization for new products and catalog backfill command `php artisan inventory:initialize` via `InventoryInitializationService`; implement foundational `InventoryService` providing deterministic pessimistic row-lock helper `lockBalancesForUpdate` in ascending ID order; build read-only administrative inventory workspace at `GET /admin/inventory` protected by `Permission::INVENTORY_VIEW`; provide stock status interpretation (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`), multi-column search, warehouse filtering, allowlisted sorting, bounded pagination, and responsive desktop table and mobile cards.
+- **Reason:** Provide the authoritative foundation for physical warehouse stock storage, enforce mathematical stock invariants at the database boundary, and establish strict domain separation between physical inventory and commercial order allocations.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P1` (Core Operations)
+- **Affected PRD Requirements:** §39.2.
+- **Affected Architecture:** Technical Architecture §14, §15, §18.
+- **Affected Security:** Security & Access §18, §23; RBAC `Permission::INVENTORY_VIEW` authorized for Super Admin, Admin, and Warehouse Manager; Salesman, Accountant, and Delivery Partner denied with 403 Forbidden.
+- **Affected Frontend:** `resources/js/Pages/Admin/Inventory/Index.tsx`, `resources/js/types/inventory.ts`.
+- **Affected Tickets:** `FEAT-INV-001` completed.
+- **Inventory Impact:** Authoritative physical stock balance aggregate established with database mathematical constraints. Future stock reservation engine (`FEAT-INV-003`), movement ledgers (`FEAT-INV-004`), and manual adjustments (`FEAT-INV-006`) will operate over this foundation.
+- **Order Impact:** Clear separation maintained between physical stock (`inventory_balances`) and customer fulfillment commitments (`order_item_allocations`). Zero allocation mutation.
+- **Payment Impact:** None.
+- **Tax Impact:** None.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** Two new migrations: `2026_09_06_000002_create_warehouses_table.php` and `2026_09_06_000003_create_inventory_balances_table.php`.
+- **Testing Impact:** Added 15 comprehensive automated tests in `InventoryFoundationTest.php` and dedicated PostgreSQL constraint test script `verify_postgres_inventory_foundation.php`. Full repository test suite at 967 tests (957 passed, 6,310 assertions, 10 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** Run `php artisan migrate` and optional `php artisan inventory:initialize`.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-INV-001`.
+
 ---
 
 ## 3. Template for Future Change Requests
