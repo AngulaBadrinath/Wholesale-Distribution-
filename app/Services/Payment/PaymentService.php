@@ -286,4 +286,112 @@ class PaymentService
             return $payment;
         }, 3);
     }
+
+    /**
+     * Correct and resubmit a rejected payment with updated instrument details and/or replacement evidence.
+     *
+     * @param  Payment  $payment
+     * @param  array<string, mixed>  $data
+     * @param  UploadedFile|null  $evidenceFile
+     * @param  User  $actor
+     * @return Payment
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws ValidationException
+     */
+    public function correctAndResubmitPayment(
+        Payment $payment,
+        array $data,
+        ?UploadedFile $evidenceFile,
+        User $actor
+    ): Payment {
+        $this->permissionService->authorize($actor, Permission::PAYMENT_CREATE);
+
+        // State machine pre-check: only REJECTED payments can be corrected
+        if ($payment->status !== PaymentTransactionStatus::REJECTED) {
+            throw new ConflictHttpException("Payment {$payment->payment_number} is in '{$payment->status->label()}' status and cannot be corrected.");
+        }
+
+        // Anti-IDOR for Salesman role
+        if ($actor->role === UserRole::SALESMAN) {
+            $isAssigned = $payment->customer && $payment->customer->salesman_id === $actor->id;
+            $isRecorder = $payment->recorded_by === $actor->id;
+
+            if (! $isAssigned && ! $isRecorder) {
+                throw new AuthorizationException('You are not authorized to correct payments for this customer account.');
+            }
+        }
+
+        // Handle replacement evidence if uploaded
+        $evidenceMetadata = [];
+        if ($evidenceFile) {
+            $evidenceMetadata = $this->evidenceService->validateAndStoreEvidence($evidenceFile);
+        }
+
+        return DB::transaction(function () use ($payment, $data, $evidenceMetadata, $actor) {
+            $lockedPayment = Payment::where('id', $payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedPayment->status !== PaymentTransactionStatus::REJECTED) {
+                throw new ConflictHttpException("Payment {$lockedPayment->payment_number} is no longer in rejected status.");
+            }
+
+            $updatePayload = [
+                'status' => PaymentTransactionStatus::PENDING_VERIFICATION,
+                'version' => $lockedPayment->version + 1,
+            ];
+
+            if (isset($data['amount']) && (float) $data['amount'] > 0) {
+                $updatePayload['amount'] = number_format((float) $data['amount'], 2, '.', '');
+            }
+
+            if (! empty($data['payment_date'])) {
+                if (Carbon::parse($data['payment_date'])->isFuture()) {
+                    throw ValidationException::withMessages(['payment_date' => 'Payment date cannot be in the future.']);
+                }
+                $updatePayload['payment_date'] = $data['payment_date'];
+            }
+
+            if (! empty($data['bank_name'])) {
+                $updatePayload['bank_name'] = trim((string) $data['bank_name']);
+            }
+            if (! empty($data['cheque_number'])) {
+                $updatePayload['cheque_number'] = trim((string) $data['cheque_number']);
+            }
+            if (! empty($data['cheque_date'])) {
+                $updatePayload['cheque_date'] = $data['cheque_date'];
+            }
+            if (! empty($data['issuer_name'])) {
+                $updatePayload['issuer_name'] = trim((string) $data['issuer_name']);
+            }
+            if (! empty($data['money_order_number'])) {
+                $updatePayload['money_order_number'] = trim((string) $data['money_order_number']);
+            }
+            if (! empty($data['receipt_reference'])) {
+                $updatePayload['receipt_reference'] = trim((string) $data['receipt_reference']);
+            }
+            if (! empty($data['notes'])) {
+                $updatePayload['notes'] = trim((string) $data['notes']);
+            }
+
+            if (! empty($evidenceMetadata)) {
+                $updatePayload['evidence_object_key'] = $evidenceMetadata['evidence_object_key'];
+                $updatePayload['evidence_original_name'] = $evidenceMetadata['evidence_original_name'];
+                $updatePayload['evidence_mime_type'] = $evidenceMetadata['evidence_mime_type'];
+                $updatePayload['evidence_size_bytes'] = $evidenceMetadata['evidence_size_bytes'];
+                $updatePayload['evidence_uploaded_at'] = $evidenceMetadata['evidence_uploaded_at'];
+            }
+
+            $lockedPayment->update($updatePayload);
+
+            Log::info('Payment corrected and resubmitted for verification', [
+                'payment_id' => $lockedPayment->id,
+                'payment_number' => $lockedPayment->payment_number,
+                'corrected_by' => $actor->id,
+                'new_version' => $lockedPayment->version,
+            ]);
+
+            return $lockedPayment->fresh(['customer', 'order', 'recordedBy']);
+        }, 3);
+    }
 }

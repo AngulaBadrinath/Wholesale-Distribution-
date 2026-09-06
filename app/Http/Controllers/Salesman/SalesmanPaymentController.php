@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Salesman;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Payment\CorrectPaymentRequest;
 use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Http\Requests\Payment\CreateChequePaymentRequest;
 use App\Http\Requests\Payment\CreateMoneyOrderPaymentRequest;
+use App\Models\Payment;
 use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -70,5 +72,24 @@ class SalesmanPaymentController extends Controller
         }
 
         return redirect()->back()->with('success', "Money order payment {$payment->payment_number} recorded successfully.");
+    }
+
+    /**
+     * Correct and resubmit a rejected payment.
+     */
+    public function correct(CorrectPaymentRequest $request, Payment $payment): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $evidenceFile = $request->file('evidence');
+        $resubmittedPayment = $this->paymentService->correctAndResubmitPayment($payment, $request->validated(), $evidenceFile, $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Payment {$resubmittedPayment->payment_number} corrected and resubmitted for verification.",
+                'payment' => $resubmittedPayment,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Payment {$resubmittedPayment->payment_number} corrected and resubmitted.");
     }
 }

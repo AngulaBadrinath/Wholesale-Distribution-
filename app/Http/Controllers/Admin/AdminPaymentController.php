@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentRejectionReason;
 use App\Enums\PaymentTransactionStatus;
 use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\AdminPaymentIndexRequest;
+use App\Http\Requests\Payment\CorrectPaymentRequest;
 use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Http\Requests\Payment\CreateChequePaymentRequest;
 use App\Http\Requests\Payment\CreateMoneyOrderPaymentRequest;
+use App\Http\Requests\Payment\RejectPaymentRequest;
 use App\Models\Customer;
 use App\Models\Payment;
 use App\Services\Auth\PermissionService;
@@ -196,6 +199,50 @@ class AdminPaymentController extends Controller
         }
 
         return redirect()->back()->with('success', "Payment {$verifiedPayment->payment_number} verified and reconciled.");
+    }
+
+    /**
+     * Reject a pending payment with documented operational reason.
+     *
+     * @throws AuthorizationException
+     */
+    public function reject(RejectPaymentRequest $request, Payment $payment): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $reason = PaymentRejectionReason::from($request->validated('rejection_reason_code'));
+        $notes = (string) $request->validated('rejection_notes');
+
+        $rejectedPayment = $this->verificationService->rejectPayment($payment, $actor, $reason, $notes);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Payment {$rejectedPayment->payment_number} has been rejected.",
+                'payment' => $rejectedPayment,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Payment {$rejectedPayment->payment_number} rejected.");
+    }
+
+    /**
+     * Correct and resubmit a rejected payment.
+     *
+     * @throws AuthorizationException
+     */
+    public function correct(CorrectPaymentRequest $request, Payment $payment): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $evidenceFile = $request->file('evidence');
+        $resubmittedPayment = $this->paymentService->correctAndResubmitPayment($payment, $request->validated(), $evidenceFile, $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Payment {$resubmittedPayment->payment_number} corrected and resubmitted for verification.",
+                'payment' => $resubmittedPayment,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Payment {$resubmittedPayment->payment_number} corrected and resubmitted.");
     }
 
     /**

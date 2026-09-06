@@ -304,13 +304,25 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.payments.money-order.store');
         Route::post('/salesman/payments/money-order', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeMoneyOrder'])
             ->name('salesman.payments.money-order.store');
+
+        // Payment Correction / Resubmission (FEAT-PAY-008)
+        Route::post('/admin/payments/{payment}/correct', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'correct'])
+            ->whereNumber('payment')
+            ->name('admin.payments.correct');
+        Route::post('/salesman/payments/{payment}/correct', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'correct'])
+            ->whereNumber('payment')
+            ->name('salesman.payments.correct');
     });
 
-    // Payment Verification Engine (FEAT-PAY-007)
+    // Payment Verification & Rejection Engine (FEAT-PAY-007 / FEAT-PAY-008)
     Route::middleware('permission:payment.verify')->group(function () {
         Route::post('/admin/payments/{payment}/verify', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'verify'])
             ->whereNumber('payment')
             ->name('admin.payments.verify');
+
+        Route::post('/admin/payments/{payment}/reject', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'reject'])
+            ->whereNumber('payment')
+            ->name('admin.payments.reject');
     });
 });
 
