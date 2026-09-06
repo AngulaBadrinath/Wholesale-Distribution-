@@ -163,14 +163,14 @@
 ## 9. LOGISTICS, RETURNS & CREDITS
 
 ### Delivery Operations
-- [ ] `FEAT-DEL-001`: Delivery Assignment Engine & Driver Work Allocation
-- [ ] `FEAT-DEL-002`: Delivery Partner Mobile Assigned Queue
-- [ ] `FEAT-DEL-003`: Warehouse Pickup Confirmation
-- [ ] `FEAT-DEL-004`: Out-for-Delivery State Transition
-- [ ] `FEAT-DEL-005`: Delivery Completion & Proof of Delivery
-- [ ] `FEAT-DEL-006`: Delivery Failure Logging with Structured Reason Codes
-- [ ] `FEAT-DEL-007`: Delivery Reschedule & Return-to-Warehouse Workflow
-- [ ] `FEAT-DEL-008`: Delivery History & Tracking Audit
+- [x] `FEAT-DEL-001`: Delivery Assignment Engine & Driver Work Allocation
+- [x] `FEAT-DEL-002`: Delivery Partner Mobile Assigned Queue
+- [x] `FEAT-DEL-003`: Warehouse Pickup Confirmation
+- [x] `FEAT-DEL-004`: Out-for-Delivery State Transition
+- [x] `FEAT-DEL-005`: Delivery Completion & Proof of Delivery
+- [x] `FEAT-DEL-006`: Delivery Failure Logging with Structured Reason Codes
+- [x] `FEAT-DEL-007`: Delivery Reschedule & Return-to-Warehouse Workflow
+- [x] `FEAT-DEL-008`: Delivery History & Tracking Audit
 
 ### Returns
 - [ ] `FEAT-RET-001`: Return Request Creation (Linked to delivered orders)

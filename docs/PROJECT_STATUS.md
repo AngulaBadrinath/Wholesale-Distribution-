@@ -2,10 +2,10 @@
 
 ## Wholesale Distribution Management System
 
-**Document Version:** 1.2  
+**Document Version:** 1.3  
 **Last Verified:** September 6, 2026  
 **Audience:** Developer, Stakeholders, AI Coding Agents  
-**Baseline Verification:** Phase 00 through Phase 07 verified; tests passing; build passing.
+**Baseline Verification:** Phase 00 through Phase 08 verified; tests passing; build passing.
 
 ---
 
@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **48.4%** (62 / 128 tickets) | FEAT-PAY-001 through FEAT-PAY-009 + UI-008 verified complete; 1,083 automated tests (1,073 passed, 6,942 assertions, 10 skipped) |
+| **Overall Code Completion** | **54.7%** (70 / 128 tickets) | FEAT-DEL-001 through FEAT-DEL-008 verified complete; 1,144 automated tests (1,134 passed, 7,282 assertions, 10 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 07 — Payments & Payment Evidence** | Status: `COMPLETED` (FEAT-PAY-001 through FEAT-PAY-009 + UI-008 complete; multi-method payment engine, private S3 evidence, server-side JPEG verification, verification queue, maker-checker segregation, and reversals landed) |
-| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07 complete; Phase 09 pending) |
-| **Current Active Ticket** | **FEAT-PAY-009** (Complete) | Ready to begin Phase 08 (`FEAT-DEL-001: Delivery Assignment Engine & Driver Work Allocation`) or Phase 09 (`FEAT-DOC-001: Invoice Generation Engine`) |
+| **Current Phase** | **Phase 08 — Logistics, Delivery & Driver Operations** | Status: `COMPLETED` (FEAT-DEL-001 through FEAT-DEL-008 complete; delivery schema, assignment engine, driver mobile queue, warehouse pickup, out-for-delivery, proof-of-delivery completion with physical stock relief, failure logging, reschedule & return-to-warehouse workflows, and admin workspace landed) |
+| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07 and Phase 08 complete; Phase 09 pending) |
+| **Current Active Ticket** | **FEAT-DEL-008** (Complete) | Ready to begin Phase 09 (`FEAT-DOC-001: Invoice Generation Engine & Immutable Document Model`) |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
-| **Active Blockers** | **1** | `FEAT-RBAC-003` deferred pending domain models (`FEAT-ORD-001` order model landed; `FEAT-DLV-001` delivery model pending) |
+| **Active Blockers** | **0** | All Phase 08 domain models landed |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **62** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`, `FEAT-ADJ-005`, `FEAT-ADJ-006`, `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`, `FEAT-INV-004`, `FEAT-INV-005`, `FEAT-INV-006`, `FEAT-PAY-001`, `FEAT-PAY-002`, `FEAT-PAY-003`, `FEAT-PAY-004`, `FEAT-PAY-005`, `FEAT-PAY-006`, `FEAT-PAY-007`, `FEAT-PAY-008`, `FEAT-PAY-009`).
-- Current progress: **48.4%** (62 / 128).
+- Completed tickets: **70** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`, `FEAT-ADJ-005`, `FEAT-ADJ-006`, `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`, `FEAT-INV-004`, `FEAT-INV-005`, `FEAT-INV-006`, `FEAT-PAY-001`, `FEAT-PAY-002`, `FEAT-PAY-003`, `FEAT-PAY-004`, `FEAT-PAY-005`, `FEAT-PAY-006`, `FEAT-PAY-007`, `FEAT-PAY-008`, `FEAT-PAY-009`, `FEAT-DEL-001`, `FEAT-DEL-002`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `FEAT-DEL-006`, `FEAT-DEL-007`, `FEAT-DEL-008`).
+- Current progress: **54.7%** (70 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (62):**
+- **Completed Tickets (70):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -95,9 +95,16 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   60. `FEAT-PAY-007`: Payment Verification & Reconciliation Workflow (Administrative verification queue at `GET /admin/payments`, tabbed views with live badge counts, maker-checker segregation of duties, aggregate Customer -> Order -> Payment row locking, authoritative order payment status rollup `UNPAID`/`PARTIALLY_PAID`/`PAID`/`OVERPAID`)
   61. `FEAT-PAY-008`: Payment Rejection & Correction Flow (Structured rejection reasons, optional rejection notes, correction and resubmission preserving audit trail and payment number)
   62. `FEAT-PAY-009`: Payment Reversal & Bounced Cheque Operational Flow (Terminal reversal `BOUNCED_CHEQUE`/`NSF`/`STOP_PAYMENT`/`ENTRY_ERROR`, strict permission check `payment.reverse` for Super Admin & Accountant, order balance and payment status recalculation)
+  63. `FEAT-DEL-001`: Delivery Assignment Engine & Driver Work Allocation (Canonical `deliveries`, `delivery_items`, `delivery_events`, `delivery_failures` schema, deterministic delivery number generator `DEL-{YEAR}{MONTH}{DAY}-{SEQ}`, `DeliveryAssignmentService` with row locking, admin delivery assignment API, 17 automated tests)
+  64. `FEAT-DEL-002`: Delivery Partner Mobile Assigned Queue & Anti-IDOR Scoping (Mobile-optimized driver delivery queue at `GET /delivery`, tabbed views `today`, `active`, `pending`, `completed`, `all`, strict anti-IDOR driver scoping throwing 404 on unassigned missions, 10 automated tests)
+  65. `FEAT-DEL-003`: Warehouse Pickup Confirmation Workflow (Authoritative pickup transition at `POST /delivery/{delivery}/pickup`, synchronizing `OrderItemAllocation::dispatched_quantity = picked_quantity` and `orders.fulfillment_status = DISPATCHED`, custody acceptance, 8 automated tests)
+  66. `FEAT-DEL-004`: Out-for-Delivery State Transition (Authoritative route start at `POST /delivery/{delivery}/start-route`, transit tracking event, order delivery status synchronization, 7 automated tests)
+  67. `FEAT-DEL-005`: Delivery Completion & Proof of Delivery (Authoritative delivery completion at `POST /delivery/{delivery}/complete`, recipient name validation, optional POD photo and signature capture, Model B physical inventory relief `on_hand -= Q`, `reserved -= Q`, `DISPATCH` inventory movement, `OrderItemAllocation` delivered quantity rollup, 14 automated tests)
+  68. `FEAT-DEL-006`: Delivery Failure Logging & Exception Handling (Structured delivery exception reporting at `POST /delivery/{delivery}/fail`, 8 authoritative failure reasons, mandatory driver notes, immutable event creation, zero inventory alteration, 8 automated tests)
+  69. `FEAT-DEL-007`: Reschedule & Return-to-Warehouse Workflow (Authoritative reschedule at `POST /delivery/{delivery}/reschedule` with future date validation, return to warehouse custody at `POST /delivery/{delivery}/return-to-warehouse` resetting allocation dispatched quantities without double deduction or double restock, resolving pending failures, 9 automated tests)
+  70. `FEAT-DEL-008`: Delivery History & Admin Operations Workspace (Chronological audit history timeline component `DeliveryTimeline.tsx`, full administrative operations queue at `GET /admin/deliveries`, driver assign/reassign modal, live metric summary cards, 7 automated tests)
 - **In-Progress Tickets (0):** None.
-- **Blocked / Deferred Tickets (1):**
-  1. `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred per DEC-014; blocked pending Delivery domain models in Phase 08).
+- **Blocked / Deferred Tickets (0):** None.
 - **Upcoming Tickets (Phase 08 — Logistics & Delivery Operations or Phase 09 — Invoices & Accounting):**
   1. `FEAT-DEL-001`: Delivery Assignment Engine & Driver Work Allocation
   2. `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots

@@ -637,8 +637,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Testing Impact:** Added 15 comprehensive automated tests in `InventoryFoundationTest.php` and dedicated PostgreSQL constraint test script `verify_postgres_inventory_foundation.php`. Full repository test suite at 967 tests (957 passed, 6,310 assertions, 10 skipped) passing 100%. TypeScript and Vite build clean.
 - **Deployment Impact:** Run `php artisan migrate` and optional `php artisan inventory:initialize`.
 - **Approved By:** Principal Software Architect
+### CHANGE-015: Phase 08 Logistics, Delivery & Driver Operations Engine Implementation
+- **Change ID:** `CHANGE-015`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect & Solo Developer
+- **Request:** Implement complete Phase 08 delivery engine encompassing `FEAT-DEL-001` through `FEAT-DEL-008`: database schemas (`deliveries`, `delivery_items`, `delivery_events`, `delivery_failures`), assignment engine, driver mobile queue with anti-IDOR scoping, pickup confirmation with custody transfer, out-for-delivery route start, proof-of-delivery completion with physical stock relief (Model B), structured failure logging, reschedule and return-to-warehouse workflows, and administrative logistics workspace.
+- **Reason:** Complete core logistics milestone enabling end-to-end delivery execution, driver mobile workflows, and physical stock relief without phantom stock or reconciliation discrepancies.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Phase 08 Section Milestone)
+- **Affected PRD Requirements:** Document 01 §38.
+- **Affected Architecture:** Document 02 §16.
+- **Affected Security:** Document 03 §14.
+- **Affected Frontend:** Document 04 §15.
+- **Affected Tickets:** `FEAT-DEL-001`, `FEAT-DEL-002`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `FEAT-DEL-006`, `FEAT-DEL-007`, `FEAT-DEL-008`.
+- **Inventory Impact:** Strictly enforces Model B: Physical stock remains in warehouse `reserved` balance throughout driver custody until `DELIVERED`, which executes `on_hand -= Q`, `reserved -= Q`, and writes an immutable `DISPATCH` entry to `inventory_movements`. Return to warehouse resets allocation `dispatched_quantity = 0` and preserves reserved warehouse balance.
+- **Order Impact:** Synchronizes order `fulfillment_status` (`DISPATCHED`, `DELIVERED`, `RESERVED`) and independent `delivery_status` dimension (`ASSIGNED`, `PICKED_UP`, `OUT_FOR_DELIVERY`, `DELIVERED`, `FAILED`, `RESCHEDULED`, `RETURNED_TO_WAREHOUSE`).
+- **Payment Impact:** None.
+- **Tax Impact:** None.
+- **Accounting Impact:** Prepares clean transaction records for Phase 09 invoicing and revenue recognition upon delivery.
+- **Data Migration Impact:** Migrations `2026_09_06_000008_create_deliveries_table.php`, `2026_09_06_000009_create_delivery_items_table.php`, `2026_09_06_000010_create_delivery_events_and_failures_tables.php`.
+- **Testing Impact:** Added 80 automated delivery feature tests. Full test suite: 1,144 tests (1,134 passed, 7,282 assertions, 10 skipped). Frontend built cleanly with zero errors.
+- **Deployment Impact:** Run `php artisan migrate`.
+- **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** `FEAT-INV-001`.
+- **Release/Commit Reference:** Commits `6b497dd`, `03a9f55`, `bb535e0`, `2ee3d7e`, `2c9e904`, `3fdb764`, `2547a8e`, `f34df41`, `760594e`.
 
 ---
 

@@ -475,6 +475,30 @@
 
 ---
 
+### DEC-015: Delivery Physical Inventory Custody Model B & Anti-IDOR Fail-Closed Architecture
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:** 
+  1. **Model B Physical Custody & Inventory Relief Lifecycle:**
+     - Warehouse Pickup (`PICKED_UP`) transfers physical custody to the driver, sets `OrderItemAllocation::dispatched_quantity = picked_quantity`, and sets `orders.fulfillment_status = DISPATCHED`. Physical warehouse balance remains `reserved` (not deducted).
+     - Delivery Completion (`DELIVERED`) relieves physical inventory: `on_hand_quantity -= Q`, `reserved_quantity -= Q`, writes an immutable `DISPATCH` entry to `inventory_movements`, and synchronizes `OrderItemAllocation::delivered_quantity`.
+     - Return to Warehouse (`RETURNED_TO_WAREHOUSE`) resets `OrderItemAllocation::dispatched_quantity = 0` and sets `orders.fulfillment_status = RESERVED`. Physical stock remains safely in warehouse `reserved` balance (zero double restock, zero double deduction).
+  2. **Fail-Closed Anti-IDOR Architecture:**
+     - Delivery partner requests querying out-of-scope/unassigned delivery IDs (`GET /delivery/{id}`, `POST /delivery/{id}/*`, `GET /delivery/{id}/history`) strictly throw `NotFoundHttpException` (HTTP 404), completely eliminating mission ID enumeration attacks.
+  3. **Immutable Delivery Events & Failures Ledger:**
+     - `delivery_events` table uses `ON DELETE RESTRICT` foreign keys and Eloquent model event listeners blocking `updating` and `deleting` with `LogicException`.
+- **Context:** Establishing deterministic chain-of-custody, inventory conservation, and driver security for Phase 08 logistics operations.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-INV-001` (Atomic Inventory Reservation), `RULE-SEC-001` (Server Authority), `RULE-SEC-002` (Zero Client Trust), and `RULE-SEC-003` (Resource Scope & IDOR Protection).
+- **Alternatives Considered:**
+  - *Model A (Deducting physical stock upon pickup and adding back upon return):* Rejected due to risks of phantom stock leakage and double restock bugs during interrupted returns.
+  - *Returning HTTP 403 on driver IDOR access:* Rejected because 403 confirms the existence of a delivery ID to malicious actors, enabling enumeration.
+- **Affected Domains:** Logistics, Delivery, Inventory, Orders, Security/RBAC.
+- **Affected Documents:** PRD §38; Technical Architecture §16; Security & Access §14; Frontend Specification §15; Feature Ticket List §17.
+- **Affected Tickets:** `FEAT-DEL-001` through `FEAT-DEL-008`.
+- **Consequences:** The system maintains 100% mathematical inventory conservation and driver transit isolation.
+
+---
+
 ## Open Decisions & TBD Register
 
 The following items are recognized as open client policy items and must remain configurable until confirmed:

@@ -915,13 +915,16 @@
 - [ ] **Printing:** Print stylesheet hides navigation chrome, buttons, and headers cleanly.
 - [ ] **PDF Export:** Chromium PDF renderer outputs clean, multi-page, formatted vector document.
 
-### 1.15 Delivery Operations (`DELIVERY`)
-- [ ] **Happy Path:** Order assigned to Delivery Partner; driver accepts, marks picked up, out for delivery, and delivered (`FEAT-DEL-005`).
-- [ ] **Quantity Visibility:** Driver manifest displays current deliverable quantity (8), never cancelled quantity (2) (`RULE-DLV-001`).
-- [ ] **Security (Scoping):** Driver can only view assigned deliveries in mobile workspace (`RULE-DLV-002`).
-- [ ] **Failure Handling:** Failed delivery records mandatory structured reason code (customer unavailable, wrong address, etc.) (`FEAT-DEL-006`, `EDGE-016`).
-- [ ] **Idempotency:** Duplicate delivery completion clicks execute exactly once (`EDGE-015`).
-- [ ] **Responsive:** Mobile driver view tested with simulated touch interactions on 375px screen.
+### 1.15 Delivery Operations (`DELIVERY` / `FEAT-DEL-001` through `FEAT-DEL-008`)
+- [x] **Happy Path:** Order assigned to Delivery Partner; driver confirms warehouse pickup, starts out for delivery route, and completes delivery with proof of delivery (`FEAT-DEL-001`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `WarehousePickupTest`, `OutForDeliveryTest`, `DeliveryCompletionTest`).
+- [x] **Quantity Visibility:** Driver manifest displays current deliverable quantity and delivered quantity, reflecting accurate line progression (`RULE-DLV-001`, `DeliveryPartnerQueueTest`, `DeliveryModelTest`).
+- [x] **Security (Anti-IDOR Scoping):** Driver can strictly view and update assigned deliveries; accessing other drivers' missions throws fail-closed 404 (`RULE-DLV-002`, `DeliveryPartnerQueueTest`, `DeliveryFailureTest`, `DeliveryRescheduleReturnTest`, `DeliveryHistoryTest`).
+- [x] **Failure Handling:** Failed delivery records mandatory structured reason code (8 authoritative reasons), driver notes, and immutable event without mutating physical stock (`FEAT-DEL-006`, `EDGE-016`, `DeliveryFailureTest`).
+- [x] **Reschedule & Return-to-Warehouse:** Driver can reschedule mission to a future date or return shipment to warehouse custody, resetting allocation dispatched quantities without double deduction or double restock (`FEAT-DEL-007`, `DeliveryRescheduleReturnTest`).
+- [x] **Physical Stock Model B Relief:** Delivering relieves physical inventory (`on_hand -= Q`, `reserved -= Q`, `DISPATCH` inventory movement); returning keeps stock safely in warehouse reserved balance (`FEAT-DEL-005`, `FEAT-DEL-007`, `DeliveryCompletionTest`, `DeliveryRescheduleReturnTest`).
+- [x] **Idempotency & Concurrency:** Duplicate pickup, start route, completion, failure, or return requests execute safely without duplicate state or stock changes (`EDGE-015`, `DeliveryCompletionTest`, `DeliveryFailureTest`, `DeliveryRescheduleReturnTest`).
+- [x] **Admin Operations & Audit History:** Comprehensive administrative workspace at `GET /admin/deliveries`, driver assign/reassign modal, live metric summary cards, and chronological event timeline component (`FEAT-DEL-008`, `DeliveryHistoryTest`, `DeliveryTimeline.tsx`, `Admin/Deliveries/Index.tsx`).
+- [x] **Responsive:** Mobile driver view tested with touch-first interactions (min 44px targets), bottom sheets, and responsive desktop/tablet tables (`UI-005`, `DeliveryLayout.tsx`, `Index.tsx`, `Show.tsx`).
 
 ### 1.16 Returns, Credits & Refunds (`RETURNS`, `CREDITS`, `REFUNDS`)
 - [ ] **Happy Path:** Customer returns 2 delivered units; warehouse inspects, accepts 1 good, accepts 1 damaged.
