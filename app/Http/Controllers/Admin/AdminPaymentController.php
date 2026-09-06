@@ -6,10 +6,13 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Services\Auth\PermissionService;
 use App\Services\Payment\PaymentEvidenceService;
+use App\Services\Payment\PaymentService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,7 +22,26 @@ class AdminPaymentController extends Controller
     public function __construct(
         protected PermissionService $permissionService,
         protected PaymentEvidenceService $evidenceService,
+        protected PaymentService $paymentService,
     ) {}
+
+    /**
+     * Store a new cash payment entry from admin workspace.
+     */
+    public function storeCash(CreateCashPaymentRequest $request): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $payment = $this->paymentService->recordCashPayment($request->validated(), $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Cash payment {$payment->payment_number} recorded successfully.",
+                'payment' => $payment->load(['customer', 'order']),
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', "Cash payment {$payment->payment_number} recorded successfully.");
+    }
 
     /**
      * Get a secure, temporary presigned URL for payment evidence preview.

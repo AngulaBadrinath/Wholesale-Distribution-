@@ -281,6 +281,15 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('payment')
             ->name('admin.payments.evidence.stream');
     });
+
+    // Payment Entry Routes (FEAT-PAY-002, FEAT-PAY-003, FEAT-PAY-004)
+    Route::middleware('permission:payment.create')->group(function () {
+        // Cash Payment Entry (FEAT-PAY-002)
+        Route::post('/admin/payments/cash', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'storeCash'])
+            ->name('admin.payments.cash.store');
+        Route::post('/salesman/payments/cash', [\App\Http\Controllers\Salesman\SalesmanPaymentController::class, 'storeCash'])
+            ->name('salesman.payments.cash.store');
+    });
 });
 
 

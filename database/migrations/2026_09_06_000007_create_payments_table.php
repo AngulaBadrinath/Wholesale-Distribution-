@@ -65,6 +65,7 @@ return new class extends Migration
         });
 
         if ($isPgsql) {
+            DB::statement('CREATE SEQUENCE IF NOT EXISTS payment_number_seq START WITH 1 INCREMENT BY 1');
             DB::statement('ALTER TABLE payments ADD CONSTRAINT chk_payments_amount_positive CHECK (amount > 0)');
         }
     }
@@ -74,6 +75,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $isPgsql = DB::connection()->getDriverName() === 'pgsql';
+
         Schema::dropIfExists('payments');
+
+        if ($isPgsql) {
+            DB::statement('DROP SEQUENCE IF EXISTS payment_number_seq');
+        }
     }
 };

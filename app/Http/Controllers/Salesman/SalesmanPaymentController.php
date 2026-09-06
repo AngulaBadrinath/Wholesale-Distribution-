@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Http\Controllers\Salesman;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Payment\CreateCashPaymentRequest;
+use App\Services\Payment\PaymentService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+
+class SalesmanPaymentController extends Controller
+{
+    public function __construct(
+        protected PaymentService $paymentService,
+    ) {}
+
+    /**
+     * Store a cash payment collected by a salesman for an assigned customer.
+     */
+    public function storeCash(CreateCashPaymentRequest $request): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $payment = $this->paymentService->recordCashPayment($request->validated(), $actor);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Cash payment {$payment->payment_number} recorded successfully.",
+                'payment' => $payment->load(['customer', 'order']),
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', "Cash payment {$payment->payment_number} recorded successfully.");
+    }
+}
