@@ -402,6 +402,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('invoice')
             ->name('invoices.print');
     });
+
+    Route::middleware('permission:invoice.download')->group(function () {
+        Route::get('/invoices/{invoice}/pdf', [\App\Http\Controllers\Invoices\InvoicePdfController::class, 'download'])
+            ->whereNumber('invoice')
+            ->name('invoices.pdf');
+    });
 });
 
 
