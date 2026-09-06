@@ -104,11 +104,38 @@ export interface CompositionProportions {
     damaged_percent: number;
 }
 
+export interface InventoryMovementItem {
+    id: number;
+    movement_number: string;
+    movement_type: string;
+    movement_type_label: string;
+    movement_type_badge_variant: string;
+    from_state: string;
+    from_state_label: string;
+    to_state: string;
+    to_state_label: string;
+    quantity: number;
+    on_hand_before: number;
+    on_hand_after: number;
+    reserved_before: number;
+    reserved_after: number;
+    available_before: number;
+    available_after: number;
+    damaged_before: number;
+    damaged_after: number;
+    reference_type: string | null;
+    reference_number: string | null;
+    notes: string | null;
+    actor_name: string;
+    created_at: string | null;
+}
+
 export interface InventoryDetailPayload {
     balance: InventoryBalanceItem;
     commercial_summary: CommercialSummary;
     composition_proportions: CompositionProportions;
     active_allocations: ActiveAllocationItem[];
+    recent_movements: InventoryMovementItem[];
 }
 
 export interface InventoryFilters {

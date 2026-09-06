@@ -339,6 +339,86 @@ export default function InventoryShow({ detail }: InventoryShowProps) {
                         </div>
                     )}
                 </div>
+
+                {/* Immutable Stock Movement History Ledger */}
+                <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                    <div className="border-b border-border bg-muted/30 px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Layers className="h-4 w-4 text-emerald-500" />
+                            <h2 className="text-sm font-semibold text-foreground">
+                                Stock Movement History Ledger ({detail.recent_movements?.length ?? 0})
+                            </h2>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                            Immutable audit trail of all physical state transitions
+                        </span>
+                    </div>
+
+                    {!detail.recent_movements || detail.recent_movements.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                            <Layers className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                            <p className="mt-2 text-sm font-medium text-foreground">No movement records found</p>
+                            <p className="text-xs text-muted-foreground">
+                                No physical stock mutations or reservations have been recorded for this item yet.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="border-b border-border bg-muted/20 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    <tr>
+                                        <th className="px-4 py-3">Movement #</th>
+                                        <th className="px-3 py-3">Type</th>
+                                        <th className="px-3 py-3">Transition</th>
+                                        <th className="px-3 py-3 text-right">Quantity</th>
+                                        <th className="px-4 py-3 text-center">Physical Snapshot (Before → After)</th>
+                                        <th className="px-3 py-3">Reference #</th>
+                                        <th className="px-3 py-3">Actor</th>
+                                        <th className="px-4 py-3 text-right">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {detail.recent_movements.map((mov) => (
+                                        <tr key={mov.id} className="transition-colors hover:bg-muted/30">
+                                            <td className="px-4 py-3 font-mono text-xs font-medium text-foreground">
+                                                {mov.movement_number}
+                                            </td>
+                                            <td className="px-3 py-3">
+                                                <Badge variant="outline" className="text-xs">
+                                                    {mov.movement_type_label}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-3 py-3 text-xs">
+                                                <span className="text-muted-foreground">{mov.from_state}</span>
+                                                <span className="mx-1 text-muted-foreground">→</span>
+                                                <strong className="text-foreground">{mov.to_state}</strong>
+                                            </td>
+                                            <td className="px-3 py-3 text-right font-mono font-semibold text-foreground">
+                                                {mov.quantity.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-xs">
+                                                <div className="inline-flex items-center gap-2 font-mono text-[11px] bg-muted/50 px-2 py-1 rounded">
+                                                    <span>Avail: {mov.available_before} → {mov.available_after}</span>
+                                                    <span>•</span>
+                                                    <span>Res: {mov.reserved_before} → {mov.reserved_after}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
+                                                {mov.reference_number || '—'}
+                                            </td>
+                                            <td className="px-3 py-3 text-xs text-foreground">
+                                                {mov.actor_name}
+                                            </td>
+                                            <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                                                {mov.created_at ? new Date(mov.created_at).toLocaleString() : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </AppLayout>
     );

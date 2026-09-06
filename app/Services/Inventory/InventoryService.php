@@ -4,12 +4,15 @@ namespace App\Services\Inventory;
 
 use App\Enums\AccountStatus;
 use App\Enums\AllocationStatus;
+use App\Enums\InventoryMovementType;
+use App\Enums\InventoryStockState;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\StockStatus;
 use App\Exceptions\Inventory\InsufficientStockException;
 use App\Models\Category;
 use App\Models\InventoryBalance;
+use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemAllocation;
@@ -26,7 +29,8 @@ use Illuminate\Validation\ValidationException;
 class InventoryService
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected InventoryMovementService $movementService,
     ) {}
 
     /**
@@ -200,10 +204,39 @@ class InventoryService
             /** @var InventoryBalance $balance */
             $balance = $balancesByProduct->get($productId);
 
+            $onHandBefore = (int) $balance->on_hand_quantity;
+            $reservedBefore = (int) $balance->reserved_quantity;
+            $availableBefore = (int) $balance->available_quantity;
+            $damagedBefore = (int) $balance->damaged_quantity;
+
             $balance->reserved_quantity += $requiredQuantity;
             $balance->available_quantity = $balance->calculateAvailableQuantity();
             $balance->version += 1;
             $balance->save();
+
+            // Record authoritative immutable movement entry
+            $this->movementService->recordMovement([
+                'warehouse_id' => $warehouse->id,
+                'product_id' => $productId,
+                'inventory_balance_id' => $balance->id,
+                'movement_type' => InventoryMovementType::RESERVATION,
+                'from_state' => InventoryStockState::AVAILABLE,
+                'to_state' => InventoryStockState::RESERVED,
+                'quantity' => $requiredQuantity,
+                'on_hand_before' => $onHandBefore,
+                'on_hand_after' => (int) $balance->on_hand_quantity,
+                'reserved_before' => $reservedBefore,
+                'reserved_after' => (int) $balance->reserved_quantity,
+                'available_before' => $availableBefore,
+                'available_after' => (int) $balance->available_quantity,
+                'damaged_before' => $damagedBefore,
+                'damaged_after' => (int) $balance->damaged_quantity,
+                'reference_type' => 'order',
+                'reference_id' => $order->id,
+                'reference_number' => $order->order_number,
+                'notes' => "Stock reserved for order {$order->order_number}",
+                'actor_id' => $actor->id,
+            ]);
 
             $updatedBalances[$productId] = $balance;
         }
@@ -263,10 +296,39 @@ class InventoryService
                 continue;
             }
 
+            $onHandBefore = (int) $balance->on_hand_quantity;
+            $reservedBefore = (int) $balance->reserved_quantity;
+            $availableBefore = (int) $balance->available_quantity;
+            $damagedBefore = (int) $balance->damaged_quantity;
+
             $balance->reserved_quantity = max(0, $balance->reserved_quantity - $actualRelease);
             $balance->available_quantity = $balance->calculateAvailableQuantity();
             $balance->version += 1;
             $balance->save();
+
+            // Record authoritative immutable movement entry
+            $this->movementService->recordMovement([
+                'warehouse_id' => $warehouse->id,
+                'product_id' => $productId,
+                'inventory_balance_id' => $balance->id,
+                'movement_type' => InventoryMovementType::RELEASE,
+                'from_state' => InventoryStockState::RESERVED,
+                'to_state' => InventoryStockState::AVAILABLE,
+                'quantity' => $actualRelease,
+                'on_hand_before' => $onHandBefore,
+                'on_hand_after' => (int) $balance->on_hand_quantity,
+                'reserved_before' => $reservedBefore,
+                'reserved_after' => (int) $balance->reserved_quantity,
+                'available_before' => $availableBefore,
+                'available_after' => (int) $balance->available_quantity,
+                'damaged_before' => $damagedBefore,
+                'damaged_after' => (int) $balance->damaged_quantity,
+                'reference_type' => 'order',
+                'reference_id' => $order->id,
+                'reference_number' => $order->order_number,
+                'notes' => "Stock reservation released for order {$order->order_number}",
+                'actor_id' => $actor->id,
+            ]);
 
             $updatedBalances[$productId] = $balance;
         }
@@ -595,6 +657,40 @@ class InventoryService
         $reservedPercent = $onHand > 0 ? round(($reserved / $onHand) * 100, 1) : 0;
         $damagedPercent = $onHand > 0 ? round(($damaged / $onHand) * 100, 1) : 0;
 
+        $recentMovements = InventoryMovement::query()
+            ->with(['actor:id,name'])
+            ->where('inventory_balance_id', $balance->id)
+            ->orderBy('id', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(fn (InventoryMovement $m) => [
+                'id' => $m->id,
+                'movement_number' => $m->movement_number,
+                'movement_type' => $m->movement_type instanceof InventoryMovementType ? $m->movement_type->value : (string) $m->movement_type,
+                'movement_type_label' => $m->movement_type instanceof InventoryMovementType ? $m->movement_type->label() : (string) $m->movement_type,
+                'movement_type_badge_variant' => $m->movement_type instanceof InventoryMovementType ? $m->movement_type->badgeVariant() : 'outline',
+                'from_state' => $m->from_state instanceof InventoryStockState ? $m->from_state->value : (string) $m->from_state,
+                'from_state_label' => $m->from_state instanceof InventoryStockState ? $m->from_state->label() : (string) $m->from_state,
+                'to_state' => $m->to_state instanceof InventoryStockState ? $m->to_state->value : (string) $m->to_state,
+                'to_state_label' => $m->to_state instanceof InventoryStockState ? $m->to_state->label() : (string) $m->to_state,
+                'quantity' => (int) $m->quantity,
+                'on_hand_before' => (int) $m->on_hand_before,
+                'on_hand_after' => (int) $m->on_hand_after,
+                'reserved_before' => (int) $m->reserved_before,
+                'reserved_after' => (int) $m->reserved_after,
+                'available_before' => (int) $m->available_before,
+                'available_after' => (int) $m->available_after,
+                'damaged_before' => (int) $m->damaged_before,
+                'damaged_after' => (int) $m->damaged_after,
+                'reference_type' => $m->reference_type,
+                'reference_number' => $m->reference_number,
+                'notes' => $m->notes,
+                'actor_name' => $m->actor?->name ?? 'System',
+                'created_at' => $m->created_at?->toIso8601String(),
+            ])
+            ->values()
+            ->toArray();
+
         return [
             'balance' => $this->formatBalance($balance),
             'commercial_summary' => [
@@ -611,6 +707,7 @@ class InventoryService
                 'damaged_percent' => $damagedPercent,
             ],
             'active_allocations' => $activeAllocationsFormatted,
+            'recent_movements' => $recentMovements,
         ];
     }
 
