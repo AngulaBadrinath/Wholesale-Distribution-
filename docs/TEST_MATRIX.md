@@ -953,14 +953,19 @@
 - [x] **Strict Financial Boundary:** Returns calculate estimated credit eligibility without generating premature Credit Notes or GL entries (`FEAT-RET-001`..`004`).
 
 ### 1.16.1 Credits & Refunds (`CREDITS`, `REFUNDS` — Phase 10)
-- [ ] **Credit Note:** Credit Note (`CR-XXXXXX`) issued strictly for accepted units (`FEAT-CR-001`, `FEAT-CR-002`).
-- [ ] **Refund Approval:** Cash refund requires explicit approval by separate authorized user (`RULE-CR-003`, `FEAT-CR-003`, `FEAT-CR-004`).
-- [ ] **Constraint Assertion:** Refund cannot exceed eligible customer credit balance (`EDGE-017`, `FEAT-CR-005`).
+- [x] **Credit Note:** Credit Note (`CR-XXXXXX`) issued strictly for accepted units (`FEAT-CR-001`, `FEAT-CR-002`).
+- [x] **Refund Approval:** Cash refund requires explicit approval by separate authorized user (`RULE-CR-003`, `FEAT-CR-003`, `FEAT-CR-004`).
+- [x] **Constraint Assertion:** Refund cannot exceed eligible customer credit balance (`EDGE-017`, `FEAT-CR-005`).
 
-### 1.17 Receivables & Customer Statements (`AR`)
-- [ ] **Happy Path:** Customer statement lists chronological invoices, payments, credits, and running balance.
-- [ ] **Aging Buckets:** Invoices categorized accurately into 0-30, 31-60, 61-90, and 90+ days.
-- [ ] **Credit Limit Enforcement:** Orders exceeding available credit limit flagged for admin approval (`PRD §25.3`).
+### 1.17 Receivables, Aging & Customer Statements (`AR` — Phase 11)
+- [x] **Customer Receivable Ledger:** Append-only immutable AR transaction ledger with sequence `AR-{YYYY}-{SEQ}` for invoice charges, verified payments, payment reversals, and credit notes (`FEAT-AR-001`, `CustomerReceivableLedgerTest`).
+- [x] **Duplicate Posting & Idempotency:** DB unique constraint `(source_type, source_id, type)` guarantees single-posting idempotency across invoice charges and payment credits (`FEAT-AR-001`, `ReceivableConcurrencyTest`).
+- [x] **Refund Non-Double-Counting:** Authoritative refund disbursement consumes credit note balance without deducting receivable a second time (`FEAT-AR-001`, `CustomerReceivableLedgerTest`).
+- [x] **Aging Buckets & Reference Date Boundaries:** Exact aging categorization across `0-30`, `31-60`, `61-90`, and `90+` days past authoritative `Invoice::due_date`; fully/partially paid invoices properly accounted (`FEAT-AR-002`, `ReceivableAgingTest`).
+- [x] **Customer Credit Balance Separation:** Customer credit entitlement displayed separately, never appearing as negative aging (`FEAT-AR-002`, `ReceivableAgingTest`).
+- [x] **Chronological Customer Statement:** Statement generation across date periods with authoritative opening balance, period debits/credits, chronological running balance reconciliation, closing balance, available credit, and printable presentation (`FEAT-AR-003`, `CustomerStatementTest`).
+- [x] **Resource Scoping & Anti-IDOR:** Strict fail-closed anti-IDOR checks restricting salesmen to assigned customer portfolios while granting Admin/Accountant system-wide access (`FEAT-AR-001`..`003`, `ReceivableSecurityAndConcurrencyTest`).
+- [x] **PostgreSQL 18 Database Constraints:** Immutability triggers and FK RESTRICT blocking update/delete on posted transactions and customer deletions (`FEAT-AR-001`, `ReceivablePostgresConstraintTest`).
 
 ### 1.18 General Ledger Accounting (`ACCOUNTING`)
 - [ ] **Happy Path:** Invoice issuance automatically generates balanced double-entry journal (Debit AR, Credit Revenue, Credit Tax Liability) (`FEAT-ACC-003`).

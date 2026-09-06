@@ -190,9 +190,9 @@
 ## 10. FINANCE, RECEIVABLES & GENERAL LEDGER ACCOUNTING
 
 ### Receivables & Payables
-- [ ] `FEAT-AR-001`: Customer Receivable Transaction Ledger
-- [ ] `FEAT-AR-002`: Accounts Receivable Aging Buckets (0-30, 31-60, 61-90, 90+ days)
-- [ ] `FEAT-AR-003`: Chronological Customer Statement Generation
+- [x] `FEAT-AR-001`: Customer Receivable Transaction Ledger (Append-only immutable AR ledger, PostgreSQL sequence AR-{YYYY}-{SEQ}, duplicate posting prevention, invoice charge, verified payment, payment reversal, and credit note integration, refund non-double-counting, 26 targeted automated tests)
+- [x] `FEAT-AR-002`: Accounts Receivable Aging Buckets (0-30, 31-60, 61-90, 90+ days past authoritative Invoice::due_date, fully/partially paid invoice accounting, customer credit balance separation)
+- [x] `FEAT-AR-003`: Chronological Customer Statement Generation (Statement date filtering, opening balance aggregation, deterministic transaction_date/id order, running balance reconciliation, available credit summary, print stylesheet)
 - [ ] `FEAT-AP-001`: Supplier Payables Foundation
 
 ### Accounting Foundations

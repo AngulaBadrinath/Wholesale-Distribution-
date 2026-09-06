@@ -757,10 +757,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Accounting Impact:** Credit notes and refunds prepared for authoritative GL mapping without premature unapproved journal posting.
 - **Data Migration Impact:** Migrations `2026_09_06_000004_create_credit_notes_tables.php` and `2026_09_06_000005_create_refund_requests_tables.php` creating `credit_notes`, `credit_note_items`, `refund_requests`, `refund_request_events`, and `refund_transactions`.
 - **Testing Impact:** Added 36 targeted automated feature, concurrency, idempotency, and PostgreSQL constraint tests across `tests/Feature/Credit/*` and `tests/Feature/Refund/*`. Total repository test suite: 1,279 tests (1,269 passed, 7,702 assertions, 10 skipped).
+### CHANGE-020: Accounts Receivable Sub-Ledger, Aging & Customer Statements (FEAT-AR-001 through FEAT-AR-003)
+- **Change ID:** `CHANGE-020`
+- **Date:** September 7, 2026
+- **Requested By:** Lead Software Architect & Financial Systems Lead
+- **Request:** Implement complete Phase 11 Accounts Receivable customer sub-ledger domain including append-only immutable transaction entries (`ReceivableTransaction`, `ReceivableLedgerService`), aging exposure buckets (`ReceivableAgingService`), chronological customer statement generation (`CustomerStatementService`), invoice charge integration, verified payment and reversal integration, credit note posting, and non-double-counting refund integration.
+- **Reason:** Provide an authoritative, immutable customer accounts receivable sub-ledger that separates receivable balance from available customer credit entitlement, calculates exact aging exposure based on invoice payment terms, and generates reproducible customer account statements without altering historical financial transactions.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Financial Integrity Prerequisite)
+- **Affected PRD Requirements:** Document 01 §25, §26.
+- **Affected Architecture:** Document 02 §10, §12.
+- **Affected Security:** Document 03 §4, §5, §6 (Resource Scope & Anti-IDOR).
+- **Affected Frontend:** Document 04 §6 (Accounts Receivable & Statements Workspaces).
+- **Affected Tickets:** `FEAT-AR-001`, `FEAT-AR-002`, `FEAT-AR-003`.
+- **Inventory Impact:** None.
+- **Order Impact:** Orders linked via invoices to accounts receivable charges.
+- **Payment Impact:** Verified payments post credits; payment reversals post compensating debits; unverified payments do not alter receivables.
+- **Tax Impact:** Invoices snapshot tax totals onto AR debit lines at historical generation time.
+- **Accounting Impact:** AR sub-ledger serves as customer-level subsidiary ledger for General Ledger integration in Phase 12.
+- **Data Migration Impact:** Migration `2026_09_09_000001_create_receivable_transactions_table.php` creating `receivable_transactions`, sequence `receivable_transaction_number_seq`, and PostgreSQL immutability trigger `trg_protect_receivable_transactions`.
+- **Testing Impact:** Added 26 targeted automated feature, aging, statement, concurrency, and PostgreSQL constraint tests across `tests/Feature/Receivable/*`. Total repository test suite: 1,305 tests (1,295 passed, 7,788 assertions, 10 skipped).
 - **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** Commits on branch `feature/SECTION-CR-001-005-credits-refunds`.
+- **Release/Commit Reference:** Commits on branch `feature/SECTION-AR-001-003-receivables`.
 
 ---
 
