@@ -737,9 +737,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Data Migration Impact:** None. Pure security and policy architecture.
 - **Testing Impact:** Added 42 penetration tests (`tests/Feature/Auth/AuthorizationScopeTest.php`) across Categories A through L. Total test suite: 1,243 tests (1,233 passed, 7,547 assertions, 10 skipped).
 - **Deployment Impact:** None.
+### CHANGE-019: Customer Credits & Refunds Implementation (FEAT-CR-001 through FEAT-CR-005)
+- **Change ID:** `CHANGE-019`
+- **Date:** September 7, 2026
+- **Requested By:** Lead Software Architect & Financial Systems Lead
+- **Request:** Implement complete Phase 10 Customer Credits & Refunds domain including Credit Eligibility Calculation Engine (`CreditEligibilityService`), Credit Note Generation & Historical Immutability (`CreditNote`, `CreditNoteItem`, `CreditNoteGeneratorService`), Customer Refund Request Flow (`RefundWorkflowService`), Maker-Checker Segregation of Duties (`RefundRequestPolicy`), and Authoritative Refund Processing with Double-Refund Concurrency Prevention (`RefundProcessingTest`, `RefundConcurrencyTest`, `RefundIdempotencyTest`).
+- **Reason:** Provide authoritative financial settlement mechanisms for approved merchandise returns without mutating historical invoices, preventing premature General Ledger postings, enforcing segregation of duties between requester and approver, and guaranteeing race-free balance deduction under high concurrency.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Financial Integrity Prerequisite)
+- **Affected PRD Requirements:** Document 01 §23, §24, §25.
+- **Affected Architecture:** Document 02 §10, §12.
+- **Affected Security:** Document 03 §4, §5, §6 (Segregation of Duties).
+- **Affected Frontend:** Document 04 §6 (Credits and Refunds Workspaces).
+- **Affected Tickets:** `FEAT-CR-001`, `FEAT-CR-002`, `FEAT-CR-003`, `FEAT-CR-004`, `FEAT-CR-005`.
+- **Inventory Impact:** Zero stock mutation (stock handled earlier in returns domain).
+- **Order Impact:** Zero historical invoice mutation; originating orders linked via credit notes.
+- **Payment Impact:** Disbursed refunds recorded as immutable `refund_transactions` (`RTX-YYYY-XXXXXX`) with `CASH`, `CHEQUE`, or `MONEY_ORDER` methods.
+- **Tax Impact:** Credit notes snapshot line item taxable amounts and taxes at historical return snapshot time using BCMath.
+- **Accounting Impact:** Credit notes and refunds prepared for authoritative GL mapping without premature unapproved journal posting.
+- **Data Migration Impact:** Migrations `2026_09_06_000004_create_credit_notes_tables.php` and `2026_09_06_000005_create_refund_requests_tables.php` creating `credit_notes`, `credit_note_items`, `refund_requests`, `refund_request_events`, and `refund_transactions`.
+- **Testing Impact:** Added 36 targeted automated feature, concurrency, idempotency, and PostgreSQL constraint tests across `tests/Feature/Credit/*` and `tests/Feature/Refund/*`. Total repository test suite: 1,279 tests (1,269 passed, 7,702 assertions, 10 skipped).
+- **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** Commits on branch `feature/RBAC-003-QA-002-authorization`.
+- **Release/Commit Reference:** Commits on branch `feature/SECTION-CR-001-005-credits-refunds`.
 
 ---
 

@@ -179,11 +179,11 @@
 - [x] `FEAT-RET-004`: Return Inventory Movement Ledger Execution
 
 ### Credits & Refunds
-- [ ] `FEAT-CR-001`: Customer Credit Eligibility Calculation Engine
-- [ ] `FEAT-CR-002`: Credit Note Generation (`CR-XXXXXX`)
-- [ ] `FEAT-CR-003`: Customer Refund Request Flow
-- [ ] `FEAT-CR-004`: Refund Approval Workflow (Segregation of duties)
-- [ ] `FEAT-CR-005`: Refund Processing & Double-Refund Prevention
+- [x] `FEAT-CR-001`: Customer Credit Eligibility Calculation Engine
+- [x] `FEAT-CR-002`: Credit Note Generation (`CR-XXXXXX`)
+- [x] `FEAT-CR-003`: Customer Refund Request Flow
+- [x] `FEAT-CR-004`: Refund Approval Workflow (Segregation of duties)
+- [x] `FEAT-CR-005`: Refund Processing & Double-Refund Prevention
 
 ---
 

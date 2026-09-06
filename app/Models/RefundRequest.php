@@ -25,6 +25,16 @@ class RefundRequest extends Model
     protected $table = 'refund_requests';
 
     /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function () {
+            throw new \LogicException('Refund requests are permanent financial audit records and cannot be deleted.');
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
