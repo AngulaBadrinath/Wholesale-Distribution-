@@ -48,33 +48,23 @@ class AdminOrderAdjustmentController extends Controller
         }
 
         // 1. Single SQL Aggregation Query for queue badge counts
-        $countRow = DB::table('order_adjustments')
-            ->selectRaw("
-                COUNT(CASE WHEN status = 'SUBMITTED' THEN 1 END) as submitted_count,
-                COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_count,
-                COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_count,
-                COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_count,
-                COUNT(CASE WHEN status = 'REVERSED' THEN 1 END) as reversed_count,
-                COUNT(*) as all_count
-            ")
-            ->first();
+        $counts = \App\Services\Adjustment\OrderAdjustmentClassifier::getBadgeCounts();
 
-        $caseBCount = OrderAdjustment::query()
-            ->where('status', OrderAdjustmentStatus::SUBMITTED)
-            ->whereHas('items', fn (Builder $q) => $q->where('affected_allocation_quantity', '>', 0))
-            ->count();
+        // 2. Resolve Active Queue (with legacy status fallback support)
+        $activeQueue = $request->validated('queue');
+        if (! $activeQueue) {
+            $legacyStatus = $request->validated('status');
+            $activeQueue = match ($legacyStatus) {
+                'APPROVED' => 'ready_to_apply',
+                'APPLIED' => 'applied',
+                'REVERSED' => 'reversed',
+                'REJECTED', 'CANCELLED' => 'closed',
+                'ALL' => 'all',
+                default => 'pending',
+            };
+        }
 
-        $counts = [
-            'submitted' => (int) ($countRow->submitted_count ?? 0),
-            'case_b' => $caseBCount,
-            'approved' => (int) ($countRow->approved_count ?? 0),
-            'rejected' => (int) ($countRow->rejected_count ?? 0),
-            'cancelled' => (int) ($countRow->cancelled_count ?? 0),
-            'reversed' => (int) ($countRow->reversed_count ?? 0),
-            'all' => (int) ($countRow->all_count ?? 0),
-        ];
-
-        // 2. Base Query with bounded eager loading
+        // 3. Base Query with bounded, selective eager loading (prevents N+1)
         $query = OrderAdjustment::query()
             ->select([
                 'order_adjustments.id',
@@ -99,14 +89,21 @@ class AdminOrderAdjustmentController extends Controller
                 'order.salesman:id,name',
                 'requester:id,name,email,role',
                 'items:id,adjustment_id,order_item_id,requested_quantity_reduction,affected_allocation_quantity',
+                'items.orderItem:id,ordered_quantity,cancelled_quantity,status',
+                'items.orderItem.allocations:id,order_item_id,status,allocated_quantity,picked_quantity',
             ]);
 
-        // 3. Apply Filters
-        $statusFilter = $request->validated('status') ?: 'SUBMITTED';
-        if ($statusFilter !== 'ALL') {
-            $query->where('order_adjustments.status', $statusFilter);
+        // 4. Apply Canonical Queue Scope
+        \App\Services\Adjustment\OrderAdjustmentClassifier::applyQueueScope($query, $activeQueue);
+
+        // 5. Apply Exception Type Filter
+        if ($exceptionType = $request->validated('exception_type')) {
+            if ($exceptionType !== 'ALL') {
+                \App\Services\Adjustment\OrderAdjustmentClassifier::applyExceptionTypeScope($query, $exceptionType);
+            }
         }
 
+        // 6. Secondary Filters
         if ($reasonFilter = $request->validated('reason_code')) {
             $query->where('order_adjustments.reason_code', $reasonFilter);
         }
@@ -119,7 +116,15 @@ class AdminOrderAdjustmentController extends Controller
             }
         }
 
-        // 4. Multi-Column Search
+        if ($dateFrom = $request->validated('date_from')) {
+            $query->where('order_adjustments.requested_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+        }
+
+        if ($dateTo = $request->validated('date_to')) {
+            $query->where('order_adjustments.requested_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+        }
+
+        // 7. Multi-Column Search
         if ($search = $request->validated('search')) {
             $isPgsql = $query->getConnection()->getDriverName() === 'pgsql';
             $like = $isPgsql ? 'ilike' : 'like';
@@ -141,22 +146,29 @@ class AdminOrderAdjustmentController extends Controller
             });
         }
 
-        // 5. Sorting
+        // 8. Allow-listed Sorting with Deterministic Secondary Tie-Breaker
         $sortBy = $request->validated('sort_by') ?: 'requested_at';
         $sortDirection = $request->validated('sort_direction') ?: 'desc';
 
-        if (in_array($sortBy, ['requested_at', 'adjustment_number', 'projected_grand_total_reduction'], true)) {
+        if ($sortBy === 'age') {
+            $dir = $sortDirection === 'asc' ? 'desc' : 'asc';
+            $query->orderBy('order_adjustments.requested_at', $dir);
+        } elseif (in_array($sortBy, ['requested_at', 'adjustment_number', 'projected_grand_total_reduction'], true)) {
             $query->orderBy("order_adjustments.{$sortBy}", $sortDirection);
         } else {
             $query->orderBy('order_adjustments.requested_at', 'desc');
         }
 
-        // 6. Pagination
+        // Deterministic secondary tie-breaker
+        $query->orderBy('order_adjustments.id', 'desc');
+
+        // 9. Pagination
         $perPage = (int) ($request->validated('per_page') ?: 15);
         $paginator = $query->paginate($perPage)->withQueryString();
 
-        // 7. Transform items for frontend representation
-        $transformedItems = $paginator->getCollection()->map(function (OrderAdjustment $adj) {
+        // 10. Transform items with in-memory domain classification & action capabilities
+        $transformedItems = $paginator->getCollection()->map(function (OrderAdjustment $adj) use ($actor) {
+            $classification = \App\Services\Adjustment\OrderAdjustmentClassifier::classify($adj, $adj->order);
             $totalAffected = (int) $adj->items->sum('affected_allocation_quantity');
             $impactCase = $totalAffected > 0 ? 'CASE_B' : 'CASE_A';
 
@@ -166,6 +178,7 @@ class AdminOrderAdjustmentController extends Controller
                 'order_id' => $adj->order_id,
                 'order_number' => $adj->order->order_number ?? $adj->order_number_snapshot,
                 'order_status' => $adj->order->status->value ?? $adj->order_status_snapshot,
+                'order_status_label' => $adj->order->status->label() ?? (string) $adj->order_status_snapshot,
                 'customer_name' => $adj->order->customer->name ?? '—',
                 'customer_code' => $adj->order->customer->code ?? '—',
                 'requester_name' => $adj->requester->name ?? 'System',
@@ -182,7 +195,21 @@ class AdminOrderAdjustmentController extends Controller
                 'projected_grand_total_reduction' => (string) $adj->projected_grand_total_reduction,
                 'requested_at' => $adj->requested_at?->toIso8601String(),
                 'requested_at_formatted' => $adj->requested_at?->format('M d, Y H:i'),
+                'age_hours' => $classification['age_hours'],
+                'age_relative' => $classification['age_relative'],
+                'is_aging' => $classification['is_aging'],
+                'attention_flags' => $classification['attention_flags'],
+                'needs_attention' => $classification['needs_attention'],
+                'primary_exception' => $classification['primary_exception'],
+                'has_blocker' => $classification['has_blocker'],
+                'is_ready_to_apply' => $classification['is_ready_to_apply'],
                 'is_terminal' => $adj->isTerminal(),
+                'can' => [
+                    'review' => true,
+                    'approve' => $actor->can('approve', [$adj, $adj->order]),
+                    'apply' => $actor->can('apply', [$adj, $adj->order]),
+                    'reverse' => $actor->can('reverse', [$adj, $adj->order]),
+                ],
             ];
         });
 
@@ -201,10 +228,14 @@ class AdminOrderAdjustmentController extends Controller
             'adjustments' => $paginatedAdjustments,
             'counts' => $counts,
             'filters' => [
-                'search' => $request->validated('search') ?: '',
-                'status' => $statusFilter,
+                'queue' => $activeQueue,
+                'exception_type' => $request->validated('exception_type') ?: 'ALL',
+                'status' => $request->validated('status') ?: '',
                 'impact_case' => $request->validated('impact_case') ?: 'ALL',
                 'reason_code' => $request->validated('reason_code') ?: '',
+                'date_from' => $request->validated('date_from') ?: '',
+                'date_to' => $request->validated('date_to') ?: '',
+                'search' => $request->validated('search') ?: '',
                 'sort_by' => $sortBy,
                 'sort_direction' => $sortDirection,
                 'per_page' => $perPage,

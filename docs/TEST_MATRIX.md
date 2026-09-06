@@ -841,6 +841,31 @@
 - [x] **Inactive Account Guard (302 Redirect):** Inactive/disabled administrators redirected to `/login` (`test_inactive_admin_cannot_reverse_adjustment`).
 - [x] **Anti-IDOR Ownership Protection (404):** Mismatched `{order}` and `{adjustment}` route parameters fail closed with 404 (`test_anti_idor_mismatched_order_in_route_returns_404`).
 
+### 1.10.7 Admin Adjustment & Exception Processing Queue (`ADJUSTMENT QUEUE` / `FEAT-ADJ-006`)
+- [x] **Super Admin & Admin Full Queue Access:** Super Admin and Admin can access `/admin/adjustments` operational queue with live badge counts (`AdminAdjustmentQueueTest::test_admin_and_super_admin_can_access_adjustment_queue`).
+- [x] **Accountant Read-Only Queue Access:** Accountant role with `order.adjust.review` authorized to view queue in read-only capacity (`test_accountant_can_access_adjustment_queue`).
+- [x] **Unauthorized Operational Roles Denied (403):** Warehouse Manager, Salesman, and Delivery Partner strictly denied access with 403 Forbidden (`test_warehouse_manager_and_salesman_and_delivery_partner_denied_from_queue`).
+- [x] **Inactive Account Interception:** Suspended or disabled admin accounts blocked and redirected to login (`test_inactive_account_redirected_from_queue`).
+- [x] **Operational Attention Tab Scoping:** `queue=attention` scopes records to `SUBMITTED` or `APPROVED` with active blocking exceptions or aging (`test_queue_attention_tab_lists_submitted_and_approved_adjustments_with_active_blockers`).
+- [x] **Strict Ready-to-Apply Non-Conflicting Semantics:** `APPROVED` records with active blockers appear in `attention` and are strictly excluded from `ready_to_apply` (`test_approved_blocked_adjustment_appears_in_attention_and_never_in_ready_to_apply`).
+- [x] **Clean Approved in Ready-to-Apply:** Clean `APPROVED` adjustments appear in `ready_to_apply` and are excluded from `attention` (`test_approved_clean_adjustment_appears_in_ready_to_apply_and_not_in_attention`).
+- [x] **Pending Queue Scoping:** `queue=pending` scopes exclusively to `SUBMITTED` adjustments (`test_queue_pending_tab_lists_only_submitted_adjustments`).
+- [x] **Applied, Reversed, Closed, and All Views:** `applied`, `reversed`, `closed` (`REJECTED` / `CANCELLED`), and `all` views scope records accurately (`test_queue_applied_reversed_closed_and_all_tabs`).
+- [x] **Conflict Attention Flag Detection:** Active fulfillable quantity deficit flags `CONFLICTED` (`test_queue_detects_conflicted_attention_flag`).
+- [x] **Picked Encroachment Flag Detection:** Reduction encroaching on active warehouse picked stock flags `PICKED_ENCROACHMENT` (`test_queue_detects_picked_encroachment_attention_flag`).
+- [x] **Stale Version Flag Detection:** Order version drift post-request flags `STALE_VERSION` (`test_queue_detects_stale_version_attention_flag`).
+- [x] **Ineligible Lifecycle Flag Detection:** Order transition to terminal status flags `INELIGIBLE_LIFECYCLE` (`test_queue_detects_ineligible_lifecycle_attention_flag`).
+- [x] **Aging Flag Detection (> 24h):** Submitted adjustments older than 24 hours flag `AGING` (`test_queue_detects_aging_attention_flag_over_24_hours`).
+- [x] **Clean Recent Request Exclusion:** Recent clean request produces zero attention flags and zero warning badges (`test_clean_recent_request_has_no_attention_flags`).
+- [x] **Primary Exception Precedence Hierarchy:** Deterministic priority ordering `CONFLICTED` > `INELIGIBLE_LIFECYCLE` > `PICKED_ENCROACHMENT` > `STALE_VERSION` > `AGING` (`test_primary_exception_hierarchy_precedence`).
+- [x] **Authoritative Classifier Consistency:** Queue SQL filtering and `OrderAdjustmentReviewService` in-memory evaluations agree 100% across clean, stale, conflicted, picked, ineligible, aging, and mixed scenarios (`test_classifier_consistency_between_queue_and_review_service`).
+- [x] **Exception Type Sub-Filtering:** Server-side filtering by `exception_type` accurately scopes queue results (`test_queue_exception_type_sub_filter`).
+- [x] **Impact Case, Reason Code, and Date Range Filters:** Server-side filtering across `impact_case`, `reason_code`, `date_from`, and `date_to` (`test_queue_impact_case_and_reason_code_and_date_filtering`).
+- [x] **Multi-Column Search:** Search matches adjustment number, order number, customer name, customer code, requester name, and requester email (`test_queue_multi_column_search`).
+- [x] **Allowlisted Sorting & Stable Tie-Breaker:** Safe sort column allowlist with mandatory `id DESC` secondary tie-breaker prevents pagination jitter (`test_queue_allowlisted_sorting_with_id_desc_tie_breaker`).
+- [x] **Bounded Pagination & Query Preservation:** 15/page bounded pagination preserving all active filter query string parameters (`test_queue_bounded_pagination_and_query_string_preservation`).
+- [x] **Query Budget & Zero N+1 Scaling:** Constant 10-query execution budget regardless of record count using selective eager loading and single-trip aggregate counts (`test_queue_query_budget_and_no_n_plus_one_scaling`).
+
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
 - [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).

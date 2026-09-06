@@ -402,6 +402,27 @@
 - **Affected Tickets:** `FEAT-ADJ-005`.
 - **Consequences:** Applied adjustments can now be safely, deterministically, and non-destructively reversed with full auditability and mathematical precision.
 
+### DEC-017: Administrative Adjustment & Exception Operational Queue Architecture
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Canonical Operational Queue Views:** The canonical endpoint `GET /admin/adjustments` (`AdminOrderAdjustmentController@index`) is evolved into a dedicated operational triage queue supporting seven deterministic queue views: `attention` (Needs Attention / Exceptions), `pending` (Pending Review), `ready_to_apply` (Ready to Apply), `applied` (Applied), `reversed` (Reversed), `closed` (Rejected & Withdrawn), and `all` (Complete Archive).
+  2. **Ready-to-Apply Non-Conflicting Semantics:** `READY_TO_APPLY` is strictly defined as `status = APPROVED AND NOT (has_blocker)`. An approved adjustment possessing any current blocking condition (version mismatch, status mismatch, ineligible order lifecycle, quantity conflict, or picked encroachment) is classified into `NEEDS ATTENTION` and strictly excluded from `READY_TO_APPLY`.
+  3. **Single Authoritative Exception Classifier (`OrderAdjustmentClassifier`):** Centralizes domain classification rules and SQL query scopes into a single domain service. Evaluates attention flags (`CONFLICTED`, `INELIGIBLE_LIFECYCLE`, `PICKED_ENCROACHMENT`, `STALE_VERSION`, `STALE_STATUS`, `AGING`), primary exception precedence, blocker conditions, and queue scopes. Ensures `OrderAdjustmentReviewService::evaluate` and queue filtering remain 100% consistent.
+  4. **Single-Trip Aggregate Badge Counts:** All queue tab badge counts are computed in a single unified SQL query whose CASE conditions mirror the list scopes exactly, eliminating contradictory badge counters and guaranteeing bounded database query execution.
+  5. **Zero Database Migrations:** All exception classifications, attention badges, and operational queue memberships are 100% derivable from authoritative domain relationships and timestamps without introducing redundant database columns or triggers.
+  6. **Reconciliation of Historical ADJ-006 Price Adjustment Ambiguity:** Formally records that early draft references describing ADJ-006 as a "price adjustment framework" are superseded. Price guardrails and override workflows are governed exclusively by `FEAT-PRICE-002`. FEAT-ADJ-006 is strictly an administrative triage and exception queue for post-submission order adjustments (`QUANTITY_REDUCTION`).
+  7. **RBAC & Read-Only Queue Security:** Access is governed by `Permission::ORDER_ADJUST_REVIEW` (`order.adjust.review`), authorized for `SUPER_ADMIN`, `ADMIN`, and `ACCOUNTANT` (read-only). Commercial roles (`SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`) are strictly forbidden (HTTP 403). Viewing the queue emits zero audit logs to prevent audit log spam.
+- **Context:** Administrative users needed immediate operational visibility into pending adjustments, blocked applications, allocation conflicts, and aging backlog items without opening each review workspace individually.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-ORD-002` (Order Adjustment Framework), `RULE-ORD-003` (Independent State Dimensions), and `RULE-SEC-001` (Server-Side Authority).
+- **Alternatives Considered:**
+  - *Creating separate routes for `/admin/adjustments` and `/admin/adjustments/exceptions`:* Rejected to avoid fragmented competing endpoints and broken bookmarks.
+  - *Storing persistent exception columns in the database:* Rejected because exception states (e.g. order version mismatch or fulfillment progression) are dynamic properties of the relationship between the adjustment and the order, not static records.
+- **Affected Domains:** Order Adjustments, Orders, Security & RBAC, Administration.
+- **Affected Documents:** PRD §14, §15; Technical Architecture §14, §15; Security & Access §18; Frontend Specification §14; Feature Ticket List §19.
+- **Affected Tickets:** `FEAT-ADJ-006`.
+- **Consequences:** Administrators now have an operational command center for triaging, evaluating, and applying adjustments with live exception detection and zero query scaling.
+
 ---
 
 ## Open Decisions & TBD Register

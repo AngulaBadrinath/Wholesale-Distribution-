@@ -706,6 +706,7 @@ export interface OrderAdjustmentQueueItem {
     order_id: number;
     order_number: string;
     order_status: string;
+    order_status_label: string;
     customer_name: string;
     customer_code: string;
     requester_name: string;
@@ -722,26 +723,46 @@ export interface OrderAdjustmentQueueItem {
     projected_grand_total_reduction: string;
     requested_at: string | null;
     requested_at_formatted: string | null;
+    age_hours: number;
+    age_relative: string;
+    is_aging: boolean;
+    attention_flags: string[];
+    needs_attention: boolean;
+    primary_exception: string | null;
+    has_blocker: boolean;
+    is_ready_to_apply: boolean;
     is_terminal: boolean;
+    can: {
+        review: boolean;
+        approve: boolean;
+        apply: boolean;
+        reverse: boolean;
+    };
 }
 
 export interface OrderAdjustmentQueueCounts {
-    submitted: number;
-    case_b: number;
-    approved: number;
-    rejected: number;
-    cancelled: number;
+    attention: number;
+    pending: number;
+    ready_to_apply: number;
+    applied: number;
+    reversed: number;
+    closed: number;
     all: number;
+    case_b: number;
 }
 
 export interface OrderAdjustmentQueueFilters {
-    search: string;
-    status: string;
-    impact_case: string;
-    reason_code: string;
-    sort_by: string;
-    sort_direction: string;
-    per_page: number;
+    queue: 'attention' | 'pending' | 'ready_to_apply' | 'applied' | 'reversed' | 'closed' | 'all';
+    exception_type?: string;
+    search?: string;
+    status?: string;
+    impact_case?: string;
+    reason_code?: string;
+    date_from?: string;
+    date_to?: string;
+    sort_by?: string;
+    sort_direction?: string;
+    per_page?: number;
 }
 
 export interface OrderAdjustmentAllocationDetail {

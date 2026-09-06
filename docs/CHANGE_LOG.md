@@ -590,6 +590,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-017: Administrative Adjustment & Exception Operational Queue (FEAT-ADJ-006)
+- **Change ID:** `CHANGE-017`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement a dedicated administrative operational queue for pending and attention-required order adjustments (`FEAT-ADJ-006`). Extend the canonical `GET /admin/adjustments` endpoint with 7 canonical views (`attention`, `pending`, `ready_to_apply`, `applied`, `reversed`, `closed`, `all`), strict non-conflicting `READY_TO_APPLY = APPROVED AND NO ACTIVE BLOCKING CONDITION` semantics, single authoritative domain classifier `OrderAdjustmentClassifier` with priority hierarchy (`CONFLICTED` > `INELIGIBLE_LIFECYCLE` > `PICKED_ENCROACHMENT` > `STALE_VERSION`/`STALE_STATUS` > `AGING`), single-trip SQL aggregate badge counting with legacy count compatibility, multi-column search across adjustment number, order number, customer name/code, requester name/email, allowlisted sorting with deterministic `id DESC` secondary tie-breaker, bounded pagination, zero schema migrations, constant 10-query execution budget with zero N+1 scaling, strict RBAC (`Permission::ORDER_ADJUST_REVIEW`), anti-IDOR deep links, and responsive desktop dense table and mobile card UX with $\ge 44\text{px}$ touch targets.
+- **Reason:** Provide administrators and operational staff with a unified, real-time triage dashboard to immediately identify, prioritize, and process adjustments requiring intervention or resolution without loading entire datasets or encountering contradictory badges.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P1` (Operational Workflows)
+- **Affected PRD Requirements:** §14, §15.
+- **Affected Architecture:** Technical Architecture §14, §15, §18.
+- **Affected Security:** Security & Access §18, §23; RBAC `Permission::ORDER_ADJUST_REVIEW` authorized for Super Admin, Admin, and Accountant (read-only); Salesman, Warehouse Manager, and Delivery Partner denied with 403 Forbidden.
+- **Affected Frontend:** `resources/js/Pages/Admin/Adjustments/Index.tsx`, `resources/js/Pages/Admin/Adjustments/Partials/AdminAdjustmentQueueTabs.tsx`, `resources/js/types/order.ts`.
+- **Affected Tickets:** `FEAT-ADJ-006` completed.
+- **Inventory Impact:** None. Physical warehouse stock reservation and balances deferred to Phase 06 (`FEAT-INV-001..004`).
+- **Order Impact:** Read-only operational model over existing order adjustments and orders. Zero state mutations.
+- **Payment Impact:** None.
+- **Tax Impact:** None.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** Zero database schema modifications (zero migrations added).
+- **Testing Impact:** Added 23 targeted automated tests in `AdminAdjustmentQueueTest.php`. Full repository test suite at 952 tests (945 passed, 6,197 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-006`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown
