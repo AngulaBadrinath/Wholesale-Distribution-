@@ -174,6 +174,16 @@ class Invoice extends Model
     }
 
     /**
+     * Receivable transactions linked to this invoice.
+     *
+     * @return HasMany<ReceivableTransaction, $this>
+     */
+    public function receivableTransactions(): HasMany
+    {
+        return $this->hasMany(ReceivableTransaction::class, 'invoice_id');
+    }
+
+    /**
      * Scope query based on the authenticated actor's resource scope.
      * Salesmen can only access invoices for their assigned customers.
      */

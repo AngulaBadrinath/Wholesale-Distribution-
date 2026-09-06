@@ -77,6 +77,16 @@ class Customer extends Model
     }
 
     /**
+     * Get all receivable transactions recorded for this customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\ReceivableTransaction, $this>
+     */
+    public function receivableTransactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReceivableTransaction::class, 'customer_id');
+    }
+
+    /**
      * Scope query to active customers.
      */
     public function scopeActive(Builder $query): Builder

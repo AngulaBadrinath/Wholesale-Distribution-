@@ -165,6 +165,16 @@ class Payment extends Model
     }
 
     /**
+     * Receivable transactions linked to this payment.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\ReceivableTransaction, $this>
+     */
+    public function receivableTransactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReceivableTransaction::class, 'payment_id');
+    }
+
+    /**
      * Determine if this payment is pending verification.
      */
     public function isPending(): bool

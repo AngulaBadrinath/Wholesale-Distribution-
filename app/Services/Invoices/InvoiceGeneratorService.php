@@ -12,6 +12,7 @@ use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Receivable\ReceivableLedgerService;
 use App\Services\System\CompanyInformationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,8 @@ class InvoiceGeneratorService
 {
     public function __construct(
         protected InvoiceNumberGenerator $numberGenerator,
-        protected CompanyInformationService $companyInformationService
+        protected CompanyInformationService $companyInformationService,
+        protected ReceivableLedgerService $receivableLedgerService
     ) {}
 
     /**
@@ -202,6 +204,9 @@ class InvoiceGeneratorService
                     'line_total' => $item->line_total,
                 ]);
             }
+
+            // 9. Post authoritative invoice charge to customer accounts receivable ledger
+            $this->receivableLedgerService->recordInvoiceCharge($invoice, $actor);
 
             return $invoice->load(['items', 'order', 'customer', 'creator']);
         });

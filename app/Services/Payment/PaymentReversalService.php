@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Receivable\ReceivableLedgerService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,7 @@ class PaymentReversalService
     public function __construct(
         protected PermissionService $permissionService,
         protected PaymentVerificationService $verificationService,
+        protected ReceivableLedgerService $receivableLedgerService
     ) {}
 
     /**
@@ -81,6 +83,9 @@ class PaymentReversalService
             if ($order) {
                 $this->verificationService->reconcileOrderPaymentStatus($order);
             }
+
+            // Post compensating debit to customer accounts receivable ledger
+            $this->receivableLedgerService->recordPaymentReversal($lockedPayment, $actor);
 
             Log::warning('Payment reversed and bounced', [
                 'payment_id' => $lockedPayment->id,

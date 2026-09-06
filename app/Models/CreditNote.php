@@ -168,6 +168,15 @@ class CreditNote extends Model
     }
 
     /**
+     * Associated customer receivable sub-ledger transactions.
+     */
+    public function receivableTransactions(): HasMany
+    {
+        return $this->hasMany(ReceivableTransaction::class, 'source_id')
+            ->where('source_type', 'credit_note');
+    }
+
+    /**
      * Scope query to credit notes having refundable balance remaining.
      */
     public function scopeRefundable(Builder $query): Builder

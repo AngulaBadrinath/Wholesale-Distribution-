@@ -10,6 +10,9 @@ use App\Models\CreditNoteItem;
 use App\Models\ReturnRequest;
 use App\Models\ReturnRequestEvent;
 use App\Models\User;
+use App\Services\Credit\CreditEligibilityService;
+use App\Services\Credit\CreditNoteNumberGenerator;
+use App\Services\Receivable\ReceivableLedgerService;
 use App\Services\System\CompanyInformationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,8 @@ class CreditNoteService
     public function __construct(
         protected CreditEligibilityService $eligibilityService,
         protected CreditNoteNumberGenerator $numberGenerator,
-        protected CompanyInformationService $companyInformationService
+        protected CompanyInformationService $companyInformationService,
+        protected ReceivableLedgerService $receivableLedgerService
     ) {}
 
     /**
@@ -175,6 +179,9 @@ class CreditNoteService
                 ],
                 'created_at' => Carbon::now(),
             ]);
+
+            // Post authoritative credit note to customer accounts receivable ledger
+            $this->receivableLedgerService->recordCreditNote($creditNote, $issuer);
 
             return $creditNote->fresh(['items', 'customer', 'order', 'returnRequest', 'issuer']);
         });

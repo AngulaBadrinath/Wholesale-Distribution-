@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Receivable\ReceivableLedgerService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,7 @@ class PaymentVerificationService
 {
     public function __construct(
         protected PermissionService $permissionService,
+        protected ReceivableLedgerService $receivableLedgerService
     ) {}
 
     /**
@@ -70,6 +72,9 @@ class PaymentVerificationService
             if ($order) {
                 $this->reconcileOrderPaymentStatus($order);
             }
+
+            // Post authoritative payment credit to customer accounts receivable ledger
+            $this->receivableLedgerService->recordPaymentCredit($lockedPayment, $actor);
 
             Log::info('Payment verified successfully', [
                 'payment_id' => $lockedPayment->id,
