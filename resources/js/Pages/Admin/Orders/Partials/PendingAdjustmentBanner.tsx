@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, Link, usePage } from '@inertiajs/react';
 import { ActiveAdjustmentData } from '@/types/order';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -14,6 +14,7 @@ import {
     ShieldAlert,
     CheckCircle2,
     Info,
+    FileText,
 } from 'lucide-react';
 
 interface PendingAdjustmentBannerProps {
@@ -31,6 +32,9 @@ export default function PendingAdjustmentBanner({
     const [withdrawalReason, setWithdrawalReason] = useState('');
     const [isWithdrawing, setIsWithdrawing] = useState(false);
     const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+    const { auth } = usePage<any>().props;
+    const canReview = auth?.user?.permissions?.includes('order.adjust.review') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
 
     const hasCaseB = activeAdjustment.items.some((item) => item.is_case_b);
     const totalReductionUnits = activeAdjustment.items.reduce(
@@ -103,18 +107,34 @@ export default function PendingAdjustmentBanner({
                         </div>
                     </div>
 
-                    {activeAdjustment.can_withdraw && (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsWithdrawModalOpen(true)}
-                            className="text-xs border-amber-300 bg-white/70 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:bg-amber-950/40 dark:border-amber-700 dark:hover:bg-red-950/60 dark:hover:text-red-300 shrink-0 gap-1.5"
-                        >
-                            <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-                            <span>Withdraw Request</span>
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        {canReview && (
+                            <Link href={`/admin/orders/${orderId}/adjustments/${activeAdjustment.id}/review`}>
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    className="text-xs shrink-0 gap-1.5 shadow-xs"
+                                >
+                                    <FileText className="h-3.5 w-3.5" />
+                                    <span>Open Review Workspace</span>
+                                </Button>
+                            </Link>
+                        )}
+
+                        {activeAdjustment.can_withdraw && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsWithdrawModalOpen(true)}
+                                className="text-xs border-amber-300 bg-white/70 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:bg-amber-950/40 dark:border-amber-700 dark:hover:bg-red-950/60 dark:hover:text-red-300 shrink-0 gap-1.5"
+                            >
+                                <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                                <span>Withdraw Request</span>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Metadata & Financial Reduction Summary */}

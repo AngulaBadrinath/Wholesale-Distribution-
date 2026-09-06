@@ -726,6 +726,34 @@
 - [x] **PostgreSQL Check Constraints (Quantities & Projected Reductions):** Database rejects negative amounts or zero quantity reductions (`test_postgresql_check_constraints_on_quantities_and_amounts`).
 - [x] **PostgreSQL Non-Destructive Foreign Keys (`RESTRICT` on delete):** Deleting parent `order_adjustments` blocked when child `order_adjustment_items` exist (`test_postgresql_non_destructive_foreign_keys_prevent_cascading_loss`).
 
+### 1.10.3 Administrative Adjustment Review Workspace (`ADJUSTMENT REVIEW` / `FEAT-ADJ-002`)
+- [x] **Admin Adjustment Queue Access:** Super Admin and Admin can access `/admin/adjustments` with summary aggregation counts (`AdminAdjustmentQueueTest::test_admin_and_super_admin_can_access_adjustment_queue`).
+- [x] **Accountant Review Access:** Authorized Accountant can access queue and review workspaces (`test_accountant_can_access_adjustment_queue`).
+- [x] **Unauthorized Queue Access (403):** Warehouse Manager, Salesman, and Delivery Partner denied with 403 Forbidden (`test_warehouse_manager_and_salesman_and_delivery_partner_denied_from_queue`).
+- [x] **Status Tab Filtering:** Filtering by status (`SUBMITTED`, `CANCELLED`, etc.) returns matching subsets (`test_queue_status_filtering`).
+- [x] **Impact Case Filtering:** Filtering by `CASE_A` vs `CASE_B` correctly filters by `affected_allocation_quantity` (`test_queue_impact_case_filtering`).
+- [x] **Multi-Column Queue Search:** Searching by adjustment number, order number, or customer name/code returns matches (`test_queue_search_by_adjustment_and_order_and_customer`).
+- [x] **Allowlisted Sorting:** Sorting by request date, adjustment number, order number, and projected reduction (`test_queue_allowlisted_sorting`).
+- [x] **Bounded Pagination:** Bounded 15/page pagination with query string parameter preservation (`test_queue_bounded_pagination`).
+- [x] **Single-Query Aggregation Counts:** Tab counts computed via single `COUNT(CASE ...)` aggregation without N+1 query overhead (`test_queue_summary_counts_query_efficiency`).
+- [x] **Dedicated Review Workspace Access:** Admin can inspect `/admin/orders/{order}/adjustments/{adjustment}/review` (`AdminAdjustmentReviewDetailTest::test_admin_can_view_adjustment_review_workspace`).
+- [x] **Snapshot vs Live State Separation:** Historical request snapshots rendered unchanged while live order metrics and recalculations are clearly distinct (`test_review_workspace_displays_both_snapshot_and_live_data`).
+- [x] **Case A Clean Evaluation (`READY`):** Pure unallocated reduction evaluated with `READY` evaluation status (`test_case_a_unallocated_reduction_review_evaluation`).
+- [x] **Case B Allocation Impact (`WARNING_ALLOCATION`):** Reduction impacting allocated stock flags `WARNING_ALLOCATION` with affected allocation units (`test_case_b_allocation_impacting_review_evaluation`).
+- [x] **Active Allocation Inspection:** Allocations loaded for review exclude both `CANCELLED` and `RELEASED` states (`test_review_workspace_excludes_cancelled_and_released_allocations`).
+- [x] **No Picked/Dispatched Double-Counting:** Unpicked quantity calculated as `allocated - picked`; dispatched units are not double counted (`test_review_workspace_does_not_double_count_picked_and_dispatched`).
+- [x] **Progression Encroachment Detection:** Reduction encroaching on already picked units flags `WARNING_PICKED_ENCROACHMENT` (`test_review_workspace_detects_encroachment_on_picked_units`).
+- [x] **Stale Order Version Detection:** Shift in `order.version` since request snapshot triggers `STALE` status and explains version drift (`AdminAdjustmentStaleStateTest::test_stale_version_detected`).
+- [x] **Allocation Progression Drift Detection:** Background picking/dispatch after adjustment request submission detected and flagged in review (`test_allocation_progression_drift_detected`).
+- [x] **Mathematical Fulfillable Conflict Detection:** Concurrent cancellation causing fulfillable capacity to drop below requested reduction triggers `CONFLICTED` status (`test_mathematical_conflict_detected_when_reduction_exceeds_fulfillable`).
+- [x] **Ineligible Lifecycle State Detection:** Order transition to terminal status (`CANCELLED`, `COMPLETED`) flags `INELIGIBLE_LIFECYCLE` (`test_ineligible_order_lifecycle_detected`).
+- [x] **Terminal Request State Detection:** Withdrawn/cancelled request flags `TERMINAL_REQUEST` (`test_terminal_adjustment_request_detected`).
+- [x] **Direct URL IDOR Order Mismatch Isolation (404):** Mismatch between `{order}` and `{adjustment}` in route returns 404 (`AdminAdjustmentSecurityTest::test_mismatched_order_and_adjustment_returns_404`).
+- [x] **Salesman Review Workspace Denial (403):** Salesmen attempting to access review workspace for own customer order rejected with 403 (`test_salesman_denied_from_review_workspace`).
+- [x] **Warehouse Manager Review Denial (Option A - 403):** Warehouse Manager without review permission rejected with 403 (`test_warehouse_manager_denied_from_review_workspace`).
+- [x] **Delivery Partner Review Denial (403):** Delivery partner rejected with 403 (`test_delivery_partner_denied_from_review_workspace`).
+- [x] **Strict Read-Only Boundary:** Verification that viewing queue and review workspace causes zero mutations across orders, items, allocations, or adjustments (`test_strict_review_boundary_can_approve_and_reject_are_false`, `AdminAdjustmentReviewDetailTest::test_review_workspace_is_strictly_read_only_and_does_not_mutate_state`).
+
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
 - [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).

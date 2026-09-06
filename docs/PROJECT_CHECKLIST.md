@@ -123,7 +123,7 @@
 
 ### Order Adjustments
 - [x] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)
-- [ ] `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
+- [x] `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
 - [ ] `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow
 - [ ] `FEAT-ADJ-004`: Atomic Adjustment Application Engine
 - [ ] `FEAT-ADJ-005`: Controlled Adjustment Reversals

@@ -484,6 +484,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ADJ-001`.
 
+### CHANGE-017: FEAT-ADJ-002 Administrative Adjustment Review Workspace
+- **Change ID:** `CHANGE-017`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the dedicated Administrative Adjustment Review Workspace and Queue (`FEAT-ADJ-002`). Establish dual-entry navigation via `/admin/adjustments` (dedicated review queue with status/impact/reason filters, search, and allowlisted sorting) and `/admin/orders/{order}/adjustments/{adjustment}/review` (dedicated detail review workspace). Maintain strict read-only boundary (no approval, rejection, application, reversal, or financial mutation). Enforce canonical active allocation definition (excluding both `CANCELLED` and `RELEASED` states) and progression math without picked+dispatched double counting (`returned <= delivered <= dispatched <= picked <= allocated`). Deliver pure `OrderAdjustmentReviewService` to separate immutable historical request snapshots from live order state evaluations and detect discrepancies/stale states (`READY`, `WARNING_ALLOCATION`, `WARNING_PICKED_ENCROACHMENT`, `STALE`, `CONFLICTED`, `INELIGIBLE_LIFECYCLE`, `TERMINAL_REQUEST`). Resolve Option A reviewer permissions denying Warehouse Managers, Salesmen, and Delivery Partners while authorizing Super Admin, Admin, and Accountant under `Permission::ORDER_ADJUST_REVIEW`.
+- **Reason:** Provide administrators and accountants with authoritative, non-destructive situational awareness over pending order quantity adjustments prior to executing atomic mutations.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (High/Critical Review Workflow)
+- **Affected PRD Requirements:** §14 (Adjustment Review), §15 (Snapshot Fidelity vs Live Evaluation), §16 (Allocation Impact Inspection).
+- **Affected Architecture:** §14 (Review DTOs & Services), §15 (Stale State Resolution), §18 (Dual-Entry Routing & Anti-IDOR Scope Validation).
+- **Affected Security:** Route protection via `permission:order.adjust.review`; strict IDOR validation (`adjustment->order_id === order->id`); role authorization for Super Admin, Admin, and Accountant; complete denial of Salesman, Warehouse Manager (Option A), and Delivery Partner; zero audit noise for normal page viewing.
+- **Affected Frontend:** `resources/js/Pages/Admin/Adjustments/Index.tsx`, `resources/js/Pages/Admin/Adjustments/Review.tsx`, `resources/js/Layouts/AppLayout.tsx`, `resources/js/Pages/Admin/Orders/Partials/PendingAdjustmentBanner.tsx`, `resources/js/types/order.ts`.
+- **Affected Tickets:** `FEAT-ADJ-002` completed. Unlocks `FEAT-ADJ-003: Adjustment Approval / Rejection Workflow`.
+- **Inventory Impact:** Zero inventory or allocation modification (`releaseAllocation`/`cancelAllocation` strictly not invoked).
+- **Order Impact:** Zero order, item, or total mutation. Pure read-only inspection.
+- **Payment Impact:** None.
+- **Tax Impact:** Stored request snapshots displayed unchanged; live evaluation re-runs authoritative `TaxCalculationService::normalizeRate` and `roundHalfUp` without mutating order snapshots.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** Zero database schema modifications (22 existing migration files unchanged).
+- **Testing Impact:** Added 26 automated tests across `AdminAdjustmentQueueTest.php`, `AdminAdjustmentReviewDetailTest.php`, `AdminAdjustmentStaleStateTest.php`, and `AdminAdjustmentSecurityTest.php`. Full repository test suite at 854 tests (847 passed, 5,538 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-002`.
+
 ---
 
 ## 3. Template for Future Change Requests

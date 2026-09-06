@@ -700,5 +700,196 @@ export interface ActiveAdjustmentData {
     items: OrderAdjustmentItemData[];
 }
 
+export interface OrderAdjustmentQueueItem {
+    id: number;
+    adjustment_number: string;
+    order_id: number;
+    order_number: string;
+    order_status: string;
+    customer_name: string;
+    customer_code: string;
+    requester_name: string;
+    requester_email: string;
+    requester_role: string;
+    reason_code: string;
+    reason_label: string;
+    status: string;
+    status_label: string;
+    badge_variant: string;
+    impact_case: 'CASE_A' | 'CASE_B';
+    affected_allocation_quantity: number;
+    items_count: number;
+    projected_grand_total_reduction: string;
+    requested_at: string | null;
+    requested_at_formatted: string | null;
+    is_terminal: boolean;
+}
+
+export interface OrderAdjustmentQueueCounts {
+    submitted: number;
+    case_b: number;
+    approved: number;
+    rejected: number;
+    cancelled: number;
+    all: number;
+}
+
+export interface OrderAdjustmentQueueFilters {
+    search: string;
+    status: string;
+    impact_case: string;
+    reason_code: string;
+    sort_by: string;
+    sort_direction: string;
+    per_page: number;
+}
+
+export interface OrderAdjustmentAllocationDetail {
+    id: number;
+    allocation_number: string;
+    warehouse_code: string | null;
+    status: string;
+    status_label: string;
+    badge_variant: string;
+    allocated_quantity: number;
+    reserved_quantity: number;
+    picked_quantity: number;
+    dispatched_quantity: number;
+    delivered_quantity: number;
+    returned_quantity: number;
+    unpicked_quantity: number;
+}
+
+export interface OrderAdjustmentItemReviewData {
+    adjustment_item_id: number;
+    order_item_id: number;
+    product_id: number;
+    product_name: string;
+    sku: string;
+    unit_price_snapshot: string;
+    tax_rate_snapshot: string;
+    ordered_quantity_snapshot: number;
+    fulfillable_quantity_snapshot: number;
+    allocated_quantity_snapshot: number;
+    unallocated_quantity_snapshot: number;
+    requested_quantity_reduction: number;
+    snapshot_affected_allocation_quantity: number;
+    current_ordered_quantity: number;
+    current_cancelled_quantity: number;
+    current_fulfillable_quantity: number;
+    current_allocated_quantity: number;
+    current_unallocated_quantity: number;
+    current_affected_allocation_quantity: number;
+    snapshot_case: 'CASE_A' | 'CASE_B';
+    current_case: 'CASE_A' | 'CASE_B';
+    case_changed: boolean;
+    is_conflicted: boolean;
+    conflict_reason: string | null;
+    unpicked_allocated_quantity: number;
+    encroaches_on_picked: boolean;
+    allocations: OrderAdjustmentAllocationDetail[];
+    financial_snapshot: {
+        taxable_amount_reduction: string;
+        tax_amount_reduction: string;
+        line_total_reduction: string;
+    };
+    live_financial_preview: {
+        taxable_amount_reduction: string;
+        tax_amount_reduction: string;
+        line_total_reduction: string;
+    };
+}
+
+export interface OrderAdjustmentReviewEvaluation {
+    adjustment_id: number;
+    adjustment_number: string;
+    order_id: number;
+    order_number: string;
+    order_version_snapshot: number;
+    current_order_version: number;
+    order_status_snapshot: string;
+    current_order_status: string;
+    is_stale: boolean;
+    stale_reasons: string[];
+    evaluation_status: 'READY' | 'WARNING_ALLOCATION' | 'WARNING_PICKED_ENCROACHMENT' | 'STALE' | 'CONFLICTED' | 'INELIGIBLE_LIFECYCLE' | 'TERMINAL_REQUEST';
+    has_allocation_impact: boolean;
+    total_affected_allocation_quantity: number;
+    total_unpicked_affected_quantity: number;
+    encroaches_on_picked: boolean;
+    line_evaluations: OrderAdjustmentItemReviewData[];
+    request_financial_snapshot: {
+        subtotal_reduction: string;
+        tax_reduction: string;
+        grand_total_reduction: string;
+    };
+    live_financial_preview: {
+        subtotal_reduction: string;
+        tax_reduction: string;
+        grand_total_reduction: string;
+    };
+    financial_discrepancy: boolean;
+}
+
+export interface OrderAdjustmentReviewDetailData {
+    id: number;
+    adjustment_number: string;
+    order_id: number;
+    order_number: string;
+    order_version_snapshot: number;
+    current_order_version: number;
+    order_status_snapshot: string;
+    current_order_status: string;
+    current_order_status_label: string;
+    status: string;
+    status_label: string;
+    badge_variant: string;
+    reason_code: string;
+    reason_label: string;
+    notes: string | null;
+    requested_by: {
+        id: number | null;
+        name: string;
+        email: string;
+        role: string;
+        role_label: string;
+    };
+    requested_at: string | null;
+    requested_at_formatted: string | null;
+    reviewed_by: {
+        id: number;
+        name: string;
+    } | null;
+    reviewed_at: string | null;
+    rejection_reason: string | null;
+    cancelled_by: {
+        id: number;
+        name: string;
+    } | null;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
+    customer: {
+        id: number;
+        code: string;
+        name: string;
+        credit_limit: string;
+        payment_terms: string;
+    };
+    current_order_totals: {
+        subtotal: string;
+        tax_total: string;
+        grand_total: string;
+    };
+    order_snapshot_totals: {
+        subtotal: string;
+        tax_total: string;
+        grand_total: string;
+    };
+    projected_reductions: {
+        subtotal: string;
+        tax_total: string;
+        grand_total: string;
+    };
+}
+
 
 

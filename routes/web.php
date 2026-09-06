@@ -199,6 +199,17 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('adjustment')
             ->name('orders.adjustments.withdraw');
     });
+
+    // Administrative Adjustment Review Workspace & Queue (FEAT-ADJ-002)
+    Route::middleware('permission:order.adjust.review')->group(function () {
+        Route::get('/admin/adjustments', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'index'])
+            ->name('admin.adjustments.index');
+
+        Route::get('/admin/orders/{order}/adjustments/{adjustment}/review', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'review'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('admin.orders.adjustments.review');
+    });
 });
 
 

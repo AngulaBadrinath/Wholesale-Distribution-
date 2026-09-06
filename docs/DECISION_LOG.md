@@ -304,6 +304,25 @@
 - **Affected Tickets:** `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`.
 - **Consequences:** All future order adjustment review, approval, and application workflows (`FEAT-ADJ-002..006`) must operate over this aggregate, respecting the immutability of baseline order data until atomic application in `FEAT-ADJ-004`.
 
+### DEC-019: Administrative Adjustment Review Architecture, Read-Only Boundary, Option A Reviewer Permission Scoping & Pure State Evaluation
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Strict Read-Only Boundary:** The review workspace (`FEAT-ADJ-002`) operates strictly as an inspection and situational awareness interface. Under no circumstances may viewing or evaluating an adjustment mutate database records (`orders`, `order_items`, `order_item_allocations`, `order_adjustments`), execute approvals/rejections, or invoke allocation release/cancellation methods (`releaseAllocation`, `cancelAllocation`). No transactional audit logs are recorded for ordinary page viewing.
+  2. **Canonical Active Allocation Definition & Math:** In accordance with `FEAT-ALLOC-001/002`, active allocations are strictly defined as allocations whose status is neither `CANCELLED` nor `RELEASED`. Progression math respects the physical invariant `returned <= delivered <= dispatched <= picked <= allocated`. Unpicked allocated stock is evaluated as `allocated - picked`. Quantities already picked or dispatched must never be double-counted.
+  3. **Snapshot Fidelity vs Live Evaluation:** Immutable request snapshots (`unit_price_snapshot`, `tax_rate_snapshot`, `fulfillable_quantity_snapshot`, `allocated_quantity_snapshot`, etc.) are preserved and displayed unchanged. Pure on-the-fly live calculations using authoritative `TaxCalculationService::normalizeRate` and `roundHalfUp` are displayed alongside snapshots and clearly labeled as `CURRENT/LIVE` to highlight version or financial discrepancies without persisting mutations.
+  4. **Option A Reviewer Permission Resolution:** In resolving the role registry discrepancy, `WAREHOUSE_MANAGER` remains denied review access alongside `SALESMAN` and `DELIVERY_PARTNER`. Only `SUPER_ADMIN`, `ADMIN`, and `ACCOUNTANT` hold `Permission::ORDER_ADJUST_REVIEW` and have access to the queue (`/admin/adjustments`) and review workspace (`/admin/orders/{order}/adjustments/{adjustment}/review`).
+  5. **Pure Stale/Conflict Evaluation:** State evaluation is implemented as a deterministic, pure service (`OrderAdjustmentReviewService`) synthesizing 7 clear states (`READY`, `WARNING_ALLOCATION`, `WARNING_PICKED_ENCROACHMENT`, `STALE`, `CONFLICTED`, `INELIGIBLE_LIFECYCLE`, `TERMINAL_REQUEST`) without relying solely on `order.version`.
+- **Context:** An administrative workspace was needed to review pending adjustments, inspect Case A vs Case B impacts, and detect upstream changes in order lifecycle or picking before proceeding to approval/rejection (`FEAT-ADJ-003`).
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-SEC-001` (Server Authority), `RULE-SEC-002` (Zero Client Trust), and `RULE-ORD-002` (Order Adjustment Framework).
+- **Alternatives Considered:**
+  - *Granting Warehouse Managers review access:* Rejected under Option A to preserve strict administrative and financial segregation of duties. Warehouse personnel submit exception requests (`FEAT-ADJ-001`) but do not review or approve commercial order adjustments.
+  - *Persisting live evaluation results to the database:* Rejected because review must remain strictly read-only and non-mutating.
+- **Affected Domains:** Order Adjustments, Quantity Allocation, Security/RBAC, Admin Portal.
+- **Affected Documents:** PRD §14, §15; Technical Architecture §14, §18; Security & Access §18.
+- **Affected Tickets:** `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`.
+- **Consequences:** All future approval and rejection actions (`FEAT-ADJ-003`) will be triggered as explicit mutations from this review workspace.
+
 ---
 
 ## Open Decisions & TBD Register

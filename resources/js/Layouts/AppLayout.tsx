@@ -15,7 +15,8 @@ import {
     Package,
     FolderTree,
     Receipt,
-    Shield
+    Shield,
+    FileText
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -38,6 +39,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasOrderCreate = auth?.user?.permissions?.includes('order.create') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasOrderView = auth?.user?.permissions?.includes('order.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasAdminOrderQueue = (hasOrderView && ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) || false;
+    const hasAdjustReview = auth?.user?.permissions?.includes('order.adjust.review') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -97,6 +99,15 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                         >
                                             <Layers className="h-4 w-4 text-primary" />
                                             <span>Order Queue</span>
+                                        </Link>
+                                    )}
+                                    {hasAdjustReview && (
+                                        <Link
+                                            href="/admin/adjustments"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <FileText className="h-4 w-4 text-primary" />
+                                            <span>Adjustment Queue</span>
                                         </Link>
                                     )}
                                     {hasOrderView && (
