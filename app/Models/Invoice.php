@@ -164,6 +164,16 @@ class Invoice extends Model
     }
 
     /**
+     * Credit notes issued against this invoice.
+     *
+     * @return HasMany<CreditNote, $this>
+     */
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(CreditNote::class, 'invoice_id');
+    }
+
+    /**
      * Scope query based on the authenticated actor's resource scope.
      * Salesmen can only access invoices for their assigned customers.
      */

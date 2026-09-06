@@ -5,6 +5,8 @@ namespace App\Services\Auth;
 use App\Enums\AccountStatus;
 use App\Enums\Permission;
 use App\Enums\UserRole;
+use App\Models\CreditNote;
+use App\Models\CreditNoteItem;
 use App\Models\Customer;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
@@ -15,6 +17,8 @@ use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\RefundRequest;
+use App\Models\RefundTransaction;
 use App\Models\ReturnItem;
 use App\Models\ReturnRequest;
 use App\Models\User;
@@ -178,6 +182,106 @@ class ResourceScopeService
     }
 
     /**
+     * Determine whether the authenticated user has access to a specific credit note.
+     */
+    public function canAccessCreditNote(User $user, CreditNote|int $creditNote): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            if ($creditNote instanceof CreditNote) {
+                if ((int) $creditNote->issued_by === (int) $user->id) {
+                    return true;
+                }
+                $customerSalesmanId = $creditNote->customer?->salesman_id ?? Customer::where('id', $creditNote->customer_id)->value('salesman_id');
+
+                return (int) $customerSalesmanId === (int) $user->id;
+            }
+
+            return CreditNote::query()
+                ->where('id', (int) $creditNote)
+                ->where(function (Builder $q) use ($user) {
+                    $q->where('issued_by', $user->id)
+                        ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id))
+                        ->orWhereHas('order', fn ($oq) => $oq->where('salesman_id', $user->id));
+                })
+                ->exists();
+        }
+
+        return $this->permissionService->has($user, Permission::CREDIT_CREATE)
+            || $this->permissionService->has($user, Permission::REFUND_REQUEST)
+            || $this->permissionService->has($user, Permission::REFUND_APPROVE)
+            || $this->permissionService->has($user, Permission::ACCOUNTING_VIEW);
+    }
+
+    /**
+     * Determine whether the authenticated user has access to a specific refund request.
+     */
+    public function canAccessRefundRequest(User $user, RefundRequest|int $refundRequest): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            if ($refundRequest instanceof RefundRequest) {
+                if ((int) $refundRequest->requested_by === (int) $user->id) {
+                    return true;
+                }
+                $customerSalesmanId = $refundRequest->customer?->salesman_id ?? Customer::where('id', $refundRequest->customer_id)->value('salesman_id');
+
+                return (int) $customerSalesmanId === (int) $user->id;
+            }
+
+            return RefundRequest::query()
+                ->where('id', (int) $refundRequest)
+                ->where(function (Builder $q) use ($user) {
+                    $q->where('requested_by', $user->id)
+                        ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+                })
+                ->exists();
+        }
+
+        return $this->permissionService->has($user, Permission::REFUND_REQUEST)
+            || $this->permissionService->has($user, Permission::REFUND_APPROVE)
+            || $this->permissionService->has($user, Permission::ACCOUNTING_VIEW);
+    }
+
+    /**
+     * Determine whether the authenticated user has access to a specific refund transaction.
+     */
+    public function canAccessRefundTransaction(User $user, RefundTransaction|int $transaction): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            if ($transaction instanceof RefundTransaction) {
+                if ((int) $transaction->processed_by === (int) $user->id) {
+                    return true;
+                }
+                $customerSalesmanId = $transaction->customer?->salesman_id ?? Customer::where('id', $transaction->customer_id)->value('salesman_id');
+
+                return (int) $customerSalesmanId === (int) $user->id;
+            }
+
+            return RefundTransaction::query()
+                ->where('id', (int) $transaction)
+                ->where(function (Builder $q) use ($user) {
+                    $q->where('processed_by', $user->id)
+                        ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+                })
+                ->exists();
+        }
+
+        return $this->permissionService->has($user, Permission::REFUND_APPROVE)
+            || $this->permissionService->has($user, Permission::ACCOUNTING_VIEW);
+    }
+
+    /**
      * Determine whether the authenticated user has access to a specific inventory balance.
      */
     public function canAccessInventoryBalance(User $user, InventoryBalance|int $balance): bool
@@ -302,11 +406,65 @@ class ResourceScopeService
     }
 
     /**
+     * Query scoping helper: apply authoritative credit note scope.
+     */
+    public function scopeCreditNotes(Builder $query, User $user): Builder
+    {
+        if ($user->role === UserRole::SALESMAN) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('issued_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id))
+                    ->orWhereHas('order', fn ($oq) => $oq->where('salesman_id', $user->id));
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative refund request scope.
+     */
+    public function scopeRefundRequests(Builder $query, User $user): Builder
+    {
+        if ($user->role === UserRole::SALESMAN) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('requested_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative refund transaction scope.
+     */
+    public function scopeRefundTransactions(Builder $query, User $user): Builder
+    {
+        if ($user->role === UserRole::SALESMAN) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('processed_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * Query scoping helper: apply authoritative inventory balance scope.
      */
     public function scopeInventoryBalances(Builder $query, User $user): Builder
     {
         return $query;
+    }
+
+    /**
+     * Nested resource verification: CreditNote -> CreditNoteItem.
+     */
+    public function verifyCreditNoteItemOwnership(CreditNoteItem $item, CreditNote $creditNote): bool
+    {
+        return (int) $item->credit_note_id === (int) $creditNote->id;
     }
 
     /**

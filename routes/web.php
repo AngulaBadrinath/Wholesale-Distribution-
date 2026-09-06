@@ -453,6 +453,21 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('returnRequest')
             ->name('admin.returns.reject');
     });
+
+    // Credit Note Routes
+    Route::get('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'index'])
+        ->name('admin.credits.index');
+    Route::get('/admin/credits/{id}', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'show'])
+        ->whereNumber('id')
+        ->name('admin.credits.show');
+    Route::get('/admin/returns/{returnRequest}/credit-eligibility', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'calculateEligibility'])
+        ->whereNumber('returnRequest')
+        ->name('admin.returns.credit-eligibility');
+
+    Route::middleware('permission:credit.create')->group(function () {
+        Route::post('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'store'])
+            ->name('admin.credits.store');
+    });
 });
 
 

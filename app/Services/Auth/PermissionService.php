@@ -225,6 +225,7 @@ class PermissionService
 
                 // Credit & Refund
                 Permission::CREDIT_CREATE,
+                Permission::REFUND_REQUEST,
                 Permission::REFUND_APPROVE,
 
                 // Invoice
@@ -245,7 +246,7 @@ class PermissionService
                 Permission::ROLE_MANAGE,
             ],
 
-            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (16 permissions)
+            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (17 permissions)
             UserRole::ACCOUNTANT->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::ORDER_VIEW,
@@ -256,6 +257,7 @@ class PermissionService
                 Permission::PAYMENT_VERIFY,
                 Permission::PAYMENT_REVERSE,
                 Permission::CREDIT_CREATE,
+                Permission::REFUND_REQUEST,
                 Permission::REFUND_APPROVE,
                 Permission::INVOICE_VIEW,
                 Permission::INVOICE_PRINT,
@@ -265,7 +267,7 @@ class PermissionService
                 Permission::ACCOUNTING_REVERSE,
             ],
 
-            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (11 permissions)
+            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (12 permissions)
             UserRole::SALESMAN->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::PRODUCT_VIEW,
@@ -274,6 +276,7 @@ class PermissionService
                 Permission::ORDER_SUBMIT,
                 Permission::ORDER_ADJUST_REQUEST,
                 Permission::RETURN_REQUEST,
+                Permission::REFUND_REQUEST,
                 Permission::PAYMENT_VIEW,
                 Permission::PAYMENT_CREATE,
                 Permission::INVOICE_VIEW,

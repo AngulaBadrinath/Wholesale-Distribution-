@@ -144,6 +144,14 @@ class ReturnRequest extends Model
     }
 
     /**
+     * Associated credit note if generated.
+     */
+    public function creditNote(): BelongsTo
+    {
+        return $this->belongsTo(CreditNote::class, 'credit_note_id');
+    }
+
+    /**
      * Scope query to active open return workflows.
      */
     public function scopeOpen(Builder $query): Builder
