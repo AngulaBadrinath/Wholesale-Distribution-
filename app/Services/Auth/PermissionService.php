@@ -263,7 +263,7 @@ class PermissionService
                 Permission::ACCOUNTING_REVERSE,
             ],
 
-            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (9 permissions)
+            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (10 permissions)
             UserRole::SALESMAN->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::PRODUCT_VIEW,
@@ -271,6 +271,7 @@ class PermissionService
                 Permission::ORDER_CREATE,
                 Permission::ORDER_SUBMIT,
                 Permission::ORDER_ADJUST_REQUEST,
+                Permission::PAYMENT_VIEW,
                 Permission::PAYMENT_CREATE,
                 Permission::INVOICE_VIEW,
                 Permission::INVOICE_PRINT,

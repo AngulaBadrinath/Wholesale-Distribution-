@@ -28,6 +28,12 @@ class EnsureAccountIsActive
 
             Auth::guard('web')->logout();
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your account is currently unavailable. Contact an administrator.',
+                ], 403);
+            }
+
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 

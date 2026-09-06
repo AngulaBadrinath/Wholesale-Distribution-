@@ -270,6 +270,17 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('stockException')
             ->name('admin.inventory.exceptions.dismiss');
     });
+
+    // Payments & Payment Evidence Preview (FEAT-PAY-005 / FEAT-PAY-006)
+    Route::middleware('permission:payment.view')->group(function () {
+        Route::get('/admin/payments/{payment}/evidence-url', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'evidenceUrl'])
+            ->whereNumber('payment')
+            ->name('admin.payments.evidence.url');
+
+        Route::get('/admin/payments/{payment}/evidence-stream', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'streamEvidence'])
+            ->whereNumber('payment')
+            ->name('admin.payments.evidence.stream');
+    });
 });
 
 
