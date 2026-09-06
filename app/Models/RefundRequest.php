@@ -31,14 +31,12 @@ class RefundRequest extends Model
      */
     protected $fillable = [
         'refund_number',
-        'credit_note_id',
         'customer_id',
-        'order_id',
+        'credit_note_id',
         'status',
-        'requested_amount',
         'payment_method',
+        'amount',
         'reason',
-        'notes',
         'requested_by',
         'requested_at',
         'reviewed_by',
@@ -62,13 +60,21 @@ class RefundRequest extends Model
     protected $casts = [
         'status' => RefundStatus::class,
         'payment_method' => PaymentMethod::class,
-        'requested_amount' => 'decimal:2',
+        'amount' => 'decimal:2',
         'requested_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];
+
+    /**
+     * Accessor alias for amount to support requested_amount naming convention.
+     */
+    public function getRequestedAmountAttribute(): ?string
+    {
+        return $this->amount !== null ? (string) $this->amount : null;
+    }
 
     /**
      * Parent credit note relationship.
@@ -84,14 +90,6 @@ class RefundRequest extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
-    }
-
-    /**
-     * Originating order relationship if applicable.
-     */
-    public function order(): BelongsTo
-    {
-        return $this->belongsTo(Order::class, 'order_id');
     }
 
     /**
@@ -177,7 +175,7 @@ class RefundRequest extends Model
         return $query->where(function (Builder $q) use ($term, $like) {
             $q->where('refund_number', $like, "%{$term}%")
                 ->orWhereHas('creditNote', fn ($cn) => $cn->where('credit_number', $like, "%{$term}%"))
-                ->orWhereHas('customer', fn ($c) => $c->where('name', $like, "%{$term}%")->orWhere('customer_code', $like, "%{$term}%"));
+                ->orWhereHas('customer', fn ($c) => $c->where('name', $like, "%{$term}%")->orWhere('code', $like, "%{$term}%"));
         });
     }
 }

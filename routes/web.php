@@ -468,6 +468,36 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::post('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'store'])
             ->name('admin.credits.store');
     });
+
+    // Refund Routes
+    Route::get('/admin/refunds', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'index'])
+        ->name('admin.refunds.index');
+    Route::get('/admin/refunds/{id}', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'show'])
+        ->whereNumber('id')
+        ->name('admin.refunds.show');
+
+    Route::middleware('permission:refund.request')->group(function () {
+        Route::post('/admin/refunds', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'store'])
+            ->name('admin.refunds.store');
+        Route::post('/admin/refunds/{id}/cancel', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'cancel'])
+            ->whereNumber('id')
+            ->name('admin.refunds.cancel');
+    });
+
+    Route::middleware('permission:refund.approve')->group(function () {
+        Route::post('/admin/refunds/{id}/review', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'review'])
+            ->whereNumber('id')
+            ->name('admin.refunds.review');
+        Route::post('/admin/refunds/{id}/approve', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'approve'])
+            ->whereNumber('id')
+            ->name('admin.refunds.approve');
+        Route::post('/admin/refunds/{id}/reject', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'reject'])
+            ->whereNumber('id')
+            ->name('admin.refunds.reject');
+        Route::post('/admin/refunds/{id}/process', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'process'])
+            ->whereNumber('id')
+            ->name('admin.refunds.process');
+    });
 });
 
 

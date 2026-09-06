@@ -50,7 +50,6 @@ class RefundTransaction extends Model
         'payment_method',
         'reference_number',
         'failure_reason',
-        'notes',
         'processed_by',
         'processed_at',
         'idempotency_key',

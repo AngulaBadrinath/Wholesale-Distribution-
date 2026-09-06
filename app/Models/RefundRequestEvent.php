@@ -20,18 +20,26 @@ class RefundRequestEvent extends Model
     protected $table = 'refund_request_events';
 
     /**
+     * Disable standard updated_at timestamp.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
         'refund_request_id',
-        'user_id',
-        'event',
+        'actor_id',
+        'action',
         'from_status',
         'to_status',
         'notes',
         'metadata',
+        'created_at',
     ];
 
     /**
@@ -41,6 +49,7 @@ class RefundRequestEvent extends Model
      */
     protected $casts = [
         'metadata' => 'array',
+        'created_at' => 'datetime',
     ];
 
     /**
@@ -58,6 +67,22 @@ class RefundRequestEvent extends Model
     }
 
     /**
+     * Accessor alias for action to support event naming convention.
+     */
+    public function getEventAttribute(): ?string
+    {
+        return $this->action;
+    }
+
+    /**
+     * Accessor alias for actor_id to support user_id naming convention.
+     */
+    public function getUserIdAttribute(): ?int
+    {
+        return $this->actor_id;
+    }
+
+    /**
      * Parent refund request.
      */
     public function refundRequest(): BelongsTo
@@ -68,8 +93,16 @@ class RefundRequestEvent extends Model
     /**
      * Actor who triggered the event.
      */
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    /**
+     * User alias for actor relationship.
+     */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->actor();
     }
 }
