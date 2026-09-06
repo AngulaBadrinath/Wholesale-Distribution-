@@ -131,11 +131,11 @@
 
 ### Inventory & Warehouse
 - [x] `FEAT-INV-001`: Inventory Item & Stock Balance Foundations (Canonical `warehouses` table with default `MAIN` and partial unique default index, canonical `inventory_balances` table keyed on `UNIQUE (warehouse_id, product_id)` with RESTRICT foreign keys, PostgreSQL CHECK constraints enforcing non-negativity, bounds `reserved + damaged <= on_hand`, and formula `available = on_hand - reserved - damaged`, Product `inventoryBalances()` HasMany relation, idempotent automatic stock initialization on product creation, idempotent catalog backfill via `php artisan inventory:initialize` and `InventoryInitializationService`, deterministic row lock helper `InventoryService::lockBalancesForUpdate` ordered by ID ASC, read-only administrative workspace `GET /admin/inventory` protected by `Permission::INVENTORY_VIEW`, stock status indicators `IN_STOCK`/`LOW_STOCK`/`OUT_OF_STOCK`, multi-column search, bounded pagination, 15 comprehensive automated tests, 967 full repository tests passing 100%, PostgreSQL 18 verified)
-- [ ] `FEAT-INV-002`: Four-Tier Stock Representation (`On Hand`, `Reserved`, `Available`, `Damaged`)
-- [ ] `FEAT-INV-003`: Pessimistic Locking Stock Reservation Engine (`SELECT FOR UPDATE`)
-- [ ] `FEAT-INV-004`: Immutable Stock Movement History Ledger
-- [ ] `FEAT-INV-005`: Warehouse Stock Exception Reporting Flow
-- [ ] `FEAT-INV-006`: Authorized Inventory Balance Adjustments
+- [x] `FEAT-INV-002`: Four-Tier Stock Representation (`On Hand`, `Reserved`, `Available`, `Damaged`) (Strict multi-tier physical stock representation, dedicated detail workspace at `GET /admin/inventory/{inventoryBalance}`, commercial coverage analytics, composition proportions, active order commitments table, responsive UI)
+- [x] `FEAT-INV-003`: Pessimistic Locking Stock Reservation Engine (`SELECT FOR UPDATE`) (Authoritative physical stock reservation engine inside `StockReservationService`, atomic order approval reservation and rejection release, deterministic ascending lock ordering, strict `InsufficientStockException`, 14 comprehensive tests)
+- [x] `FEAT-INV-004`: Immutable Stock Movement History Ledger (Canonical `inventory_movements` table with database and model-level mutation blocks preventing UPDATE/DELETE, authoritative `recordMovement()`, physical snapshot tracking, dedicated movement history table in Show.tsx, 10 comprehensive tests)
+- [x] `FEAT-INV-005`: Warehouse Stock Exception Reporting Flow (Dedicated stock exception reporting and review queue at `GET /admin/inventory-exceptions`, automatic quarantine of damaged goods from `AVAILABLE` or `RESERVED` to `DAMAGED`, authoritative resolution and dismissal with optional quarantine reversion, strict RBAC, 6 comprehensive tests)
+- [x] `FEAT-INV-006`: Authorized Inventory Balance Adjustments (Authorized direct physical stock adjustment engine for `INCREASE_ON_HAND`, `DECREASE_ON_HAND`, `TRANSFER_TO_DAMAGED`, `DAMAGE_DISPOSAL`, optimistic concurrency version check + pessimistic row lock, movement ledger link, direct modal in Show.tsx, 12 comprehensive tests)
 
 ---
 
