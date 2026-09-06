@@ -908,12 +908,15 @@
 - [x] **Security (IDOR):** Salesman cannot access payment evidence for unassigned customer (`PaymentEvidencePreviewTest`).
 - [x] **UI & Accessibility:** React uploader with drag-and-drop, touch targets >= 44px, client pre-validation, accessible preview modal with zoom/pan/rotate (`UI-008`, `PaymentEvidenceUploader.tsx`, `PaymentEvidencePreviewModal.tsx`).
 
-### 1.14 Invoicing & Document Generation (`INVOICE`)
-- [ ] **Happy Path:** Invoice generated with unique number (`INV-XXXXXX`) from historical line snapshots.
-- [ ] **Hard Rule Assertion (NO PRODUCT IMAGES):** Output HTML and PDF inspected; zero `<img>` tags or thumbnail URLs present for products (`RULE-DOC-001`).
-- [ ] **Historical Immutability:** Editing product name, price, or tax in catalog does NOT alter historical invoice PDF or HTML (`RULE-DOC-003`, `EDGE-022`).
-- [ ] **Printing:** Print stylesheet hides navigation chrome, buttons, and headers cleanly.
-- [ ] **PDF Export:** Chromium PDF renderer outputs clean, multi-page, formatted vector document.
+### 1.14 Invoicing & Document Generation (`INVOICE` / `FEAT-DOC-001` through `FEAT-DOC-004`)
+- [x] **Happy Path:** Invoice generated with unique sequential number (`INV-{YEAR}-{00000X}`) from historical line snapshots via `InvoiceGeneratorService` (`FEAT-DOC-001`, `InvoiceGenerationTest`).
+- [x] **Hard Rule Assertion (NO PRODUCT IMAGES):** Output HTML and PDF strictly inspected; zero `<img>` tags, catalogue thumbnails, or media elements present (`RULE-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `InvoicePrintTest`, `InvoicePdfTest`).
+- [x] **Historical Immutability:** Editing product name, SKU, price, tax profile, customer profile, or company settings in catalog/database does NOT alter historical invoice PDF or HTML (`RULE-DOC-003`, `EDGE-022`, `FEAT-DOC-004`, `InvoiceImmutabilityTest`).
+- [x] **Database & Model Immutability Triggers:** PostgreSQL triggers `trg_protect_invoices` and `trg_protect_invoice_items` plus Eloquent event listeners strictly block direct SQL `DELETE` and commercial field `UPDATE` mutations while permitting operational status/payment updates (`FEAT-DOC-004`, `InvoiceImmutabilityTest`, `verify_postgres_invoice_foundation.php`).
+- [x] **Printing Presentation:** Print stylesheet `@media print` hides navigation chrome, buttons, and header bars cleanly with explicit page-break rules (`FEAT-DOC-002`, `InvoicePrintTest`).
+- [x] **Vector PDF Pipeline & Binary Streaming:** Headless Chromium vector PDF rendering via `InvoicePdfService`, cached private storage `storage/app/private/invoices/`, valid `%PDF-` binary signature check, and authenticated streaming download route `GET /invoices/{invoice}/pdf` (`FEAT-DOC-003`, `InvoicePdfTest`).
+- [x] **Security & Anti-IDOR Scoping:** Admin, Super Admin, and Accountant can access all invoices; Salesman can strictly access assigned customer invoices; cross-salesman access throws fail-closed 404 (`FEAT-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `InvoiceGenerationTest`, `InvoicePrintTest`, `InvoicePdfTest`).
+- [x] **Responsive Admin Workspaces:** Dedicated React admin invoice index (`/admin/invoices`) and detail inspection workspaces (`/admin/invoices/{invoice}`) supporting search, status filters, payment status filters, and one-click Print / Download PDF actions (`FEAT-DOC-002`, `Index.tsx`, `Show.tsx`).
 
 ### 1.15 Delivery Operations (`DELIVERY` / `FEAT-DEL-001` through `FEAT-DEL-008`)
 - [x] **Happy Path:** Order assigned to Delivery Partner; driver confirms warehouse pickup, starts out for delivery route, and completes delivery with proof of delivery (`FEAT-DEL-001`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `WarehousePickupTest`, `OutForDeliveryTest`, `DeliveryCompletionTest`).

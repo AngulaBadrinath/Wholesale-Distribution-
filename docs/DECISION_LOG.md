@@ -499,6 +499,34 @@
 
 ---
 
+### DEC-016: Dual-Layer Invoice Immutability, Strict Image Exclusion & Headless Vector PDF Architecture
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Dual-Layer Immutability Architecture:**
+     - **Database Layer:** PostgreSQL triggers `trg_protect_invoices` and `trg_protect_invoice_items` strictly block `DELETE` operations and commercial field `UPDATE` operations (`subtotal`, `tax_total`, `grand_total`, `currency`, line unit prices, quantities, tax rates). Operational fields (`status`, `amount_paid`, `amount_due`, `payment_status`, `pdf_path`, `pdf_generated_at`) remain updateable for payment tracking and document caching.
+     - **Application Model Layer:** Eloquent event listeners on `Invoice` and `InvoiceItem` intercept `updating` and `deleting` events, raising `LogicException` before any query reaches the database.
+  2. **Strict Product Image Exclusion (RULE-DOC-001):**
+     - Invoices are formal legal and financial accounting instruments. Both Blade HTML print views and PDF outputs strictly exclude all product thumbnails, catalogue imagery, or marketing visuals. Tables render clean typography, SKUs, product names, unit prices, tax rates, and line totals.
+  3. **Complete Point-in-Time Master Data Snapshotting:**
+     - Invoices snapshot all relevant customer attributes (`customer_name_snapshot`, `customer_code_snapshot`, `customer_tax_id_snapshot`, billing and shipping addresses) and corporate entity details (`company_legal_name_snapshot`, `company_tax_id_snapshot`, `company_address_snapshot`) at time of generation. Subsequent edits to customer profiles, company settings, or product catalogs never retroactively alter historical invoices.
+  4. **Headless Chromium Vector PDF Pipeline with Disk Caching:**
+     - Server-side PDF generation is executed via headless Chromium (`InvoicePdfService`), producing crisp vector typography and exact print CSS layout fidelity.
+     - Rendered PDFs are cached securely in private storage (`storage/app/private/invoices/{year}/{month}/INV-{number}.pdf`), verified with binary `%PDF-` signature detection, and streamed to authorized roles via authenticated routes (`GET /invoices/{invoice}/pdf`).
+  5. **Sequential Numbering Invariant:**
+     - Invoices utilize PostgreSQL sequence `invoice_number_seq` to guarantee gap-free, atomic sequential numbers formatted as `INV-{YEAR}-{00000X}` (`InvoiceNumberGenerator`).
+- **Context:** Establishing the financial document and tax invoicing foundation for Phase 09.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-DOC-001` (Strict Image Exclusion), `RULE-DOC-002` (Sequential Numbering), `RULE-DOC-003` (Document Immutability), and `RULE-SEC-001` (Server Authority).
+- **Alternatives Considered:**
+  - *PHP-based pure rendering libraries (DomPDF/TCPDF):* Rejected due to incomplete CSS3/Flexbox support, poor font kerning, and layout breakage on modern financial tables. Headless Chromium provides 100% CSS print standard compliance.
+  - *Dynamic joins to customer/company tables at render time:* Rejected because future company address or customer name edits would violate historical tax document legal compliance.
+- **Affected Domains:** Invoices, Documents, Security/RBAC, Orders, Accounts Receivable.
+- **Affected Documents:** PRD §17; Technical Architecture §17; Security & Access §15; Frontend Specification §16; Feature Ticket List §18.
+- **Affected Tickets:** `FEAT-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `FEAT-DOC-004`.
+- **Consequences:** Financial documents are legally compliant, mathematically permanent, and immune to retroactive catalog or profile mutations.
+
+---
+
 ## Open Decisions & TBD Register
 
 The following items are recognized as open client policy items and must remain configurable until confirmed:
@@ -510,4 +538,4 @@ The following items are recognized as open client policy items and must remain c
 - **DEC-TBD-005:** Whether unverified pending cheque payments reduce customer credit exposure immediately or upon verification.
 - **DEC-TBD-006:** Default policy for customer balances after downward adjustment: automated account credit vs cash refund.
 - **DEC-TBD-007:** Exact revenue recognition timing: upon dispatch vs upon delivery.
-- **DEC-TBD-008:** Invoice sequential numbering format and prefix.
+- **DEC-TBD-008:** [RESOLVED in DEC-016] Invoice sequential numbering format and prefix: `INV-{YYYY}-{000001}`.

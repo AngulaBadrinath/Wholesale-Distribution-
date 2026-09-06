@@ -664,6 +664,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-016: Phase 09 Invoicing, Credit Notes & Receipts (Documents & PDF Engine) Implementation
+- **Change ID:** `CHANGE-016`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect & Solo Developer
+- **Request:** Implement complete Phase 09 document and tax invoice engine encompassing `FEAT-DOC-001` through `FEAT-DOC-004`: database schemas (`invoices`, `invoice_items`, `invoice_number_seq`), atomic invoice generator from order snapshots, zero product images rule enforcement, responsive HTML and print CSS presentation, headless Chromium vector PDF pipeline with disk caching and binary streaming download, dual-layer immutability triggers and model event guards, and administrative index and detail workspaces.
+- **Reason:** Complete core financial document milestone providing legally compliant, immutable tax invoices with exact point-in-time commercial snapshots and zero retroactive drift.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Phase 09 Section Milestone)
+- **Affected PRD Requirements:** Document 01 §17.
+- **Affected Architecture:** Document 02 §17.
+- **Affected Security:** Document 03 §15.
+- **Affected Frontend:** Document 04 §16.
+- **Affected Tickets:** `FEAT-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `FEAT-DOC-004`.
+- **Inventory Impact:** None. Invoices record historical financial values derived from fulfilled order snapshots without mutating stock balances.
+- **Order Impact:** Orders are linked to invoices via `order_id` (1-to-1). Invoices snapshot all order line items, tax profiles, unit prices, quantities, and totals.
+- **Payment Impact:** Invoices track `amount_paid`, `amount_due`, and `payment_status` as allowed operational fields without mutating commercial totals.
+- **Tax Impact:** Line-level tax amounts, rates, and tax profile codes are snapshotted permanently on `invoice_items`.
+- **Accounting Impact:** Provides the immutable document source for general ledger receivables and revenue recognition.
+- **Data Migration Impact:** Migrations `2026_09_06_000011_create_invoices_and_invoice_items_tables.php` and `2026_09_06_000012_create_invoice_immutability_triggers.php`.
+- **Testing Impact:** Added 34 automated document tests across generation, print presentation, PDF streaming, and trigger immutability. Full test suite: 1,178 tests (1,168 passed, 7,380 assertions, 10 skipped). TypeScript check and Vite build 100% clean.
+- **Deployment Impact:** Run `php artisan migrate`. Ensure Chrome/Chromium executable or Node Puppeteer is available in runtime environment for vector PDF downloads.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Commits `3126b3e`, `baf8610`, `1ce50e5`, `78824c5`, `1e698e2`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

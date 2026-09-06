@@ -13,26 +13,26 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **54.7%** (70 / 128 tickets) | FEAT-DEL-001 through FEAT-DEL-008 verified complete; 1,144 automated tests (1,134 passed, 7,282 assertions, 10 skipped) |
+| **Overall Code Completion** | **57.8%** (74 / 128 tickets) | FEAT-DOC-001 through FEAT-DOC-004 verified complete; 1,178 automated tests (1,168 passed, 7,380 assertions, 10 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 08 — Logistics, Delivery & Driver Operations** | Status: `COMPLETED` (FEAT-DEL-001 through FEAT-DEL-008 complete; delivery schema, assignment engine, driver mobile queue, warehouse pickup, out-for-delivery, proof-of-delivery completion with physical stock relief, failure logging, reschedule & return-to-warehouse workflows, and admin workspace landed) |
-| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07 and Phase 08 complete; Phase 09 pending) |
-| **Current Active Ticket** | **FEAT-DEL-008** (Complete) | Ready to begin Phase 09 (`FEAT-DOC-001: Invoice Generation Engine & Immutable Document Model`) |
+| **Current Phase** | **Phase 09 — Invoicing, Credit Notes & Receipts (Documents & PDF Engine)** | Status: `COMPLETED` (FEAT-DOC-001 through FEAT-DOC-004 complete; dual-layer immutability triggers, distinct sequential numbering, complete historical snapshots, zero product images, responsive HTML/print view, headless Chromium vector PDF generation and streaming download) |
+| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07 and Phase 09 complete; Phase 10 / reporting pending) |
+| **Current Active Ticket** | **FEAT-DOC-004** (Complete) | Ready to begin Phase 10 (`FEAT-REP-001: Sales & Commercial Performance Reporting`) |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
-| **Active Blockers** | **0** | All Phase 08 domain models landed |
+| **Active Blockers** | **0** | All Phase 09 document domain models landed |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **70** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`, `FEAT-ADJ-005`, `FEAT-ADJ-006`, `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`, `FEAT-INV-004`, `FEAT-INV-005`, `FEAT-INV-006`, `FEAT-PAY-001`, `FEAT-PAY-002`, `FEAT-PAY-003`, `FEAT-PAY-004`, `FEAT-PAY-005`, `FEAT-PAY-006`, `FEAT-PAY-007`, `FEAT-PAY-008`, `FEAT-PAY-009`, `FEAT-DEL-001`, `FEAT-DEL-002`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `FEAT-DEL-006`, `FEAT-DEL-007`, `FEAT-DEL-008`).
-- Current progress: **54.7%** (70 / 128).
+- Completed tickets: **74** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`, `FEAT-ADJ-005`, `FEAT-ADJ-006`, `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`, `FEAT-INV-004`, `FEAT-INV-005`, `FEAT-INV-006`, `FEAT-PAY-001`, `FEAT-PAY-002`, `FEAT-PAY-003`, `FEAT-PAY-004`, `FEAT-PAY-005`, `FEAT-PAY-006`, `FEAT-PAY-007`, `FEAT-PAY-008`, `FEAT-PAY-009`, `FEAT-DEL-001`, `FEAT-DEL-002`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `FEAT-DEL-006`, `FEAT-DEL-007`, `FEAT-DEL-008`, `FEAT-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `FEAT-DOC-004`).
+- Current progress: **57.8%** (74 / 128).
 
 ---
 
 ## 2. Ticket Tracking Breakdown
 
-- **Completed Tickets (70):**
+- **Completed Tickets (74):**
   1. `TECH-FOUND-001`: Repository & Laravel 13 / React 19 / Inertia 3 / Vite Bootstrap
   2. `TECH-FOUND-002`: Database & Migration Foundation (PostgreSQL 18)
   3. `TECH-FOUND-003`: Global Error & Logging Foundation (/health & sanitization)
@@ -103,11 +103,15 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   68. `FEAT-DEL-006`: Delivery Failure Logging & Exception Handling (Structured delivery exception reporting at `POST /delivery/{delivery}/fail`, 8 authoritative failure reasons, mandatory driver notes, immutable event creation, zero inventory alteration, 8 automated tests)
   69. `FEAT-DEL-007`: Reschedule & Return-to-Warehouse Workflow (Authoritative reschedule at `POST /delivery/{delivery}/reschedule` with future date validation, return to warehouse custody at `POST /delivery/{delivery}/return-to-warehouse` resetting allocation dispatched quantities without double deduction or double restock, resolving pending failures, 9 automated tests)
   70. `FEAT-DEL-008`: Delivery History & Admin Operations Workspace (Chronological audit history timeline component `DeliveryTimeline.tsx`, full administrative operations queue at `GET /admin/deliveries`, driver assign/reassign modal, live metric summary cards, 7 automated tests)
+  71. `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots (PostgreSQL sequence `invoice_number_seq` generating `INV-{YEAR}-{00000X}`, atomic generator `InvoiceGeneratorService::generateForOrder()`, complete customer and company snapshots, zero product images, anti-IDOR scoped API endpoints, 10 automated tests)
+  72. `FEAT-DOC-002`: Invoice HTML Presentation & Print View (Zero product images [RULE-DOC-001], print CSS stylesheet with clean page-breaks, customer and issuer metadata, line item tax breakdowns, React admin index and detail workspaces, print route `GET /invoices/{invoice}/print`, 8 automated tests)
+  73:   73. `FEAT-DOC-003`: Invoice PDF Generation Pipeline & Binary Streaming (Headless Chromium vector PDF generation via `InvoicePdfService`, cached private storage `storage/app/private/invoices/`, valid `%PDF-` binary signature check, streaming download route `GET /invoices/{invoice}/pdf`, 8 automated tests)
+  74. `FEAT-DOC-004`: Historical Document Immutability Protection (Dual-layer immutability architecture: PostgreSQL triggers `trg_protect_invoices` and `trg_protect_invoice_items` blocking DELETE and commercial updates; Eloquent model event listeners raising `LogicException` on illegal mutations; operational updates allowed for status and payment tracking, 8 automated tests)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (0):** None.
-- **Upcoming Tickets (Phase 08 — Logistics & Delivery Operations or Phase 09 — Invoices & Accounting):**
-  1. `FEAT-DEL-001`: Delivery Assignment Engine & Driver Work Allocation
-  2. `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots
+- **Upcoming Tickets (Phase 10 — Reporting & Audit Logging):**
+  1. `FEAT-REP-001`: Sales & Commercial Performance Reporting
+  2. `FEAT-REP-002`: Inventory Valuation & Stock Movement Reporting
 
 ---
 
@@ -117,9 +121,9 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
 |---|---|---|---|---|
 | **GATE A: FOUNDATION** | Phase 00, 01 | Application boot, DB, Design System, Auth & RBAC | `IN_PROGRESS` | Phase 00 Complete; Phase 01 Pending |
 | **GATE B: COMMERCE** | Phase 02, 03, 04, 05 | Master Data, Pricing, Tax, Ordering, Admin Queues | `COMPLETED` | Phase 02, 03, 04, 05 Complete |
-| **GATE C: OPERATIONS** | Phase 06 | Quantity Allocation, Order Adjustment, Inventory | `COMPLETED` | Phase 06 Complete |
-| **GATE D: FINANCE** | Phase 07, 09 | Payments, Invoices, Receivables, General Ledger | `IN_PROGRESS` | Phase 07 Complete; Phase 09 Pending |
-| **GATE E: LOGISTICS** | Phase 08 | Delivery Operations, Returns, Credit Notes, Refunds | `NOT_STARTED` | Incomplete |
+| **GATE C: OPERATIONS** | Phase 06, 08 | Quantity Allocation, Order Adjustment, Inventory, Delivery | `COMPLETED` | Phase 06, 08 Complete |
+| **GATE D: FINANCE** | Phase 07, 09 | Payments, Invoices, Receivables, Documents | `COMPLETED` | Phase 07, 09 Complete |
+| **GATE E: LOGISTICS** | Phase 08 | Delivery Operations, Returns, Custody Tracking | `COMPLETED` | Phase 08 Complete |
 | **GATE F: PRODUCTION** | Phase 10, 11 | Reports, Auditing, Hardening, CI/CD, AWS Deploy | `NOT_STARTED` | Incomplete |
 
 ---
@@ -134,7 +138,7 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
 3. **Payment Evidence Security Leakage:** Cheque and money-order JPEG photos contain sensitive financial data.
    - *Mitigation:* Private Amazon S3 bucket with zero public access; short-lived presigned URLs ($\le 15\text{ mins}$) generated on-demand for authorized roles only (`RULE-FILE-003`).
 4. **Historical Financial Mutability:** Future changes to product prices or taxes could corrupt past invoices or journal entries.
-   - *Mitigation:* Immutable historical snapshots permanently recorded on order line items (`RULE-PRI-001`, `RULE-TAX-002`).
+   - *Mitigation:* Dual-layer immutability via PostgreSQL triggers and Eloquent event guards, plus complete customer/company/line snapshots recorded at generation time (`RULE-PRI-001`, `RULE-TAX-002`, `RULE-DOC-003`).
 
 ---
 
@@ -149,7 +153,7 @@ The following business items are marked **TBD** in specifications and must be re
 - **DEC-TBD-005:** Whether unverified pending cheque payments reduce customer credit exposure immediately or upon verification. Default: exposure reduced only upon verification (`VERIFIED`).
 - **DEC-TBD-006:** Default policy for customer balances after downward adjustment: automated account credit vs cash refund. Default: account credit balance created.
 - **DEC-TBD-007:** Exact revenue recognition timing: upon dispatch vs upon delivery. Default: recognized upon delivery confirmation.
-- **DEC-TBD-008:** Invoice sequential numbering format and prefix. Default: `INV-{YYYY}-{000001}`.
+- **DEC-TBD-008:** Invoice sequential numbering format and prefix. Resolved: `INV-{YYYY}-{000001}` via PostgreSQL sequence `invoice_number_seq`.
 
 ---
 
@@ -171,7 +175,7 @@ The following items are recognized as future enterprise enhancements and are int
 - **Local Development Environment:** Fully bootstrapped and operational. Docker Compose running `postgres:18-alpine` (port 5433) and `redis:7-alpine` (port 6380).
 - **Staging Environment:** Not configured (`DEPLOY-001` scheduled for Phase 11).
 - **Production AWS Environment:** Architecture-ready (`DEPLOY-002` scheduled for Phase 11).
-- **Automated Test Runner:** PHPUnit harness operational (410 tests passing, 2,728 assertions). TypeScript static check operational (`npm run type-check`).
+- **Automated Test Runner:** PHPUnit harness operational (1,168 tests passing, 7,380 assertions). TypeScript static check operational (`npm run type-check`).
 - **CI/CD Pipelines:** GitHub Actions CI workflow implemented in `.github/workflows/ci.yml`.
 
 ---
@@ -179,4 +183,5 @@ The following items are recognized as future enterprise enhancements and are int
 ## 8. Next Recommended Action
  
 1. Activate next ticket in sequence from Document 05 / BUILD_PHASES.md:
-   - **`FEAT-ALLOC-001: Order Item Quantity Allocation Model`** (Phase 06 / Epic 07: Operations: Allocation, Adjustments & Inventory).
+   - **`FEAT-REP-001: Sales & Commercial Performance Reporting`** (Phase 10: Reporting, Observability & Auditing).
+

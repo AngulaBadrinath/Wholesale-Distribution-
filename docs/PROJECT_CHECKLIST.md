@@ -153,10 +153,10 @@
 - [x] `FEAT-PAY-009`: Payment Reversal & Bounced Cheque Operational Flow
 
 ### Invoices & Documents
-- [ ] `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots
-- [ ] `FEAT-DOC-002`: Invoice Print & HTML Presentation (Strictly NO product images)
-- [ ] `FEAT-DOC-003`: Server-Side Invoice PDF Download Pipeline
-- [ ] `FEAT-DOC-004`: Historical Document Immutability Protection
+- [x] `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots
+- [x] `FEAT-DOC-002`: Invoice Print & HTML Presentation (Strictly NO product images)
+- [x] `FEAT-DOC-003`: Server-Side Invoice PDF Download Pipeline
+- [x] `FEAT-DOC-004`: Historical Document Immutability Protection
 
 ---
 
