@@ -324,6 +324,13 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('payment')
             ->name('admin.payments.reject');
     });
+
+    // Payment Reversal & Bounced Cheque Engine (FEAT-PAY-009)
+    Route::middleware('permission:payment.reverse')->group(function () {
+        Route::post('/admin/payments/{payment}/reverse', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'reverse'])
+            ->whereNumber('payment')
+            ->name('admin.payments.reverse');
+    });
 });
 
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentRejectionReason;
+use App\Enums\PaymentReversalReason;
 use App\Enums\PaymentTransactionStatus;
 use App\Enums\Permission;
 use App\Enums\UserRole;
@@ -14,10 +15,12 @@ use App\Http\Requests\Payment\CreateCashPaymentRequest;
 use App\Http\Requests\Payment\CreateChequePaymentRequest;
 use App\Http\Requests\Payment\CreateMoneyOrderPaymentRequest;
 use App\Http\Requests\Payment\RejectPaymentRequest;
+use App\Http\Requests\Payment\ReversePaymentRequest;
 use App\Models\Customer;
 use App\Models\Payment;
 use App\Services\Auth\PermissionService;
 use App\Services\Payment\PaymentEvidenceService;
+use App\Services\Payment\PaymentReversalService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PaymentVerificationService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -36,6 +39,7 @@ class AdminPaymentController extends Controller
         protected PaymentEvidenceService $evidenceService,
         protected PaymentService $paymentService,
         protected PaymentVerificationService $verificationService,
+        protected PaymentReversalService $reversalService,
     ) {}
 
     /**
@@ -243,6 +247,29 @@ class AdminPaymentController extends Controller
         }
 
         return redirect()->back()->with('success', "Payment {$resubmittedPayment->payment_number} corrected and resubmitted.");
+    }
+
+    /**
+     * Authoritatively reverse a verified payment (e.g. bounced cheque, NSF, bank dispute).
+     *
+     * @throws AuthorizationException
+     */
+    public function reverse(ReversePaymentRequest $request, Payment $payment): JsonResponse|RedirectResponse
+    {
+        $actor = $request->user();
+        $reason = PaymentReversalReason::from($request->validated('reversal_reason_code'));
+        $notes = (string) $request->validated('reversal_notes');
+
+        $reversedPayment = $this->reversalService->reversePayment($payment, $actor, $reason, $notes);
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => "Payment {$reversedPayment->payment_number} has been reversed.",
+                'payment' => $reversedPayment,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Payment {$reversedPayment->payment_number} reversed.");
     }
 
     /**
