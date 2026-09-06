@@ -1,0 +1,203 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Receivable;
+
+use App\Enums\InvoiceStatus;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+
+class ReceivableAgingService
+{
+    public function __construct(
+        protected ReceivableLedgerService $ledgerService
+    ) {}
+
+    /**
+     * Compute receivable aging buckets for a single customer.
+     *
+     * @return array{
+     *     customer_id: int,
+     *     customer_name: string,
+     *     customer_code: string,
+     *     reference_date: string,
+     *     current: string,
+     *     days_1_30: string,
+     *     days_31_60: string,
+     *     days_61_90: string,
+     *     days_91_plus: string,
+     *     total_receivable: string,
+     *     available_credit: string,
+     *     invoices: array<int, array<string, mixed>>
+     * }
+     */
+    public function getAgingForCustomer(Customer|int $customerInput, ?Carbon $referenceDate = null): array
+    {
+        /** @var Customer $customer */
+        $customer = $customerInput instanceof Customer
+            ? $customerInput
+            : Customer::findOrFail($customerInput);
+
+        $refDate = ($referenceDate ?? Carbon::now())->startOfDay();
+
+        // 1. Fetch all open invoices for this customer (amount_due > 0 and status is ISSUED)
+        $invoices = Invoice::query()
+            ->where('customer_id', $customer->id)
+            ->where('status', InvoiceStatus::ISSUED->value)
+            ->where('amount_due', '>', 0)
+            ->orderBy('due_date', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $current = '0.00';
+        $days1To30 = '0.00';
+        $days31To60 = '0.00';
+        $days61To90 = '0.00';
+        $days91Plus = '0.00';
+        $totalReceivable = '0.00';
+
+        $invoiceDetails = [];
+
+        foreach ($invoices as $invoice) {
+            $amountDue = number_format((float) $invoice->amount_due, 2, '.', '');
+            if (bccomp($amountDue, '0.00', 2) <= 0) {
+                continue;
+            }
+
+            $totalReceivable = bcadd($totalReceivable, $amountDue, 2);
+
+            $dueDate = $invoice->due_date ? Carbon::parse($invoice->due_date)->startOfDay() : $refDate;
+            
+            // Days overdue = reference date - due date
+            $daysOverdue = $dueDate->isAfter($refDate) ? 0 : (int) $dueDate->diffInDays($refDate);
+
+            $bucket = match (true) {
+                $daysOverdue <= 0 => 'current',
+                $daysOverdue <= 30 => 'days_1_30',
+                $daysOverdue <= 60 => 'days_31_60',
+                $daysOverdue <= 90 => 'days_61_90',
+                default => 'days_91_plus',
+            };
+
+            match ($bucket) {
+                'current' => $current = bcadd($current, $amountDue, 2),
+                'days_1_30' => $days1To30 = bcadd($days1To30, $amountDue, 2),
+                'days_31_60' => $days31To60 = bcadd($days31To60, $amountDue, 2),
+                'days_61_90' => $days61To90 = bcadd($days61To90, $amountDue, 2),
+                'days_91_plus' => $days91Plus = bcadd($days91Plus, $amountDue, 2),
+            };
+
+            $invoiceDetails[] = [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'invoice_date' => $invoice->invoice_date?->toDateString(),
+                'due_date' => $invoice->due_date?->toDateString(),
+                'grand_total' => (string) $invoice->grand_total,
+                'amount_paid' => (string) $invoice->amount_paid,
+                'amount_due' => $amountDue,
+                'days_overdue' => $daysOverdue,
+                'bucket' => $bucket,
+                'status' => $invoice->status->value,
+            ];
+        }
+
+        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
+
+        return [
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->name,
+            'customer_code' => $customer->code ?? $customer->customer_code ?? '',
+            'reference_date' => $refDate->toDateString(),
+            'current' => $current,
+            'days_1_30' => $days1To30,
+            'days_31_60' => $days31To60,
+            'days_61_90' => $days61To90,
+            'days_91_plus' => $days91Plus,
+            'total_receivable' => $totalReceivable,
+            'available_credit' => $availableCredit,
+            'invoices' => $invoiceDetails,
+        ];
+    }
+
+    /**
+     * Compute system-wide or salesman-scoped aging summary across customers.
+     *
+     * @return array{
+     *     reference_date: string,
+     *     summary: array{
+     *         current: string,
+     *         days_1_30: string,
+     *         days_31_60: string,
+     *         days_61_90: string,
+     *         days_91_plus: string,
+     *         total_receivable: string,
+     *         total_available_credit: string
+     *     },
+     *     customers: array<int, array<string, mixed>>
+     * }
+     */
+    public function getAgingReport(?Carbon $referenceDate = null, ?User $scopedUser = null, ?string $searchTerm = null): array
+    {
+        $refDate = ($referenceDate ?? Carbon::now())->startOfDay();
+
+        $customerQuery = Customer::query()->orderBy('name', 'asc');
+
+        if ($scopedUser && $scopedUser->isSalesman()) {
+            $customerQuery->where('salesman_id', $scopedUser->id);
+        }
+
+        if ($searchTerm) {
+            $customerQuery->where(function (Builder $q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('code', 'like', "%{$searchTerm}%")
+                    ->orWhere('email', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        $customers = $customerQuery->get();
+
+        $totalCurrent = '0.00';
+        $totalDays1To30 = '0.00';
+        $totalDays31To60 = '0.00';
+        $totalDays61To90 = '0.00';
+        $totalDays91Plus = '0.00';
+        $totalReceivable = '0.00';
+        $totalAvailableCredit = '0.00';
+
+        $customerRows = [];
+
+        foreach ($customers as $customer) {
+            $aging = $this->getAgingForCustomer($customer, $refDate);
+
+            // If customer has no receivables and no credits, we can omit from aging table if requested or keep
+            $totalCurrent = bcadd($totalCurrent, $aging['current'], 2);
+            $totalDays1To30 = bcadd($totalDays1To30, $aging['days_1_30'], 2);
+            $totalDays31To60 = bcadd($totalDays31To60, $aging['days_31_60'], 2);
+            $totalDays61To90 = bcadd($totalDays61To90, $aging['days_61_90'], 2);
+            $totalDays91Plus = bcadd($totalDays91Plus, $aging['days_91_plus'], 2);
+            $totalReceivable = bcadd($totalReceivable, $aging['total_receivable'], 2);
+            $totalAvailableCredit = bcadd($totalAvailableCredit, $aging['available_credit'], 2);
+
+            $customerRows[] = $aging;
+        }
+
+        return [
+            'reference_date' => $refDate->toDateString(),
+            'summary' => [
+                'current' => $totalCurrent,
+                'days_1_30' => $totalDays1To30,
+                'days_31_60' => $totalDays31To60,
+                'days_61_90' => $totalDays61To90,
+                'days_91_plus' => $totalDays91Plus,
+                'total_receivable' => $totalReceivable,
+                'total_available_credit' => $totalAvailableCredit,
+            ],
+            'customers' => $customerRows,
+        ];
+    }
+}
