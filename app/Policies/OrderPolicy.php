@@ -9,11 +9,13 @@ use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Auth\ResourceScopeService;
 
 class OrderPolicy
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected ResourceScopeService $resourceScopeService,
     ) {}
 
     /**
@@ -34,11 +36,7 @@ class OrderPolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return $order->salesman_id === $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessOrder($user, $order);
     }
 
     /**
@@ -62,11 +60,7 @@ class OrderPolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return $order->salesman_id === $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessOrder($user, $order);
     }
 
     /**
@@ -82,11 +76,7 @@ class OrderPolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return $order->salesman_id === $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessOrder($user, $order);
     }
 
     /**
@@ -98,8 +88,8 @@ class OrderPolicy
             return false;
         }
 
-        if ($order && $user->role === UserRole::SALESMAN) {
-            return $order->salesman_id === $user->id;
+        if ($order) {
+            return $this->resourceScopeService->canAccessOrder($user, $order);
         }
 
         return true;
@@ -146,7 +136,7 @@ class OrderPolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN && $order->salesman_id !== $user->id) {
+        if (! $this->resourceScopeService->canAccessOrder($user, $order)) {
             return false;
         }
 
@@ -161,4 +151,3 @@ class OrderPolicy
         return $order->adjustment_status !== AdjustmentStatus::REQUESTED;
     }
 }
-

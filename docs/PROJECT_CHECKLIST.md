@@ -58,7 +58,7 @@
 ### Roles & Permissions
 - [x] `FEAT-RBAC-001`: Role Model (`SUPER_ADMIN`, `ADMIN`, `ACCOUNTANT`, `SALESMAN`, `WAREHOUSE_MANAGER`, `DELIVERY_PARTNER`)
 - [x] `FEAT-RBAC-002`: Server-Side Permission Registry (`module.action` default-deny)
-- [ ] `FEAT-RBAC-003`: Resource Scope Enforcement (Deferred: Pending Phase 03/05/08 domain models per DEC-014)
+- [x] `FEAT-RBAC-003`: Resource Scope Enforcement (Centralized `ResourceScopeService`, model policies, scoped query builders, fail-closed 404 anti-IDOR enforcement)
 
 ---
 
@@ -246,7 +246,7 @@
 ## 13. QUALITY ASSURANCE, SECURITY & PERFORMANCE
 
 - [ ] `QA-001`: Authentication Test Suite
-- [ ] `QA-002`: Authorization & IDOR Penetration Test Suite
+- [x] `QA-002`: Authorization & IDOR Penetration Test Suite (42 penetration tests, Categories A through L, 100% passing)
 - [ ] `QA-003`: Order Lifecycle E2E Test Suite
 - [ ] `QA-004`: Order Adjustment E2E Test Suite
 - [ ] `QA-005`: Inventory Concurrency & Race-Condition Test Suite

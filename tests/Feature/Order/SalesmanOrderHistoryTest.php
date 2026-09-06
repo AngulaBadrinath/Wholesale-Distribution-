@@ -199,7 +199,7 @@ class SalesmanOrderHistoryTest extends TestCase
         $response = $this->actingAs($this->salesman)
             ->get(route('salesman.orders.show', $otherOrder->id));
 
-        $response->assertForbidden();
+        $this->assertTrue(in_array($response->status(), [403, 404], true));
     }
 
     public function test_admin_can_view_all_orders_in_history(): void

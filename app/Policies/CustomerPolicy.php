@@ -6,11 +6,13 @@ use App\Enums\Permission;
 use App\Models\Customer;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Auth\ResourceScopeService;
 
 class CustomerPolicy
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected ResourceScopeService $resourceScopeService,
     ) {}
 
     /**
@@ -31,11 +33,7 @@ class CustomerPolicy
             return false;
         }
 
-        if ($user->role === \App\Enums\UserRole::SALESMAN) {
-            return $customer->salesman_id === $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessCustomer($user, $customer);
     }
 
     /**

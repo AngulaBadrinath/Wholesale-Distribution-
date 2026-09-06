@@ -13,20 +13,20 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **60.9%** (78 / 128 tickets) | FEAT-RET-001 through FEAT-RET-004 verified complete; 1,201 automated tests (1,191 passed, 7,453 assertions, 10 skipped) |
+| **Overall Code Completion** | **61.7%** (79 / 128 tickets) | FEAT-RBAC-003 and QA-002 verified complete; 1,243 automated tests (1,233 passed, 7,547 assertions, 10 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 09.5 — Returns & Warehouse Return Operations** | Status: `COMPLETED` (FEAT-RET-001 through FEAT-RET-004 complete; server-side returnable quantity calculation, inspection vs disposition separation, atomic inventory movement ledger execution, allocation synchronization, maker-checker authorization, strict financial boundary) |
-| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07, 08, 09, and 09.5 complete; Credits/Refunds and General Ledger pending) |
-| **Current Active Ticket** | **FEAT-RET-004** (Complete) | Ready to begin Phase 10 / Credits (`FEAT-CR-001: Customer Credit Eligibility Calculation Engine`) |
+| **Current Phase** | **Phase 01.5 — Resource Scope & Authorization Penetration** | Status: `COMPLETED` (FEAT-RBAC-003 and QA-002 complete; centralized ResourceScopeService, 11 domain model policies, Gate::before integration, fail-closed 404 anti-IDOR protection, 42 penetration tests) |
+| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 00, 01, 01.5, 02, 03, 04, 05, 06, 07, 08, 09, 09.5 complete; Credits/Refunds and General Ledger pending) |
+| **Current Active Ticket** | **QA-002** (Complete) | Ready to begin Phase 10 / Credits (`FEAT-CR-001: Customer Credit Eligibility Calculation Engine`) |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
-| **Active Blockers** | **0** | All Returns domain models and workflows landed |
+| **Active Blockers** | **0** | Full cross-domain resource scoping and authorization penetration verified |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **78** (`TECH-FOUND-001`..`004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`).
-- Current progress: **60.9%** (78 / 128).
+- Completed tickets: **79** (`TECH-FOUND-001`..`004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`..`003`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`, `QA-002`).
+- Current progress: **61.7%** (79 / 128).
 
 ---
 

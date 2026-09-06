@@ -3,15 +3,16 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
-use App\Enums\UserRole;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Auth\ResourceScopeService;
 
 class InvoicePolicy
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected ResourceScopeService $resourceScopeService,
     ) {}
 
     /**
@@ -32,11 +33,7 @@ class InvoicePolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return (int) $invoice->customer?->salesman_id === (int) $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessInvoice($user, $invoice);
     }
 
     /**
@@ -48,11 +45,7 @@ class InvoicePolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return (int) $invoice->customer?->salesman_id === (int) $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessInvoice($user, $invoice);
     }
 
     /**
@@ -64,11 +57,7 @@ class InvoicePolicy
             return false;
         }
 
-        if ($user->role === UserRole::SALESMAN) {
-            return (int) $invoice->customer?->salesman_id === (int) $user->id;
-        }
-
-        return true;
+        return $this->resourceScopeService->canAccessInvoice($user, $invoice);
     }
 
     /**

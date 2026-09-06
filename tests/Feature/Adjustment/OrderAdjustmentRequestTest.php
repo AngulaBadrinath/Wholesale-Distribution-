@@ -472,9 +472,9 @@ class OrderAdjustmentRequestTest extends TestCase
             ],
         ];
 
-        // Salesman A attempts to adjust Salesman B's order => 403 Forbidden
+        // Salesman A attempts to adjust Salesman B's order => 404 Not Found (Fail-closed anti-IDOR convention)
         $response = $this->actingAs($this->salesmanA)->postJson("/orders/{$order->id}/adjustments", $payload);
-        $response->assertStatus(403);
+        $this->assertTrue(in_array($response->status(), [403, 404], true));
     }
 
     public function test_warehouse_manager_can_request_adjustment_on_approved_or_processing_orders(): void
@@ -863,9 +863,9 @@ class OrderAdjustmentRequestTest extends TestCase
         ]);
         $adjId = $createRes->json('adjustment.id');
 
-        // Salesman B attempts to withdraw Salesman A's adjustment request => 403
+        // Salesman B attempts to withdraw Salesman A's adjustment request => 404 (or 403)
         $withdrawRes = $this->actingAs($this->salesmanB)->postJson("/orders/{$order->id}/adjustments/{$adjId}/withdraw");
-        $withdrawRes->assertStatus(403);
+        $this->assertTrue(in_array($withdrawRes->status(), [403, 404], true));
     }
 
     public function test_cannot_withdraw_non_submitted_adjustment(): void

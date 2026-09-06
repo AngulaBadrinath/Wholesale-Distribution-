@@ -3,19 +3,23 @@
 namespace App\Http\Controllers\Order;
 
 use App\DTOs\Adjustment\CreateOrderAdjustmentDTO;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Adjustment\CreateOrderAdjustmentRequest;
 use App\Http\Requests\Adjustment\WithdrawOrderAdjustmentRequest;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Services\Adjustment\OrderAdjustmentService;
+use App\Services\Auth\ResourceScopeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrderAdjustmentRequestController extends Controller
 {
     public function __construct(
-        protected OrderAdjustmentService $orderAdjustmentService
+        protected OrderAdjustmentService $orderAdjustmentService,
+        protected ResourceScopeService $resourceScopeService,
     ) {}
 
     /**
@@ -24,6 +28,12 @@ class OrderAdjustmentRequestController extends Controller
     public function store(CreateOrderAdjustmentRequest $request, Order $order): JsonResponse|RedirectResponse
     {
         $actor = $request->user();
+
+        // Anti-IDOR: Fail closed if salesman attempts to adjust an order outside their portfolio
+        if (! $this->resourceScopeService->canAccessOrder($actor, $order)) {
+            throw new NotFoundHttpException('Order not found.');
+        }
+
         $dto = CreateOrderAdjustmentDTO::fromArray($request->validated(), $order->id);
 
         $adjustment = $this->orderAdjustmentService->createAdjustmentRequest(
@@ -70,6 +80,16 @@ class OrderAdjustmentRequestController extends Controller
     public function withdraw(WithdrawOrderAdjustmentRequest $request, Order $order, OrderAdjustment $adjustment): JsonResponse|RedirectResponse
     {
         $actor = $request->user();
+
+        // Nested Resource IDOR defense: Verify parent-child integrity
+        if (! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
+            throw new NotFoundHttpException('Adjustment does not belong to the specified order.');
+        }
+
+        // Anti-IDOR: Fail closed if salesman attempts to withdraw an adjustment on an order outside their portfolio
+        if (! $this->resourceScopeService->canAccessOrder($actor, $order)) {
+            throw new NotFoundHttpException('Order not found.');
+        }
 
         $withdrawn = $this->orderAdjustmentService->withdrawAdjustmentRequest(
             actor: $actor,

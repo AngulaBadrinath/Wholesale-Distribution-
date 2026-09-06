@@ -303,7 +303,7 @@ class SalesmanOrderController extends Controller
         }
 
         if ($actor->role === UserRole::SALESMAN && $order->salesman_id !== $actor->id) {
-            throw new AuthorizationException('You are not authorized to view or edit drafts for other salesmen.');
+            abort(404);
         }
 
         $order->load(['customer', 'items.product.taxProfile', 'items.product.primaryImage']);
@@ -485,7 +485,7 @@ class SalesmanOrderController extends Controller
         $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
 
         if ($actor->role === UserRole::SALESMAN && $order->salesman_id !== $actor->id) {
-            throw new AuthorizationException('You are not authorized to view orders for other salesmen.');
+            abort(404);
         }
 
         $order->load([

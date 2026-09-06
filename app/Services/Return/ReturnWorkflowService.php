@@ -243,6 +243,13 @@ class ReturnWorkflowService
             throw new AuthorizationException('Inactive user accounts cannot reject returns.');
         }
 
+        // Maker-checker policy check: Requester cannot reject their own return unless Super Admin
+        if ($actor->id === $returnRequest->created_by && $actor->role !== UserRole::SUPER_ADMIN) {
+            throw ValidationException::withMessages([
+                'approved_by' => 'Maker-checker policy violation: Return reviewer cannot be the same user who created the return request.',
+            ]);
+        }
+
         $reason = trim((string) ($data['rejection_reason'] ?? ''));
         if ($reason === '') {
             throw ValidationException::withMessages([

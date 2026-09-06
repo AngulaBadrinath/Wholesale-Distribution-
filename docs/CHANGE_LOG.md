@@ -716,6 +716,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** Commits on branch `feature/SECTION-RET-001-004-returns`.
 
+### CHANGE-018: Resource Scope Enforcement & Authorization Penetration Suite (FEAT-RBAC-003 & QA-002)
+- **Change ID:** `CHANGE-018`
+- **Date:** September 6, 2026
+- **Requested By:** Lead Software Architect & Security Lead
+- **Request:** Implement centralized cross-domain resource scoping (`ResourceScopeService`), comprehensive model policy enforcement (`CustomerPolicy`, `OrderPolicy`, `OrderAdjustmentPolicy`, `DeliveryPolicy`, `ReturnRequestPolicy`, `PaymentPolicy`, `InvoicePolicy`, `InventoryBalancePolicy`, `StockExceptionPolicy`), `Gate::before` delegation for instance scopes, fail-closed 404 anti-IDOR protection, and 42 penetration tests across Categories A through L.
+- **Reason:** Guarantee zero client trust, server-side resource scoping, fail-closed 404 defense against ID enumeration, segregation of duties (maker-checker), parent-child nested resource integrity, and role boundary isolation across all 11 active domains.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Security & Authorization Prerequisite)
+- **Affected PRD Requirements:** Document 01 §7.3, §38.
+- **Affected Architecture:** Document 02 §7.3, §8.
+- **Affected Security:** Document 03 §4, §5, §6, §7.
+- **Affected Frontend:** Document 04 §4.
+- **Affected Tickets:** `FEAT-RBAC-003`, `QA-002`.
+- **Inventory Impact:** Stock adjustments and exceptions strictly scoped to authorized warehouse personnel; unauthorized roles blocked with 403.
+- **Order Impact:** Salesmen strictly scoped to assigned orders and drafts; cross-salesman lookups fail-closed with 404 Not Found.
+- **Payment Impact:** Payment viewing and recording strictly scoped; verification restricted to Accountant/Admin with maker-checker self-verification prevention.
+- **Tax Impact:** None.
+- **Accounting Impact:** General ledger access restricted to Accountant/Admin; operational staff denied.
+- **Data Migration Impact:** None. Pure security and policy architecture.
+- **Testing Impact:** Added 42 penetration tests (`tests/Feature/Auth/AuthorizationScopeTest.php`) across Categories A through L. Total test suite: 1,243 tests (1,233 passed, 7,547 assertions, 10 skipped).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Commits on branch `feature/RBAC-003-QA-002-authorization`.
+
 ---
 
 ## 3. Template for Future Change Requests

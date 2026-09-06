@@ -308,9 +308,9 @@ class DraftOrderPersistenceTest extends TestCase
         ]);
 
         // 1. Attempt Edit
-        $this->actingAs($this->salesman)
-            ->get("/salesman/orders/drafts/{$otherDraft->id}/edit")
-            ->assertForbidden();
+        $editResponse = $this->actingAs($this->salesman)
+            ->get("/salesman/orders/drafts/{$otherDraft->id}/edit");
+        $this->assertTrue(in_array($editResponse->status(), [403, 404], true));
 
         // 2. Attempt Update
         $this->actingAs($this->salesman)

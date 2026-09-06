@@ -8,11 +8,13 @@ use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Auth\ResourceScopeService;
 
 class OrderAdjustmentPolicy
 {
     public function __construct(
         protected PermissionService $permissionService,
+        protected ResourceScopeService $resourceScopeService,
     ) {}
 
     /**
@@ -20,7 +22,8 @@ class OrderAdjustmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->permissionService->has($user, Permission::ORDER_ADJUST_REVIEW);
+        return $this->permissionService->has($user, Permission::ORDER_ADJUST_REVIEW)
+            || $this->permissionService->has($user, Permission::ORDER_ADJUST_REQUEST);
     }
 
     /**
@@ -28,7 +31,11 @@ class OrderAdjustmentPolicy
      */
     public function view(User $user, OrderAdjustment $adjustment): bool
     {
-        return $this->permissionService->has($user, Permission::ORDER_ADJUST_REVIEW);
+        if (! $this->viewAny($user)) {
+            return false;
+        }
+
+        return $this->resourceScopeService->canAccessAdjustment($user, $adjustment);
     }
 
     /**
@@ -40,7 +47,7 @@ class OrderAdjustmentPolicy
             return false;
         }
 
-        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+        if ($order !== null && ! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
             return false;
         }
 
@@ -60,7 +67,7 @@ class OrderAdjustmentPolicy
             return false;
         }
 
-        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+        if ($order !== null && ! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
             return false;
         }
 
@@ -85,7 +92,7 @@ class OrderAdjustmentPolicy
             return false;
         }
 
-        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+        if ($order !== null && ! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
             return false;
         }
 
@@ -110,7 +117,7 @@ class OrderAdjustmentPolicy
             return false;
         }
 
-        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+        if ($order !== null && ! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
             return false;
         }
 
@@ -130,7 +137,7 @@ class OrderAdjustmentPolicy
             return false;
         }
 
-        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+        if ($order !== null && ! $this->resourceScopeService->verifyOrderAdjustmentOwnership($adjustment, $order)) {
             return false;
         }
 
@@ -142,5 +149,3 @@ class OrderAdjustmentPolicy
         return true;
     }
 }
-
-
