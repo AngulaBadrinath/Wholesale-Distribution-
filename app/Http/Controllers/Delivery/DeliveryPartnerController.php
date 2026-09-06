@@ -182,4 +182,26 @@ class DeliveryPartnerController extends Controller
 
         return back()->with('success', "Delivery {$updatedDelivery->delivery_number} confirmed as picked up.");
     }
+
+    /**
+     * Start out-for-delivery route (FEAT-DEL-004).
+     */
+    public function startRoute(Request $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->startRoute(
+            $delivery,
+            $request->user(),
+            $request->only(['notes'])
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} is now out for delivery.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('success', "Delivery {$updatedDelivery->delivery_number} is now out for delivery.");
+    }
 }

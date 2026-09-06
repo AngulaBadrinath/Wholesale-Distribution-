@@ -131,6 +131,75 @@ class DeliveryWorkflowService
     }
 
     /**
+     * Authoritative Out-for-Delivery State Transition (FEAT-DEL-004).
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws NotFoundHttpException
+     */
+    public function startRoute(Delivery $delivery, User $actor, array $options = []): Delivery
+    {
+        $this->authorizeDeliveryUpdate($delivery, $actor);
+
+        return DB::transaction(function () use ($delivery, $actor, $options) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $delivery->order_id)->lockForUpdate()->firstOrFail();
+
+            /** @var Delivery $lockedDelivery */
+            $lockedDelivery = Delivery::where('id', $delivery->id)->lockForUpdate()->firstOrFail();
+
+            // Idempotency check
+            if ($lockedDelivery->status === DeliveryStatus::OUT_FOR_DELIVERY) {
+                return $lockedDelivery->load(['items', 'order', 'customer', 'driver']);
+            }
+
+            if (! $lockedDelivery->canStartRoute()) {
+                throw new ConflictHttpException("Delivery {$lockedDelivery->delivery_number} is in '{$lockedDelivery->status->value}' status and cannot transition to out-for-delivery. It must be in 'PICKED_UP' status.");
+            }
+
+            $now = Carbon::now();
+            $previousStatus = $lockedDelivery->status;
+
+            $lockedDelivery->status = DeliveryStatus::OUT_FOR_DELIVERY;
+            $lockedDelivery->out_for_delivery_at = $now;
+            $lockedDelivery->updated_by = $actor->id;
+            $lockedDelivery->version += 1;
+            $lockedDelivery->save();
+
+            // Record immutable event
+            DeliveryEvent::create([
+                'delivery_id' => $lockedDelivery->id,
+                'event_type' => DeliveryEventType::OUT_FOR_DELIVERY,
+                'from_status' => $previousStatus->value,
+                'to_status' => DeliveryStatus::OUT_FOR_DELIVERY->value,
+                'actor_id' => $actor->id,
+                'notes' => $options['notes'] ?? 'Driver has departed with shipment and is en route to destination',
+                'metadata' => [
+                    'out_for_delivery_at' => $now->toIso8601String(),
+                    'driver_id' => $lockedDelivery->driver_id,
+                ],
+                'created_at' => $now,
+            ]);
+
+            // Sync order delivery status
+            $lockedOrder->delivery_status = DeliveryStatus::OUT_FOR_DELIVERY;
+            $lockedOrder->save();
+
+            Log::info('logistics.delivery_start_route', [
+                'delivery_id' => $lockedDelivery->id,
+                'delivery_number' => $lockedDelivery->delivery_number,
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'driver_id' => $lockedDelivery->driver_id,
+                'actor_id' => $actor->id,
+                'timestamp' => $now->toIso8601String(),
+            ]);
+
+            return $lockedDelivery->load(['items', 'order', 'customer', 'driver']);
+        }, 3);
+    }
+
+    /**
      * Authorize that the actor is either the assigned delivery driver or a privileged admin.
      *
      * @throws AuthorizationException
