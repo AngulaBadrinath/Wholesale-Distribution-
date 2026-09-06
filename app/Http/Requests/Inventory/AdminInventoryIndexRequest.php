@@ -30,15 +30,22 @@ class AdminInventoryIndexRequest extends FormRequest
             'available_quantity',
             'reserved_quantity',
             'damaged_quantity',
+            'commercial_allocated_quantity',
+            'commercial_unallocated_demand',
             'reorder_point',
             'safety_stock',
             'bin_location',
             'last_counted_at',
             'created_at',
+            'sku',
+            'product_name',
         ];
 
         return [
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'has_damaged' => ['nullable', 'boolean'],
+            'has_allocations' => ['nullable', 'boolean'],
             'stock_status' => ['nullable', 'string', Rule::in($statusValues)],
             'search' => ['nullable', 'string', 'max:100'],
             'sort_by' => ['nullable', 'string', Rule::in($sortByValues)],

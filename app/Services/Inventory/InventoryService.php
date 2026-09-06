@@ -3,9 +3,14 @@
 namespace App\Services\Inventory;
 
 use App\Enums\AccountStatus;
+use App\Enums\AllocationStatus;
+use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\StockStatus;
+use App\Models\Category;
 use App\Models\InventoryBalance;
+use App\Models\OrderItem;
+use App\Models\OrderItemAllocation;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -120,20 +125,55 @@ class InventoryService
      */
     public function getSummaryCounts(?int $warehouseId = null): array
     {
+        $metrics = $this->getSummaryMetrics($warehouseId);
+
+        return [
+            'all_items' => $metrics['all_items'],
+            'in_stock_items' => $metrics['in_stock_items'],
+            'low_stock_items' => $metrics['low_stock_items'],
+            'out_of_stock_items' => $metrics['out_of_stock_items'],
+        ];
+    }
+
+    /**
+     * Retrieve comprehensive multi-metric KPI summary for operational inventory dashboards.
+     * Computes both SKU counts and exact unit sums in a single-trip aggregate query.
+     *
+     * @return array<string, int>
+     */
+    public function getSummaryMetrics(?int $warehouseId = null): array
+    {
         $query = InventoryBalance::query();
 
         if ($warehouseId !== null) {
             $query->where('warehouse_id', $warehouseId);
         }
 
-        $balances = $query->get(['id', 'on_hand_quantity', 'reserved_quantity', 'damaged_quantity', 'available_quantity', 'reorder_point']);
+        $balances = $query->get([
+            'id',
+            'product_id',
+            'on_hand_quantity',
+            'reserved_quantity',
+            'damaged_quantity',
+            'available_quantity',
+            'reorder_point',
+        ]);
 
-        $total = $balances->count();
+        $totalSkus = $balances->count();
+        $totalOnHand = 0;
+        $totalReserved = 0;
+        $totalAvailable = 0;
+        $totalDamaged = 0;
         $inStock = 0;
         $lowStock = 0;
         $outOfStock = 0;
 
         foreach ($balances as $b) {
+            $totalOnHand += (int) $b->on_hand_quantity;
+            $totalReserved += (int) $b->reserved_quantity;
+            $totalAvailable += (int) $b->available_quantity;
+            $totalDamaged += (int) $b->damaged_quantity;
+
             $status = $b->getStockStatus();
             match ($status) {
                 StockStatus::IN_STOCK => $inStock++,
@@ -142,8 +182,29 @@ class InventoryService
             };
         }
 
+        // Active commercial allocations across warehouse or system
+        $allocQuery = OrderItemAllocation::query()
+            ->whereIn('status', [
+                AllocationStatus::ALLOCATED,
+                AllocationStatus::RESERVED,
+                AllocationStatus::PICKED,
+                AllocationStatus::PACKED,
+                AllocationStatus::DISPATCHED,
+            ]);
+
+        $totalAllocatedUnits = (int) $allocQuery->sum('allocated_quantity');
+
         return [
-            'all_items' => $total,
+            'total_skus' => $totalSkus,
+            'total_on_hand_units' => $totalOnHand,
+            'total_reserved_units' => $totalReserved,
+            'total_available_units' => $totalAvailable,
+            'total_allocated_units' => $totalAllocatedUnits,
+            'total_damaged_units' => $totalDamaged,
+            'in_stock_skus' => $inStock,
+            'low_stock_skus' => $lowStock,
+            'out_of_stock_skus' => $outOfStock,
+            'all_items' => $totalSkus,
             'in_stock_items' => $inStock,
             'low_stock_items' => $lowStock,
             'out_of_stock_items' => $outOfStock,
@@ -152,6 +213,7 @@ class InventoryService
 
     /**
      * Retrieve paginated, searchable, filterable inventory balance list for Admin/Warehouse workspaces.
+     * Includes single-trip subqueries for commercial allocations and demand to prevent N+1 queries.
      *
      * @param  array<string, mixed>  $filters
      *
@@ -163,7 +225,35 @@ class InventoryService
             $this->ensureActorCanView($actor);
         }
 
+        $activeAllocationStatuses = [
+            AllocationStatus::ALLOCATED->value,
+            AllocationStatus::RESERVED->value,
+            AllocationStatus::PICKED->value,
+            AllocationStatus::PACKED->value,
+            AllocationStatus::DISPATCHED->value,
+        ];
+
+        $openOrderStatuses = [
+            OrderStatus::APPROVED->value,
+            OrderStatus::PROCESSING->value,
+        ];
+
         $query = InventoryBalance::query()
+            ->select('inventory_balances.*')
+            ->selectSub(
+                OrderItemAllocation::query()
+                    ->selectRaw('COALESCE(SUM(allocated_quantity), 0)')
+                    ->whereColumn('order_item_allocations.product_id', 'inventory_balances.product_id')
+                    ->whereIn('status', $activeAllocationStatuses),
+                'commercial_allocated_quantity'
+            )
+            ->selectSub(
+                OrderItem::query()
+                    ->selectRaw('COALESCE(SUM(CASE WHEN (ordered_quantity - cancelled_quantity) - reserved_quantity > 0 THEN (ordered_quantity - cancelled_quantity) - reserved_quantity ELSE 0 END), 0)')
+                    ->whereColumn('order_items.product_id', 'inventory_balances.product_id')
+                    ->whereHas('order', fn ($q) => $q->whereIn('status', $openOrderStatuses)),
+                'commercial_unallocated_demand'
+            )
             ->with([
                 'warehouse:id,code,name,is_active,is_default',
                 'product:id,sku,name,unit,status,category_id',
@@ -175,27 +265,52 @@ class InventoryService
             $query->where('warehouse_id', (int) $filters['warehouse_id']);
         }
 
-        // 2. Stock status filter
+        // 2. Category filter
+        if (! empty($filters['category_id']) && is_numeric($filters['category_id'])) {
+            $query->whereHas('product', fn ($q) => $q->where('category_id', (int) $filters['category_id']));
+        }
+
+        // 3. Stock status filter
         if (! empty($filters['stock_status'])) {
             $query->filterByStockStatus((string) $filters['stock_status']);
         }
 
-        // 3. Search query across product SKU/name and bin_location
+        // 4. Damaged stock toggle
+        if (! empty($filters['has_damaged'])) {
+            $query->where('damaged_quantity', '>', 0);
+        }
+
+        // 5. Active allocations toggle
+        if (! empty($filters['has_allocations'])) {
+            $query->whereExists(function ($sub) use ($activeAllocationStatuses) {
+                $sub->select(DB::raw(1))
+                    ->from('order_item_allocations')
+                    ->whereColumn('order_item_allocations.product_id', 'inventory_balances.product_id')
+                    ->whereIn('status', $activeAllocationStatuses);
+            });
+        }
+
+        // 6. Search query across product SKU/name and bin_location
         if (! empty($filters['search'])) {
             $query->search((string) $filters['search']);
         }
 
-        // 4. Sort allow-listing
+        // 7. Sort allow-listing
         $allowedSorts = [
+            'id',
             'on_hand_quantity',
             'available_quantity',
             'reserved_quantity',
             'damaged_quantity',
+            'commercial_allocated_quantity',
+            'commercial_unallocated_demand',
             'reorder_point',
             'safety_stock',
             'bin_location',
             'last_counted_at',
             'created_at',
+            'sku',
+            'product_name',
         ];
 
         $sortBy = in_array($filters['sort_by'] ?? null, $allowedSorts, true)
@@ -204,15 +319,130 @@ class InventoryService
 
         $sortDirection = strtolower((string) ($filters['sort_direction'] ?? 'asc')) === 'desc' ? 'desc' : 'asc';
 
+        if ($sortBy === 'sku') {
+            $query->join('products as p_sort', 'p_sort.id', '=', 'inventory_balances.product_id')
+                ->orderBy('p_sort.sku', $sortDirection);
+        } elseif ($sortBy === 'product_name') {
+            $query->join('products as p_sort', 'p_sort.id', '=', 'inventory_balances.product_id')
+                ->orderBy('p_sort.name', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
+
         $boundedPerPage = max(1, min(100, $perPage));
 
-        $paginator = $query->orderBy($sortBy, $sortDirection)
-            ->paginate($boundedPerPage)
-            ->withQueryString();
+        $paginator = $query->paginate($boundedPerPage)->withQueryString();
 
         $paginator->through(fn (InventoryBalance $balance) => $this->formatBalance($balance));
 
         return $paginator;
+    }
+
+    /**
+     * Retrieve complete product stock detail workspace data including physical breakdown,
+     * active commercial order allocations, and net commercial coverage.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws AuthorizationException
+     */
+    public function getDetail(InventoryBalance $balance, ?User $actor = null): array
+    {
+        if ($actor !== null) {
+            $this->ensureActorCanView($actor);
+        }
+
+        $balance->loadMissing([
+            'warehouse:id,code,name,is_active,is_default',
+            'product:id,sku,name,unit,status,category_id',
+            'product.category:id,code,name',
+        ]);
+
+        $activeAllocationStatuses = [
+            AllocationStatus::ALLOCATED,
+            AllocationStatus::RESERVED,
+            AllocationStatus::PICKED,
+            AllocationStatus::PACKED,
+            AllocationStatus::DISPATCHED,
+        ];
+
+        // Active commercial allocations for this SKU
+        $allocations = OrderItemAllocation::query()
+            ->with([
+                'order:id,order_number,customer_id,status,fulfillment_status',
+                'order.customer:id,name,code',
+                'allocatedBy:id,name',
+            ])
+            ->where('product_id', $balance->product_id)
+            ->whereIn('status', $activeAllocationStatuses)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $activeAllocationsFormatted = $allocations->map(fn (OrderItemAllocation $a) => [
+            'id' => $a->id,
+            'allocation_number' => $a->allocation_number,
+            'order_id' => $a->order_id,
+            'order_number' => $a->order?->order_number ?? "ORD-{$a->order_id}",
+            'customer_name' => $a->order?->customer?->name ?? 'Unknown Customer',
+            'customer_code' => $a->order?->customer?->code ?? 'N/A',
+            'order_status' => $a->order?->status instanceof OrderStatus
+                ? $a->order->status->value
+                : (string) ($a->order?->status ?? 'APPROVED'),
+            'order_status_label' => $a->order?->status instanceof OrderStatus
+                ? $a->order->status->label()
+                : (string) ($a->order?->status ?? 'Approved'),
+            'allocated_quantity' => (int) $a->allocated_quantity,
+            'reserved_quantity' => (int) $a->reserved_quantity,
+            'picked_quantity' => (int) $a->picked_quantity,
+            'dispatched_quantity' => (int) $a->dispatched_quantity,
+            'delivered_quantity' => (int) $a->delivered_quantity,
+            'status' => $a->status instanceof AllocationStatus ? $a->status->value : (string) $a->status,
+            'status_label' => $a->status instanceof AllocationStatus ? $a->status->label() : (string) $a->status,
+            'status_badge_variant' => $a->status instanceof AllocationStatus ? $a->status->badgeVariant() : 'outline',
+            'allocated_by_name' => $a->allocatedBy?->name ?? 'System',
+            'allocated_at' => $a->allocated_at?->toIso8601String() ?? $a->created_at?->toIso8601String(),
+        ])->values()->toArray();
+
+        // Total commercial allocated quantity
+        $commercialAllocatedQty = (int) $allocations->sum('allocated_quantity');
+
+        // Open unallocated demand for approved/processing orders
+        $unallocatedDemand = (int) OrderItem::query()
+            ->where('product_id', $balance->product_id)
+            ->whereHas('order', fn ($q) => $q->whereIn('status', [OrderStatus::APPROVED, OrderStatus::PROCESSING]))
+            ->get()
+            ->sum(fn (OrderItem $item) => max(0, $item->fulfillableQuantity() - $item->reserved_quantity));
+
+        // Net Commercial Coverage = Physical Available - Open Unallocated Demand
+        $availableQty = (int) $balance->available_quantity;
+        $netCommercialCoverage = $availableQty - $unallocatedDemand;
+
+        // Stock proportions for visual chart (sum to on_hand or 1 if on_hand is 0)
+        $onHand = max(0, (int) $balance->on_hand_quantity);
+        $reserved = max(0, (int) $balance->reserved_quantity);
+        $damaged = max(0, (int) $balance->damaged_quantity);
+
+        $availablePercent = $onHand > 0 ? round(($availableQty / $onHand) * 100, 1) : 0;
+        $reservedPercent = $onHand > 0 ? round(($reserved / $onHand) * 100, 1) : 0;
+        $damagedPercent = $onHand > 0 ? round(($damaged / $onHand) * 100, 1) : 0;
+
+        return [
+            'balance' => $this->formatBalance($balance),
+            'commercial_summary' => [
+                'allocated_quantity' => $commercialAllocatedQty,
+                'unallocated_demand' => $unallocatedDemand,
+                'net_coverage' => $netCommercialCoverage,
+                'is_surplus' => $netCommercialCoverage >= 0,
+                'coverage_status' => $netCommercialCoverage >= 0 ? 'SURPLUS' : 'DEFICIT',
+            ],
+            'composition_proportions' => [
+                'on_hand_total' => $onHand,
+                'available_percent' => $availablePercent,
+                'reserved_percent' => $reservedPercent,
+                'damaged_percent' => $damagedPercent,
+            ],
+            'active_allocations' => $activeAllocationsFormatted,
+        ];
     }
 
     /**
@@ -236,6 +466,7 @@ class InventoryService
             'product_status' => $balance->product?->status instanceof \App\Enums\ProductStatus
                 ? $balance->product->status->value
                 : (string) ($balance->product?->status ?? 'ACTIVE'),
+            'category_id' => $balance->product?->category_id,
             'category_name' => $balance->product?->category?->name,
             'bin_location' => $balance->bin_location,
             'reorder_point' => (int) $balance->reorder_point,
@@ -244,6 +475,12 @@ class InventoryService
             'reserved_quantity' => (int) $balance->reserved_quantity,
             'available_quantity' => (int) $balance->available_quantity,
             'damaged_quantity' => (int) $balance->damaged_quantity,
+            'commercial_allocated_quantity' => isset($balance->commercial_allocated_quantity)
+                ? (int) $balance->commercial_allocated_quantity
+                : 0,
+            'commercial_unallocated_demand' => isset($balance->commercial_unallocated_demand)
+                ? (int) $balance->commercial_unallocated_demand
+                : 0,
             'stock_status' => $status->value,
             'stock_status_label' => $status->label(),
             'stock_status_badge_variant' => $status->badgeVariant(),
@@ -273,6 +510,25 @@ class InventoryService
                 'name' => $w->name,
                 'is_default' => (bool) $w->is_default,
                 'is_active' => (bool) $w->is_active,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Retrieve all active product categories for filter dropdown.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCategories(): array
+    {
+        return Category::query()
+            ->orderBy('name', 'asc')
+            ->get(['id', 'code', 'name'])
+            ->map(fn (Category $c) => [
+                'id' => $c->id,
+                'code' => $c->code,
+                'name' => $c->name,
             ])
             ->values()
             ->toArray();
