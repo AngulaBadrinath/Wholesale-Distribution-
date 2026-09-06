@@ -873,6 +873,13 @@ export interface OrderAdjustmentReviewDetailData {
     } | null;
     cancelled_at: string | null;
     cancellation_reason: string | null;
+    reversed_by?: {
+        id: number;
+        name: string;
+    } | null;
+    reversed_at?: string | null;
+    reversed_at_formatted?: string | null;
+    reversal_reason?: string | null;
     customer: {
         id: number;
         code: string;

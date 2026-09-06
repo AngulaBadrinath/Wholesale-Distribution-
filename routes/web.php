@@ -231,6 +231,14 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('adjustment')
             ->name('admin.orders.adjustments.apply');
     });
+
+    // Authoritative Order Adjustment Reversal Engine (FEAT-ADJ-005)
+    Route::middleware('permission:order.adjust.reverse')->group(function () {
+        Route::post('/admin/orders/{order}/adjustments/{adjustment}/reverse', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'reverse'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('admin.orders.adjustments.reverse');
+    });
 });
 
 

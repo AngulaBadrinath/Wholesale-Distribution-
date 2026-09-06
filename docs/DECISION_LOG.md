@@ -377,6 +377,33 @@
 
 ---
 
+### DEC-016: Adjustment Reversal Engine & Deterministic LIFO Commercial Restoration
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Guarded State Transition & Exactly-Once Reversal:** Only adjustments in `OrderAdjustmentStatus::APPLIED` may enter the reversal engine. Valid transition is strictly `APPLIED -> REVERSED`. Any duplicate reversal attempt or attempt on non-applied requests (`SUBMITTED`, `APPROVED`, `REJECTED`, `CANCELLED`, or already `REVERSED`) immediately returns **HTTP 409 Conflict**.
+  2. **Canonical Transactional Lock Hierarchy:** Execution is wrapped inside `DB::transaction(..., 3)` acquiring row-level pessimistic locks in canonical deadlock-free order: `orders -> order_items ASC -> order_item_allocations ASC -> order_adjustments`.
+  3. **Strict Deterministic LIFO Reversal:** Adjustments applied to an order must be reversed in strict reverse-chronological order (`applied_at DESC, id DESC`). Any attempt to reverse an earlier adjustment while a subsequent applied adjustment remains active on the same order is rejected with **HTTP 409 Conflict** ("LIFO rule violation").
+  4. **Non-Destructive Allocation Restoration (Case B):** Historical `RELEASED` allocation rows created during adjustment application remain completely immutable, never deleted, and never altered back to `ALLOCATED`. A brand new forward restoration allocation record is created (`ALC-{order_number}-{order_item_id}-{seq}`) with `allocated_quantity = affected_allocation_quantity`, `reserved_quantity = 0` (no fabricated reservation state; preserves $0 \le \text{reserved} \le \text{allocated}$), unpicked status (`picked=0, dispatched=0, delivered=0, returned=0`), canonical sequence, and warehouse code derived authoritatively from historical records.
+  5. **Quantity Conservation (`RULE-DOM-001`):** `order_items.ordered_quantity` remains strictly immutable. `cancelled_quantity` is decremented by requested reduction $R$, fulfillable quantity increases by $R$, and the invariant $\text{ordered} = \text{cancelled} + \text{fulfillable}$ is preserved.
+  6. **Authoritative Financial Recalculation:** Recomputes line taxable amount, tax amount, and line totals using `TaxCalculationService::calculateLineTax` with snapshotted line pricing. Recomputes order `subtotal`, `tax_total`, and `grand_total` authoritatively across lines. Decrements `orders.adjustment_total` using BCMath without rounding drift.
+  7. **Order Version & Status Synchronization:** Increments `orders.version` exactly once ($+1$). Transitions `orders.adjustment_status` to `REVERSED` if no other applied adjustments exist on the order, or retains `APPLIED` if an earlier applied adjustment remains active.
+  8. **Order Lifecycle & Fulfillment Progression Guards:** Reversal is blocked with **HTTP 409 Conflict** if the order has transitioned to `CANCELLED` or `COMPLETED`, or if fulfillment has progressed to `PACKED`, `DISPATCHED`, or `DELIVERED`.
+  9. **RBAC & Maker-Checker Segregation of Duties:** Reversal is protected by `Permission::ORDER_ADJUST_REVERSE` (`order.adjust.reverse`), authorized for Super Admin and Admin roles. An Admin cannot reverse an adjustment they personally requested. A Super Admin may self-reverse only through an explicit emergency override with mandatory reason ($\ge 10$ chars), logged to audit.
+  10. **Strict Transactional Atomicity:** Reversals are all-or-nothing. Any failure rolls back the entire transaction: zero quantities changed, zero allocations created, zero financial deltas, zero version increment.
+- **Context:** Once an adjustment has been applied, customer circumstances or inventory restocking may require reversing the reduction while preserving absolute historical auditability and preventing double-counting or sequence corruption.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-ORD-002` (Order Adjustment Framework), `RULE-INV-001` (Atomic Inventory Reservation), `RULE-PRI-001` (Historical Price Snapshots), `RULE-SEC-001` (Server Authority), and `RULE-SEC-002` (Zero Client Trust).
+- **Alternatives Considered:**
+  - *Reactivating historical RELEASED allocation rows:* Rejected because historical operational records must remain immutable; resurrected rows corrupt operational timelines and allocation state machines.
+  - *Arbitrarily setting `reserved_quantity = affected_quantity` on restoration:* Rejected because historical allocations may have had `reserved = 0`, and fabricating reservation state violates the zero-fabrication invariant and causes inventory ledger drift.
+  - *Allowing arbitrary-order reversals without LIFO enforcement:* Rejected because non-LIFO reversals corrupt sequential financial snapshots and cascade quantity allocations unpredictably.
+- **Affected Domains:** Order Adjustments, Quantity Allocation, Pricing & Tax Engine, Orders & Invoicing, Security/RBAC.
+- **Affected Documents:** PRD §14, §15; Technical Architecture §14, §15, §18; Security & Access §18, §23; Frontend Specification §14.
+- **Affected Tickets:** `FEAT-ADJ-005`.
+- **Consequences:** Applied adjustments can now be safely, deterministically, and non-destructively reversed with full auditability and mathematical precision.
+
+---
+
 ## Open Decisions & TBD Register
 
 The following items are recognized as open client policy items and must remain configurable until confirmed:

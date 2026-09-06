@@ -116,5 +116,31 @@ class OrderAdjustmentPolicy
 
         return true;
     }
+
+    /**
+     * Determine whether the user can reverse a specific applied adjustment.
+     */
+    public function reverse(User $user, OrderAdjustment $adjustment, ?Order $order = null): bool
+    {
+        if (! $user->isActive()) {
+            return false;
+        }
+
+        if (! $this->permissionService->has($user, Permission::ORDER_ADJUST_REVERSE)) {
+            return false;
+        }
+
+        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+            return false;
+        }
+
+        // Maker-Checker: Requester cannot reverse their own request unless Super Admin emergency override
+        if ((int) $adjustment->requested_by === (int) $user->id) {
+            return $user->role === UserRole::SUPER_ADMIN;
+        }
+
+        return true;
+    }
 }
+
 

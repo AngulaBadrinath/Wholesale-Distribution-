@@ -821,6 +821,26 @@
 - [x] **Anti-IDOR Ownership Protection (404):** Mismatched `{order}` and `{adjustment}` IDs in route fails closed (`test_idor_mismatched_order_and_adjustment_fails`).
 - [x] **Direct PostgreSQL 18.6 Live Container Verification:** All PostgreSQL CHECK constraints (`chk_order_items_quantities`, `chk_order_items_progression`, `chk_order_item_allocations_quantities`, `chk_order_item_allocations_progression`) verified satisfied on live PostgreSQL 18.6 container without errors.
 
+### 1.10.6 Adjustment Reversal Engine (`ADJUSTMENT REVERSAL` / `FEAT-ADJ-005`)
+- [x] **Valid Case A Reversal:** Admin reverses applied Case A adjustment; `cancelled_quantity` decremented back to 0, `fulfillableQuantity()` restored to original ordered quantity, allocations untouched, line/order financials recalculated, version incremented (+1), `orders.adjustment_status = 'REVERSED'` (`AdminAdjustmentReversalTest::test_admin_can_reverse_case_a_adjustment`).
+- [x] **Valid Case B Reversal & Non-Destructive Forward Restoration Allocation:** Active allocation capacity restored via a brand new forward allocation row (`ALC-{order}-{item}-{seq}`) with `allocated_quantity = affected_quantity`, unpicked status, canonical sequence, and warehouse derived from historical allocations (`test_admin_can_reverse_case_b_adjustment_with_restoration_allocation`).
+- [x] **Historical RELEASED Row Immutability:** Pre-existing `RELEASED` allocation rows remain completely immutable, never deleted, and never altered back to `ALLOCATED` (`test_admin_can_reverse_case_b_adjustment_with_restoration_allocation`).
+- [x] **Zero / Low Reserved Quantity Math (No Fabricated Reservations):** Restored forward allocations initialize `reserved_quantity = 0`, strictly preserving $0 \le \text{reserved} \le \text{allocated}$ (`test_case_b_reversal_zero_reserved_source_case`).
+- [x] **Multi-Line Mixed Case A & Case B Reversal:** Multiple order lines with mixed Case A and Case B reductions reversed atomically, synchronizing line and order totals without rounding drift (`test_multi_line_mixed_case_a_and_case_b_reversal`).
+- [x] **Sequential Adjustments LIFO Reversal Success:** Multiple applied adjustments reversed in strict reverse-chronological order; `orders.adjustment_status` remains `APPLIED` until all are reversed (`test_sequential_adjustments_lifo_reversal_success`).
+- [x] **Duplicate Reversal Guard (409):** Reversing an already `REVERSED` adjustment rejected with 409 Conflict (`AdminAdjustmentReversalConflictTest::test_duplicate_reversal_rejected_with_409`).
+- [x] **Non-Applied Adjustment Status Guard (409):** Adjustments in `SUBMITTED`, `APPROVED`, `REJECTED`, or `CANCELLED` status rejected with 409 Conflict (`test_cannot_reverse_adjustment_with_invalid_status`).
+- [x] **Terminal Order Lifecycle Guard (409):** Orders in `CANCELLED` or `COMPLETED` lifecycle states reject reversals with 409 Conflict (`test_cannot_reverse_when_order_is_cancelled`, `test_cannot_reverse_when_order_is_completed`).
+- [x] **Fulfillment Progression Conflict Guard (409):** Orders progressed to `PACKED`, `DISPATCHED`, or `DELIVERED` reject reversals with 409 Conflict (`test_cannot_reverse_when_fulfillment_has_progressed`).
+- [x] **Out-of-Order LIFO Violation Guard (409):** Attempting to reverse an older adjustment while a newer applied adjustment is active rejects with 409 Conflict (`test_lifo_out_of_order_reversal_rejected_with_409`).
+- [x] **Transactional Atomicity & Rollback:** Mid-reversal constraint failure rolls back all database modifications completely (`test_all_or_nothing_atomicity_rollback_on_failure`).
+- [x] **RBAC Super Admin & Admin Reversal Success:** Super Admin and Admin authorized to reverse adjustments (`AdminAdjustmentReversalSecurityTest::test_super_admin_can_reverse_adjustment`, `test_admin_can_reverse_adjustment_requested_by_salesman`).
+- [x] **Maker-Checker Segregation of Duties (Admin Denied):** Admin attempting to reverse an adjustment they personally requested is rejected with 403 Forbidden (`test_maker_checker_admin_cannot_reverse_adjustment_they_personally_requested`).
+- [x] **Maker-Checker Super Admin Emergency Override:** Super Admin self-reversal permitted only with valid emergency override reason ($\ge 10$ chars) and logs `ADJUSTMENT_EMERGENCY_OVERRIDE` audit event (`test_maker_checker_super_admin_cannot_reverse_own_adjustment_without_emergency_override`, `test_maker_checker_super_admin_can_self_reverse_with_valid_emergency_override`).
+- [x] **RBAC Unauthorized Roles Denied (403):** Accountant, Salesman, Warehouse Manager, and Delivery Partner denied with 403 Forbidden.
+- [x] **Inactive Account Guard (302 Redirect):** Inactive/disabled administrators redirected to `/login` (`test_inactive_admin_cannot_reverse_adjustment`).
+- [x] **Anti-IDOR Ownership Protection (404):** Mismatched `{order}` and `{adjustment}` route parameters fail closed with 404 (`test_anti_idor_mismatched_order_in_route_returns_404`).
+
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
 - [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).

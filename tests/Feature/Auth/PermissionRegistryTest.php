@@ -121,12 +121,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 40 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 41 permissions.
      */
-    public function test_admin_has_exactly_the_intended_40_permissions(): void
+    public function test_admin_has_exactly_the_intended_41_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(40, $permissions);
+        $this->assertCount(41, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 
@@ -135,7 +135,6 @@ class PermissionRegistryTest extends TestCase
         $this->assertNotContains(Permission::PAYMENT_REVERSE->value, $permissionValues);
         $this->assertNotContains(Permission::ACCOUNTING_POST->value, $permissionValues);
         $this->assertNotContains(Permission::ACCOUNTING_REVERSE->value, $permissionValues);
-        $this->assertNotContains(Permission::ORDER_ADJUST_REVERSE->value, $permissionValues);
         $this->assertNotContains(Permission::RETURN_REQUEST->value, $permissionValues);
         $this->assertNotContains(Permission::REFUND_REQUEST->value, $permissionValues);
         $this->assertNotContains(Permission::INVENTORY_EXCEPTION_REPORT->value, $permissionValues);
@@ -144,6 +143,7 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains(Permission::ROLE_MANAGE->value, $permissionValues);
         $this->assertContains(Permission::ORDER_APPROVE->value, $permissionValues);
         $this->assertContains(Permission::ORDER_REJECT->value, $permissionValues);
+        $this->assertContains(Permission::ORDER_ADJUST_REVERSE->value, $permissionValues);
         $this->assertContains(Permission::PAYMENT_VERIFY->value, $permissionValues);
         $this->assertContains(Permission::USER_SUSPEND->value, $permissionValues);
         $this->assertContains(Permission::PRICING_OVERRIDE->value, $permissionValues);

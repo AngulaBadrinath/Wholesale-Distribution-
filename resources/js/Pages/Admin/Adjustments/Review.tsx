@@ -27,10 +27,12 @@ import {
     Info,
     X,
     Zap,
+    RotateCcw,
 } from 'lucide-react';
 import ApproveAdjustmentModal from './Partials/ApproveAdjustmentModal';
 import RejectAdjustmentModal from './Partials/RejectAdjustmentModal';
 import ApplyAdjustmentModal from './Partials/ApplyAdjustmentModal';
+import ReverseAdjustmentModal from './Partials/ReverseAdjustmentModal';
 
 interface AdjustmentReviewProps {
     adjustment: OrderAdjustmentReviewDetailData;
@@ -40,6 +42,7 @@ interface AdjustmentReviewProps {
         approve: boolean;
         reject: boolean;
         apply?: boolean;
+        reverse?: boolean;
         is_requester?: boolean;
         is_super_admin?: boolean;
     };
@@ -54,6 +57,7 @@ export default function AdjustmentReview({
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
 
     const toggleAllocationExpand = (itemId: number) => {
         setExpandedAllocations((prev) => ({
@@ -172,6 +176,28 @@ export default function AdjustmentReview({
                 );
 
             case 'TERMINAL_REQUEST':
+                if (adjustment.status === 'REVERSED') {
+                    return (
+                        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3 text-destructive">
+                            <RotateCcw className="h-5 w-5 shrink-0 mt-0.5 text-destructive" />
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-semibold text-foreground">Adjustment Reversed (Terminal)</h4>
+                                <p className="text-xs text-muted-foreground">
+                                    This adjustment was reversed on {adjustment.reversed_at_formatted ?? 'recently'}
+                                    {adjustment.reversed_by?.name ? ` by ${adjustment.reversed_by.name}` : ''}.
+                                    All original quantities and financial totals have been restored.
+                                </p>
+                                {adjustment.reversal_reason && (
+                                    <div className="text-xs text-foreground mt-1.5 bg-card/80 p-2.5 rounded-md border border-destructive/20 font-mono">
+                                        <span className="text-muted-foreground font-sans font-semibold">Reason: </span>
+                                        {adjustment.reversal_reason}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                }
+
                 return (
                     <div className="bg-muted border border-border rounded-lg p-4 flex items-start gap-3 text-muted-foreground">
                         <History className="h-5 w-5 shrink-0 mt-0.5" />
@@ -326,11 +352,37 @@ export default function AdjustmentReview({
                             )}
                         </div>
                     ) : adjustment.status === 'APPLIED' ? (
-                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-2 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-2 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>
+                                    Applied on <strong className="font-semibold">{adjustment.applied_at_formatted ?? 'recently'}</strong>
+                                    {adjustment.applied_by?.name ? ` by ${adjustment.applied_by.name}` : ''}.
+                                </span>
+                            </div>
+
+                            {can.reverse && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsReverseModalOpen(true)}
+                                    disabled={
+                                        evaluation.evaluation_status === 'INELIGIBLE_LIFECYCLE'
+                                    }
+                                    className="h-9 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 gap-1.5 font-medium"
+                                >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                    <span>Reverse Adjustment</span>
+                                </Button>
+                            )}
+                        </div>
+                    ) : adjustment.status === 'REVERSED' ? (
+                        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 px-3.5 py-2 rounded-lg text-xs text-destructive">
+                            <RotateCcw className="h-4 w-4 text-destructive shrink-0" />
                             <span>
-                                Applied on <strong className="font-semibold">{adjustment.applied_at_formatted ?? 'recently'}</strong>
-                                {adjustment.applied_by?.name ? ` by ${adjustment.applied_by.name}` : ''}.
+                                Reversed on <strong className="font-semibold">{adjustment.reversed_at_formatted ?? 'recently'}</strong>
+                                {adjustment.reversed_by?.name ? ` by ${adjustment.reversed_by.name}` : ''}.
                             </span>
                         </div>
                     ) : (
@@ -710,6 +762,21 @@ export default function AdjustmentReview({
                 totalAffectedAllocationQuantity={evaluation.total_affected_allocation_quantity}
                 projectedReductions={adjustment.projected_reductions}
                 onClose={() => setIsApplyModalOpen(false)}
+            />
+
+            {/* Reverse Modal */}
+            <ReverseAdjustmentModal
+                isOpen={isReverseModalOpen}
+                orderId={adjustment.order_id}
+                orderNumber={adjustment.order_number}
+                adjustmentId={adjustment.id}
+                adjustmentNumber={adjustment.adjustment_number}
+                hasAllocationImpact={evaluation.has_allocation_impact}
+                totalAffectedAllocationQuantity={evaluation.total_affected_allocation_quantity}
+                projectedReductions={adjustment.projected_reductions}
+                isRequester={!!can.is_requester}
+                isSuperAdmin={!!can.is_super_admin}
+                onClose={() => setIsReverseModalOpen(false)}
             />
         </AppLayout>
     );

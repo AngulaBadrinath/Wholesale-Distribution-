@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Adjustment\AdminAdjustmentQueueRequest;
 use App\Http\Requests\Adjustment\ApproveOrderAdjustmentRequest;
 use App\Http\Requests\Adjustment\RejectOrderAdjustmentRequest;
+use App\Http\Requests\Adjustment\ReverseOrderAdjustmentRequest;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderAdjustmentItem;
@@ -53,6 +54,7 @@ class AdminOrderAdjustmentController extends Controller
                 COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_count,
                 COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_count,
                 COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_count,
+                COUNT(CASE WHEN status = 'REVERSED' THEN 1 END) as reversed_count,
                 COUNT(*) as all_count
             ")
             ->first();
@@ -68,6 +70,7 @@ class AdminOrderAdjustmentController extends Controller
             'approved' => (int) ($countRow->approved_count ?? 0),
             'rejected' => (int) ($countRow->rejected_count ?? 0),
             'cancelled' => (int) ($countRow->cancelled_count ?? 0),
+            'reversed' => (int) ($countRow->reversed_count ?? 0),
             'all' => (int) ($countRow->all_count ?? 0),
         ];
 
@@ -240,6 +243,7 @@ class AdminOrderAdjustmentController extends Controller
             'requester:id,name,email,role',
             'reviewer:id,name,email',
             'canceller:id,name,email',
+            'reverser:id,name,email',
             'items' => fn ($q) => $q->orderBy('id', 'asc'),
             'items.orderItem' => fn ($q) => $q->with([
                 'allocations' => fn ($allocQ) => $allocQ->orderBy('id', 'asc'),
@@ -291,6 +295,13 @@ class AdminOrderAdjustmentController extends Controller
             ] : null,
             'cancelled_at' => $adjustment->cancelled_at?->toIso8601String(),
             'cancellation_reason' => $adjustment->cancellation_reason,
+            'reversed_by' => $adjustment->reverser ? [
+                'id' => $adjustment->reverser->id,
+                'name' => $adjustment->reverser->name,
+            ] : null,
+            'reversed_at' => $adjustment->reversed_at?->toIso8601String(),
+            'reversed_at_formatted' => $adjustment->reversed_at?->format('M d, Y H:i:s'),
+            'reversal_reason' => $adjustment->reversal_reason,
             'customer' => [
                 'id' => $order->customer->id,
                 'code' => $order->customer->code,
@@ -323,6 +334,7 @@ class AdminOrderAdjustmentController extends Controller
                 'approve' => $actor->can('approve', [$adjustment, $order]),
                 'reject' => $actor->can('reject', [$adjustment, $order]),
                 'apply' => $actor->can('apply', [$adjustment, $order]),
+                'reverse' => $actor->can('reverse', [$adjustment, $order]),
                 'is_requester' => (int) $adjustment->requested_by === (int) $actor->id,
                 'is_super_admin' => $actor->isSuperAdmin(),
             ],
@@ -426,5 +438,39 @@ class AdminOrderAdjustmentController extends Controller
                 'adjustment' => $adjustment->id,
             ])
             ->with('success', "Adjustment {$appliedAdjustment->adjustment_number} has been applied successfully.");
+    }
+
+    /**
+     * Authoritatively reverse an applied order adjustment request.
+     */
+    public function reverse(
+        ReverseOrderAdjustmentRequest $request,
+        Order $order,
+        OrderAdjustment $adjustment
+    ): RedirectResponse {
+        $actor = $request->user();
+
+        // Mismatched Order/Adjustment IDOR Guard
+        if ((int) $adjustment->order_id !== (int) $order->id) {
+            abort(404, 'Adjustment request does not belong to the specified order.');
+        }
+
+        Gate::authorize('reverse', [$adjustment, $order]);
+
+        $reversedAdjustment = $this->workflowService->reverseAdjustment(
+            $actor,
+            $order,
+            $adjustment,
+            $request->validated('reason'),
+            $request->validated(),
+            $request->ip()
+        );
+
+        return redirect()
+            ->route('admin.orders.adjustments.review', [
+                'order' => $order->id,
+                'adjustment' => $adjustment->id,
+            ])
+            ->with('success', "Adjustment {$reversedAdjustment->adjustment_number} has been reversed successfully.");
     }
 }

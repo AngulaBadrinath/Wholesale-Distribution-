@@ -908,5 +908,469 @@ class OrderAdjustmentWorkflowService
             'timestamp' => Carbon::now()->toIso8601String(),
         ]);
     }
+
+    /**
+     * Authoritatively reverse an applied order adjustment request.
+     * Executes within DB::transaction(..., 3) with deterministic lock ordering:
+     * 1. orders (Root lock)
+     * 2. order_items ASC
+     * 3. order_item_allocations ASC
+     * 4. order_adjustments row
+     *
+     * Invariants:
+     * - Only APPLIED -> REVERSED transition allowed.
+     * - Live revalidation of order lifecycle, fulfillable quantities, and LIFO sequential constraints.
+     * - Case A: decrements cancelled_quantity, increases unallocated headroom, recalculates financials.
+     * - Case B: creates new forward restoration allocation row under locked OrderItem boundary,
+     *   preserves historical RELEASED rows intact, resyncs rollups, decrements cancelled_quantity, recalculates financials.
+     * - Recalculates order subtotal, tax_total, grand_total, and decrements adjustment_total.
+     * - Increments orders.version exactly once.
+     * - Sets orders.adjustment_status = REVERSED (or APPLIED if earlier adjustment remains applied).
+     * - All-or-nothing atomicity: any line failure aborts the entire transaction.
+     * - Emits structured observability events post-commit.
+     *
+     * @param  array<string, mixed>  $options
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws ValidationException
+     * @throws NotFoundHttpException
+     */
+    public function reverseAdjustment(
+        User $actor,
+        Order $order,
+        OrderAdjustment $adjustment,
+        string $reason,
+        array $options = [],
+        ?string $clientIp = null
+    ): OrderAdjustment {
+        // 1. Pre-transaction authorization checks
+        if (! $actor->isActive()) {
+            throw new AuthorizationException('Your account is not active.');
+        }
+
+        $this->permissionService->authorize($actor, Permission::ORDER_ADJUST_REVERSE);
+
+        // Pre-transaction IDOR guard
+        if ((int) $adjustment->order_id !== (int) $order->id) {
+            throw new NotFoundHttpException('Adjustment request does not belong to the specified order.');
+        }
+
+        $validatedReason = trim($reason);
+        if (mb_strlen($validatedReason) < 10 || mb_strlen($validatedReason) > 1000) {
+            throw ValidationException::withMessages([
+                'reason' => 'Reversal reason must be between 10 and 1000 characters.',
+            ]);
+        }
+
+        $isEmergencyOverride = false;
+        $overrideReason = null;
+        $restoredAllocationsLog = [];
+        $totalUnitsRestored = 0;
+        $financialDeltaLog = [];
+
+        /** @var OrderAdjustment $reversedAdjustment */
+        $reversedAdjustment = DB::transaction(function () use (
+            $actor,
+            $order,
+            $adjustment,
+            $validatedReason,
+            $options,
+            $clientIp,
+            &$isEmergencyOverride,
+            &$overrideReason,
+            &$restoredAllocationsLog,
+            &$totalUnitsRestored,
+            &$financialDeltaLog
+        ) {
+            // 1. Lock orders (Root lock)
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->firstOrFail();
+
+            // 2. Lock order_items in deterministic ASC order
+            $lockedItems = OrderItem::where('order_id', $lockedOrder->id)
+                ->lockForUpdate()
+                ->orderBy('id', 'asc')
+                ->with('product')
+                ->get();
+            $lockedItemsById = $lockedItems->keyBy('id');
+
+            // 3. Lock order_item_allocations in deterministic ASC order
+            OrderItemAllocation::where('order_id', $lockedOrder->id)
+                ->lockForUpdate()
+                ->orderBy('id', 'asc')
+                ->get();
+
+            // 4. Lock order_adjustments row
+            /** @var OrderAdjustment $lockedAdjustment */
+            $lockedAdjustment = OrderAdjustment::where('id', $adjustment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Re-verify IDOR under lock
+            if ((int) $lockedAdjustment->order_id !== (int) $lockedOrder->id) {
+                throw new NotFoundHttpException('Adjustment request does not belong to the specified order.');
+            }
+
+            // 5. Maker-Checker Segregation of Duties
+            $isSelfDecision = ((int) $lockedAdjustment->requested_by === (int) $actor->id);
+            if ($isSelfDecision) {
+                if ($actor->role !== UserRole::SUPER_ADMIN) {
+                    throw new AuthorizationException(
+                        'Segregation of duties violation: You cannot reverse an adjustment request that you personally submitted.'
+                    );
+                }
+
+                $rawOverride = $options['emergency_override_reason'] ?? null;
+                $overrideReason = is_string($rawOverride) ? trim($rawOverride) : '';
+
+                if (mb_strlen($overrideReason) < 10 || mb_strlen($overrideReason) > 1000) {
+                    throw ValidationException::withMessages([
+                        'emergency_override_reason' => 'Super Admin self-reversal requires an emergency override reason between 10 and 1000 characters.',
+                    ]);
+                }
+
+                $isEmergencyOverride = true;
+            }
+
+            // 6. State Machine Guard: Only APPLIED -> REVERSED is valid.
+            if ($lockedAdjustment->status === OrderAdjustmentStatus::REVERSED) {
+                throw new ConflictHttpException(
+                    "Adjustment {$lockedAdjustment->adjustment_number} has already been reversed."
+                );
+            }
+
+            if ($lockedAdjustment->status !== OrderAdjustmentStatus::APPLIED) {
+                throw new ConflictHttpException(
+                    "Cannot reverse adjustment {$lockedAdjustment->adjustment_number}: status is '{$lockedAdjustment->status->label()}', expected 'Applied'."
+                );
+            }
+
+            // 7. Sequential Adjustments / Strict LIFO Guard
+            // Target adjustment must be the latest still-active applied adjustment for this order.
+            $hasSubsequentApplied = OrderAdjustment::where('order_id', $lockedOrder->id)
+                ->where('id', '!=', $lockedAdjustment->id)
+                ->where('status', OrderAdjustmentStatus::APPLIED)
+                ->where(function ($q) use ($lockedAdjustment) {
+                    $q->where('applied_at', '>', $lockedAdjustment->applied_at)
+                        ->orWhere(function ($tieQ) use ($lockedAdjustment) {
+                            $tieQ->where('applied_at', '=', $lockedAdjustment->applied_at)
+                                ->where('id', '>', $lockedAdjustment->id);
+                        });
+                })
+                ->exists();
+
+            if ($hasSubsequentApplied) {
+                $blockReason = "Cannot reverse adjustment {$lockedAdjustment->adjustment_number}: A subsequent adjustment has been applied to this order. Adjustments must be reversed in reverse chronological (LIFO) order.";
+                $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                throw new ConflictHttpException($blockReason);
+            }
+
+            // 8. Order Lifecycle Check
+            $eligibleStatuses = [
+                OrderStatus::APPROVED,
+                OrderStatus::PROCESSING,
+            ];
+            if (! in_array($lockedOrder->status, $eligibleStatuses, true)) {
+                $blockReason = "Order {$lockedOrder->order_number} has transitioned to '{$lockedOrder->status->label()}', which does not permit adjustment reversals.";
+                $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                throw new ConflictHttpException("Cannot reverse adjustment: {$blockReason}");
+            }
+
+            // 9. Fulfillment Progression Guard
+            $ineligibleFulfillment = [
+                \App\Enums\FulfillmentStatus::PACKED,
+                \App\Enums\FulfillmentStatus::DISPATCHED,
+                \App\Enums\FulfillmentStatus::DELIVERED,
+                \App\Enums\FulfillmentStatus::PARTIALLY_DELIVERED,
+            ];
+            if ($lockedOrder->fulfillment_status && in_array($lockedOrder->fulfillment_status, $ineligibleFulfillment, true)) {
+                $blockReason = "Order {$lockedOrder->order_number} has advanced to fulfillment stage '{$lockedOrder->fulfillment_status->label()}', which prevents commercial item restoration.";
+                $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                throw new ConflictHttpException("Cannot reverse adjustment: {$blockReason}");
+            }
+
+            // 10. Load adjustment line items
+            $adjItems = $lockedAdjustment->items()->orderBy('id', 'asc')->get();
+            if ($adjItems->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'adjustment' => 'Adjustment must contain at least one line item to reverse.',
+                ]);
+            }
+
+            // 11. AUTHORITATIVE PRE-VALIDATION: Validate ALL lines before mutating ANY record (All-or-Nothing)
+            foreach ($adjItems as $adjItem) {
+                /** @var OrderItem|null $item */
+                $item = $lockedItemsById->get($adjItem->order_item_id);
+                if (! $item) {
+                    $blockReason = "Order item #{$adjItem->order_item_id} does not exist on order {$lockedOrder->order_number}.";
+                    $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                    throw new ConflictHttpException("Cannot reverse adjustment: {$blockReason}");
+                }
+
+                $reduction = (int) $adjItem->requested_quantity_reduction;
+                if ($reduction <= 0) {
+                    throw ValidationException::withMessages([
+                        'requested_quantity_reduction' => "Requested quantity reduction must be positive for line item #{$item->id}.",
+                    ]);
+                }
+
+                // Conservation check: cannot restore more cancelled units than currently recorded as cancelled
+                if ($item->cancelled_quantity < $reduction) {
+                    $blockReason = "Line item #{$item->id} cancelled quantity ({$item->cancelled_quantity}) is less than the adjustment reduction ({$reduction}).";
+                    $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                    throw new ConflictHttpException("Cannot reverse adjustment: {$blockReason}");
+                }
+
+                // Case B check: if affected_allocation_quantity > 0, verify unallocated headroom
+                $affectedAllocation = (int) $adjItem->affected_allocation_quantity;
+                if ($affectedAllocation > 0) {
+                    $newFulfillable = $item->fulfillableQuantity() + $reduction;
+                    $currentAllocated = $item->allocatedQuantity();
+                    if (($currentAllocated + $affectedAllocation) > $newFulfillable) {
+                        $blockReason = "Restoring {$affectedAllocation} allocated units for line item #{$item->id} would exceed the restored fulfillable quantity ({$newFulfillable}).";
+                        $this->logReversalBlocked($lockedAdjustment, $lockedOrder, $actor, $blockReason, $clientIp);
+                        throw new ConflictHttpException("Cannot reverse adjustment: {$blockReason}");
+                    }
+                }
+            }
+
+            // 12. EXECUTE ATOMIC MUTATIONS FOR EACH LINE
+            foreach ($adjItems as $adjItem) {
+                /** @var OrderItem $item */
+                $item = $lockedItemsById->get($adjItem->order_item_id);
+                $reduction = (int) $adjItem->requested_quantity_reduction;
+                $affectedAllocation = (int) $adjItem->affected_allocation_quantity;
+
+                // 1. Decrement cancelled_quantity (authoritatively restores fulfillable quantity)
+                $item->cancelled_quantity -= $reduction;
+                $totalUnitsRestored += $reduction;
+                $item->save();
+
+                // 2. Case B: Create forward restoration allocation record
+                if ($affectedAllocation > 0) {
+                    // Derive authoritative warehouse_code from historical released row for this adjustment
+                    $releasedAlloc = OrderItemAllocation::where('order_item_id', $item->id)
+                        ->where('status', AllocationStatus::RELEASED)
+                        ->where('notes', 'like', "%{$lockedAdjustment->adjustment_number}%")
+                        ->orderBy('id', 'desc')
+                        ->first();
+
+                    $warehouseCode = $releasedAlloc?->warehouse_code ?: 'MAIN';
+
+                    // Generate next deterministic sequence under locked OrderItem boundary
+                    $orderNumClean = $lockedOrder->order_number ?: 'ORD-' . $lockedOrder->id;
+                    $maxSeq = OrderItemAllocation::where('order_item_id', $item->id)
+                        ->pluck('allocation_number')
+                        ->map(function ($num) {
+                            if (preg_match('/-(\d+)$/', (string) $num, $matches)) {
+                                return (int) $matches[1];
+                            }
+                            return 0;
+                        })
+                        ->max() ?? 0;
+
+                    $nextSeq = sprintf('%02d', $maxSeq + 1);
+                    $restorationAllocNumber = "ALC-{$orderNumClean}-{$item->id}-{$nextSeq}";
+
+                    // Forward restoration allocation:
+                    // Invariant: 0 <= reserved_quantity <= allocated_quantity.
+                    // Setting reserved_quantity = 0 prevents fabricating unverified reservation capacity.
+                    $restorationAlloc = OrderItemAllocation::create([
+                        'allocation_number' => $restorationAllocNumber,
+                        'order_id' => $lockedOrder->id,
+                        'order_item_id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'allocated_quantity' => $affectedAllocation,
+                        'reserved_quantity' => 0,
+                        'picked_quantity' => 0,
+                        'dispatched_quantity' => 0,
+                        'delivered_quantity' => 0,
+                        'returned_quantity' => 0,
+                        'status' => AllocationStatus::ALLOCATED,
+                        'warehouse_code' => $warehouseCode,
+                        'notes' => "Restoration allocation of {$affectedAllocation} units via reversed adjustment {$lockedAdjustment->adjustment_number}",
+                        'allocated_by' => $actor->id,
+                        'allocated_at' => Carbon::now(),
+                    ]);
+
+                    $restoredAllocationsLog[] = [
+                        'order_item_id' => $item->id,
+                        'allocation_id' => $restorationAlloc->id,
+                        'allocation_number' => $restorationAlloc->allocation_number,
+                        'restored_quantity' => $affectedAllocation,
+                        'warehouse_code' => $warehouseCode,
+                    ];
+                }
+
+                // 3. Synchronize line item rollups authoritatively from active allocations
+                $this->allocationService->syncOrderItemRollups($item);
+
+                // 4. Authoritatively recalculate line financials from restored fulfillable quantity
+                $newFulfillable = $item->fulfillableQuantity();
+                if ($newFulfillable > 0) {
+                    $lineTaxResult = $this->taxCalculationService->calculateLineTax(
+                        $item->product,
+                        $item->unit_price,
+                        $newFulfillable
+                    );
+
+                    $item->taxable_amount = $lineTaxResult->taxableAmount;
+                    $item->tax_amount = $lineTaxResult->taxAmount;
+                    $item->line_total = $lineTaxResult->lineTotal;
+                } else {
+                    $item->taxable_amount = '0.00';
+                    $item->tax_amount = '0.00';
+                    $item->line_total = '0.00';
+                }
+                $item->save();
+
+                // 5. Validate line conservation and progression constraints
+                $this->allocationValidator->validateItemConservation($item);
+            }
+
+            // 13. AUTHORITATIVE ORDER TOTALS RECALCULATION
+            $allOrderItems = OrderItem::where('order_id', $lockedOrder->id)->get();
+            $orderSubtotal = '0.00';
+            $orderTaxTotal = '0.00';
+            $orderGrandTotal = '0.00';
+
+            foreach ($allOrderItems as $itm) {
+                $orderSubtotal = bcadd($orderSubtotal, (string) $itm->taxable_amount, 2);
+                $orderTaxTotal = bcadd($orderTaxTotal, (string) $itm->tax_amount, 2);
+                $orderGrandTotal = bcadd($orderGrandTotal, (string) $itm->line_total, 2);
+            }
+
+            $oldSubtotal = (string) $lockedOrder->subtotal;
+            $oldTaxTotal = (string) $lockedOrder->tax_total;
+            $oldGrandTotal = (string) $lockedOrder->grand_total;
+            $oldAdjustmentTotal = (string) $lockedOrder->adjustment_total;
+
+            $lockedOrder->subtotal = $orderSubtotal;
+            $lockedOrder->tax_total = $orderTaxTotal;
+            $lockedOrder->grand_total = $orderGrandTotal;
+
+            // Decrement adjustment total by the reversed adjustment's grand total reduction
+            $reduction = (string) $lockedAdjustment->projected_grand_total_reduction;
+            $newAdjustmentTotal = bcsub($oldAdjustmentTotal, $reduction, 2);
+            if (bccomp($newAdjustmentTotal, '0.00', 2) < 0) {
+                $newAdjustmentTotal = '0.00';
+            }
+            $lockedOrder->adjustment_total = $newAdjustmentTotal;
+
+            // 14. UPDATE ORDER STATE & VERSION
+            $hasPriorApplied = OrderAdjustment::where('order_id', $lockedOrder->id)
+                ->where('id', '!=', $lockedAdjustment->id)
+                ->where('status', OrderAdjustmentStatus::APPLIED)
+                ->exists();
+
+            $lockedOrder->adjustment_status = $hasPriorApplied ? AdjustmentStatus::APPLIED : AdjustmentStatus::REVERSED;
+            $lockedOrder->version = (int) $lockedOrder->version + 1;
+            $lockedOrder->save();
+
+            // 15. UPDATE ADJUSTMENT STATE
+            $lockedAdjustment->status = OrderAdjustmentStatus::REVERSED;
+            $lockedAdjustment->reversed_at = Carbon::now();
+            $lockedAdjustment->reversed_by = $actor->id;
+            $lockedAdjustment->reversal_reason = $validatedReason;
+            $lockedAdjustment->save();
+
+            $financialDeltaLog = [
+                'old_subtotal' => $oldSubtotal,
+                'new_subtotal' => $orderSubtotal,
+                'old_tax_total' => $oldTaxTotal,
+                'new_tax_total' => $orderTaxTotal,
+                'old_grand_total' => $oldGrandTotal,
+                'new_grand_total' => $orderGrandTotal,
+                'old_adjustment_total' => $oldAdjustmentTotal,
+                'new_adjustment_total' => (string) $lockedOrder->adjustment_total,
+            ];
+
+            return $lockedAdjustment->load(['order', 'items', 'reviewer', 'requester', 'reverser']);
+        }, 3);
+
+        // 16. POST-COMMIT OBSERVABILITY LOGGING
+        Log::info('commerce.order_adjustment_event', [
+            'action' => 'ADJUSTMENT_REVERSED',
+            'adjustment_id' => $reversedAdjustment->id,
+            'adjustment_number' => $reversedAdjustment->adjustment_number,
+            'order_id' => $reversedAdjustment->order_id,
+            'order_number' => $reversedAdjustment->order_number_snapshot,
+            'actor_id' => $actor->id,
+            'actor_name' => $actor->name,
+            'actor_role' => $actor->role->value,
+            'reversal_reason' => $validatedReason,
+            'is_emergency_override' => $isEmergencyOverride,
+            'override_reason' => $overrideReason,
+            'total_units_restored' => $totalUnitsRestored,
+            'financial_deltas' => $financialDeltaLog,
+            'restored_allocations' => $restoredAllocationsLog,
+            'ip_address' => $clientIp,
+            'timestamp' => Carbon::now()->toIso8601String(),
+        ]);
+
+        if (! empty($restoredAllocationsLog)) {
+            Log::info('commerce.order_adjustment_event', [
+                'action' => 'ALLOCATION_RESTORED',
+                'order_id' => $reversedAdjustment->order_id,
+                'adjustment_id' => $reversedAdjustment->id,
+                'restored_allocations' => $restoredAllocationsLog,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+        }
+
+        Log::info('commerce.order_adjustment_event', [
+            'action' => 'ORDER_FINANCIALS_RECALCULATED',
+            'order_id' => $reversedAdjustment->order_id,
+            'adjustment_id' => $reversedAdjustment->id,
+            'financials' => $financialDeltaLog,
+            'timestamp' => Carbon::now()->toIso8601String(),
+        ]);
+
+        if ($isEmergencyOverride) {
+            Log::info('commerce.order_adjustment_event', [
+                'action' => 'ADJUSTMENT_EMERGENCY_OVERRIDE',
+                'adjustment_id' => $reversedAdjustment->id,
+                'adjustment_number' => $reversedAdjustment->adjustment_number,
+                'order_id' => $reversedAdjustment->order_id,
+                'order_number' => $reversedAdjustment->order_number_snapshot,
+                'actor_id' => $actor->id,
+                'actor_name' => $actor->name,
+                'actor_role' => $actor->role->value,
+                'override_reason' => $overrideReason,
+                'decision' => 'REVERSED',
+                'ip_address' => $clientIp,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+        }
+
+        return $reversedAdjustment;
+    }
+
+    /**
+     * Helper to log blocked reversal attempts for audit/observability.
+     */
+    protected function logReversalBlocked(
+        OrderAdjustment $adjustment,
+        Order $order,
+        User $actor,
+        string $reason,
+        ?string $clientIp
+    ): void {
+        Log::warning('commerce.order_adjustment_event', [
+            'action' => 'ADJUSTMENT_REVERSAL_BLOCKED',
+            'adjustment_id' => $adjustment->id,
+            'adjustment_number' => $adjustment->adjustment_number,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'actor_id' => $actor->id,
+            'actor_name' => $actor->name,
+            'actor_role' => $actor->role->value,
+            'reason' => $reason,
+            'ip_address' => $clientIp,
+            'timestamp' => Carbon::now()->toIso8601String(),
+        ]);
+    }
 }
+
 

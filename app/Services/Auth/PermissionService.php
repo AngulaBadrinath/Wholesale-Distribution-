@@ -194,6 +194,7 @@ class PermissionService
                 Permission::ORDER_ADJUST_REVIEW,
                 Permission::ORDER_ADJUST_APPROVE,
                 Permission::ORDER_ADJUST_APPLY,
+                Permission::ORDER_ADJUST_REVERSE,
 
                 // Payment
                 Permission::PAYMENT_VIEW,

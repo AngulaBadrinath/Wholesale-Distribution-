@@ -563,6 +563,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-016: Adjustment Reversal Engine & Non-Destructive Forward Restoration (FEAT-ADJ-005)
+- **Change ID:** `CHANGE-016`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement authoritative, atomic, and non-destructive reversal of applied order adjustments with strict LIFO order enforcement, zero fabricated reservations, historical `RELEASED` allocation immutability, and full financial and quantity restoration.
+- **Reason:** Once an adjustment has been applied, customer business circumstances or warehouse restocking may require reversing the quantity reduction without corrupting historical records, violating quantity conservation, or causing rounding drift.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (High-Risk Transactional Integrity)
+- **Affected PRD Requirements:** §14, §15.
+- **Affected Architecture:** Technical Architecture §14, §15, §18.
+- **Affected Security:** Security & Access §18, §23; RBAC `Permission::ORDER_ADJUST_REVERSE` authorized for Super Admin and Admin; maker-checker segregation enforced.
+- **Affected Frontend:** `resources/js/Pages/Admin/Adjustments/Review.tsx`, `resources/js/Pages/Admin/Adjustments/Partials/ReverseAdjustmentModal.tsx`, `resources/js/types/order.ts`.
+- **Affected Tickets:** `FEAT-ADJ-005` completed. Unlocks `FEAT-ADJ-006: Admin Adjustment & Exception Processing Queue`.
+- **Inventory Impact:** Zero physical warehouse ledgering (Phase 06 inventory deferred to `FEAT-INV-001..004`). Forward restoration allocation records created (`ALC-{order}-{item}-{seq}`) with `allocated_quantity = affected_allocation_quantity`, `reserved_quantity = 0` (no fabricated reservation state), and warehouse code authoritatively derived from historical allocation records.
+- **Order Impact:** Orders atomically mutated: `orders.version += 1`, `orders.adjustment_status = 'REVERSED'` (or `'APPLIED'` if an earlier adjustment remains applied), `orders.subtotal`, `orders.tax_total`, and `orders.grand_total` recalculated authoritatively across lines, and `orders.adjustment_total` decremented via BCMath. Items updated with non-destructive quantity conservation (`cancelled_quantity -= R`, `fulfillableQuantity()` restored, `ordered_quantity` immutable).
+- **Payment Impact:** None.
+- **Tax Impact:** Line taxable amount, tax amount, and line totals recalculated authoritatively using `TaxCalculationService::calculateLineTax` with historical snapshot pricing. Historical tax snapshots (`tax_rate_snapshot`, `tax_profile_id`) preserved intact.
+- **Accounting Impact:** None (GL journal entries and credit notes deferred to Phase 07/09).
+- **Data Migration Impact:** Migration `2026_09_06_000001_add_reversal_columns_to_order_adjustments_table.php` added nullable `reversed_by` foreign key to `users` (`nullOnDelete()`) and nullable `reversal_reason` text column.
+- **Testing Impact:** Added 24 automated tests across `AdminAdjustmentReversalTest.php`, `AdminAdjustmentReversalSecurityTest.php`, and `AdminAdjustmentReversalConflictTest.php`. Verified directly against PostgreSQL 18 container. Full repository test suite at 939 tests (932 passed, 5,982 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-005`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

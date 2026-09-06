@@ -48,6 +48,8 @@ class OrderAdjustment extends Model
         'cancellation_reason',
         'applied_at',
         'reversed_at',
+        'reversed_by',
+        'reversal_reason',
         'projected_subtotal_reduction',
         'projected_tax_reduction',
         'projected_grand_total_reduction',
@@ -79,6 +81,7 @@ class OrderAdjustment extends Model
         'requested_by' => 'integer',
         'reviewed_by' => 'integer',
         'cancelled_by' => 'integer',
+        'reversed_by' => 'integer',
     ];
 
     /**
@@ -132,11 +135,29 @@ class OrderAdjustment extends Model
     }
 
     /**
+     * Get the administrative user who reversed this applied adjustment.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function reverser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reversed_by');
+    }
+
+    /**
      * Determine if this adjustment is in SUBMITTED status.
      */
     public function isSubmitted(): bool
     {
         return $this->status === OrderAdjustmentStatus::SUBMITTED;
+    }
+
+    /**
+     * Determine if this adjustment is in REVERSED status.
+     */
+    public function isReversed(): bool
+    {
+        return $this->status === OrderAdjustmentStatus::REVERSED;
     }
 
     /**
@@ -149,3 +170,4 @@ class OrderAdjustment extends Model
             : in_array($this->status, [OrderAdjustmentStatus::REJECTED->value, OrderAdjustmentStatus::CANCELLED->value, OrderAdjustmentStatus::REVERSED->value], true);
     }
 }
+
