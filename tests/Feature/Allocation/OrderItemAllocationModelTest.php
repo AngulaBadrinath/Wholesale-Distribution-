@@ -13,6 +13,7 @@ use App\Enums\TaxProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\InventoryBalance;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemAllocation;
@@ -124,6 +125,12 @@ class OrderItemAllocationModelTest extends TestCase
             'status' => ProductStatus::ACTIVE,
             'unit' => 'BAG',
         ]);
+
+        InventoryBalance::whereIn('product_id', [$this->productA->id, $this->productB->id])
+            ->update([
+                'on_hand_quantity' => 100,
+                'available_quantity' => 100,
+            ]);
     }
 
     protected function createOrderWithItems(

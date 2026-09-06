@@ -7,8 +7,10 @@ use App\Enums\AllocationStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\StockStatus;
+use App\Exceptions\Inventory\InsufficientStockException;
 use App\Models\Category;
 use App\Models\InventoryBalance;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemAllocation;
 use App\Models\Product;
@@ -117,6 +119,173 @@ class InventoryService
 
         return $balance->available_quantity >= $requiredQuantity;
     }
+
+    /**
+     * Authoritatively reserve physical inventory for an order inside an active DB transaction.
+     * Pessimistic row locking is acquired in deterministic ascending ID order on inventory_balances.
+     *
+     * @return array<int, InventoryBalance> Map of product_id => updated InventoryBalance
+     *
+     * @throws InsufficientStockException
+     * @throws ValidationException
+     */
+    public function reserveStockForOrder(Order $order, User $actor, ?int $warehouseId = null): array
+    {
+        $warehouse = $warehouseId
+            ? Warehouse::findOrFail($warehouseId)
+            : (Warehouse::getDefault() ?: Warehouse::firstOrFail());
+
+        // Extract order items that require fulfillment
+        $items = $order->items()->orderBy('id', 'asc')->get();
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages([
+                'order' => 'Order contains no items to reserve.',
+            ]);
+        }
+
+        // Calculate fulfillable demand per product ID
+        $productDemand = [];
+        $productSkus = [];
+        foreach ($items as $item) {
+            $fulfillable = $item->fulfillableQuantity();
+            if ($fulfillable > 0) {
+                $productDemand[$item->product_id] = ($productDemand[$item->product_id] ?? 0) + $fulfillable;
+                $productSkus[$item->product_id] = $item->sku_snapshot;
+            }
+        }
+
+        if (empty($productDemand)) {
+            return [];
+        }
+
+        $productIds = array_keys($productDemand);
+        sort($productIds, SORT_NUMERIC);
+
+        // Deterministically acquire pessimistic row locks in ascending ID order
+        $balances = $this->lockBalancesForUpdate($warehouse->id, $productIds);
+        $balancesByProduct = $balances->keyBy('product_id');
+
+        // Phase 1: Authoritative Pre-validation across all lines
+        foreach ($productDemand as $productId => $requiredQuantity) {
+            /** @var InventoryBalance|null $balance */
+            $balance = $balancesByProduct->get($productId);
+            $sku = $productSkus[$productId] ?? "PROD-{$productId}";
+
+            if (! $balance) {
+                throw new InsufficientStockException(
+                    productId: $productId,
+                    sku: $sku,
+                    requestedQuantity: $requiredQuantity,
+                    availableQuantity: 0,
+                    warehouseId: $warehouse->id,
+                    message: "No inventory balance found for SKU [{$sku}] at warehouse [{$warehouse->code}]. Available: 0, Requested: {$requiredQuantity}."
+                );
+            }
+
+            if ($balance->available_quantity < $requiredQuantity) {
+                throw new InsufficientStockException(
+                    productId: $productId,
+                    sku: $sku,
+                    requestedQuantity: $requiredQuantity,
+                    availableQuantity: $balance->available_quantity,
+                    warehouseId: $warehouse->id,
+                    message: "Insufficient physical stock for SKU [{$sku}] at warehouse [{$warehouse->code}]. Available: {$balance->available_quantity}, Requested: {$requiredQuantity}."
+                );
+            }
+        }
+
+        // Phase 2: Authoritative Atomic Mutation
+        $updatedBalances = [];
+        foreach ($productDemand as $productId => $requiredQuantity) {
+            /** @var InventoryBalance $balance */
+            $balance = $balancesByProduct->get($productId);
+
+            $balance->reserved_quantity += $requiredQuantity;
+            $balance->available_quantity = $balance->calculateAvailableQuantity();
+            $balance->version += 1;
+            $balance->save();
+
+            $updatedBalances[$productId] = $balance;
+        }
+
+        return $updatedBalances;
+    }
+
+    /**
+     * Authoritatively release physical inventory reservation for an order inside an active DB transaction.
+     * Pessimistic row locking is acquired in deterministic ascending ID order on inventory_balances.
+     *
+     * @param  array<int, int>|null  $itemQuantities  Optional map of order_item_id => quantityToRelease
+     * @return array<int, InventoryBalance> Map of product_id => updated InventoryBalance
+     */
+    public function releaseStockForOrder(Order $order, User $actor, ?int $warehouseId = null, ?array $itemQuantities = null): array
+    {
+        $warehouse = $warehouseId
+            ? Warehouse::findOrFail($warehouseId)
+            : (Warehouse::getDefault() ?: Warehouse::firstOrFail());
+
+        $items = $order->items()->orderBy('id', 'asc')->get();
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $productReleases = [];
+        foreach ($items as $item) {
+            $releaseQty = $itemQuantities !== null
+                ? ($itemQuantities[$item->id] ?? 0)
+                : $item->reserved_quantity;
+
+            if ($releaseQty > 0) {
+                $productReleases[$item->product_id] = ($productReleases[$item->product_id] ?? 0) + $releaseQty;
+            }
+        }
+
+        if (empty($productReleases)) {
+            return [];
+        }
+
+        $productIds = array_keys($productReleases);
+        sort($productIds, SORT_NUMERIC);
+
+        $balances = $this->lockBalancesForUpdate($warehouse->id, $productIds);
+        $balancesByProduct = $balances->keyBy('product_id');
+
+        $updatedBalances = [];
+        foreach ($productReleases as $productId => $qtyToRelease) {
+            /** @var InventoryBalance|null $balance */
+            $balance = $balancesByProduct->get($productId);
+            if (! $balance) {
+                continue;
+            }
+
+            $actualRelease = min($balance->reserved_quantity, $qtyToRelease);
+            if ($actualRelease <= 0) {
+                continue;
+            }
+
+            $balance->reserved_quantity = max(0, $balance->reserved_quantity - $actualRelease);
+            $balance->available_quantity = $balance->calculateAvailableQuantity();
+            $balance->version += 1;
+            $balance->save();
+
+            $updatedBalances[$productId] = $balance;
+        }
+
+        // Update item reserved quantities
+        foreach ($items as $item) {
+            $releaseQty = $itemQuantities !== null
+                ? ($itemQuantities[$item->id] ?? 0)
+                : $item->reserved_quantity;
+
+            if ($releaseQty > 0) {
+                $item->reserved_quantity = max(0, $item->reserved_quantity - $releaseQty);
+                $item->save();
+            }
+        }
+
+        return $updatedBalances;
+    }
+
 
     /**
      * Retrieve aggregate stock status counts for operational dashboard widgets.

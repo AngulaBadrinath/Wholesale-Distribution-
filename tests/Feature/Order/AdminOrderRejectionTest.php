@@ -12,6 +12,7 @@ use App\Enums\TaxProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\InventoryBalance;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -127,6 +128,12 @@ class AdminOrderRejectionTest extends TestCase
             'status' => ProductStatus::ACTIVE,
             'unit' => 'CASE',
         ]);
+
+        InventoryBalance::where('product_id', $this->productA->id)
+            ->update([
+                'on_hand_quantity' => 100,
+                'available_quantity' => 100,
+            ]);
     }
 
     protected function createSubmittedOrder(array $overrides = []): Order

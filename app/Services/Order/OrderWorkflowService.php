@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderItemAllocation;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
+use App\Services\Inventory\InventoryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -24,12 +25,13 @@ class OrderWorkflowService
 {
     public function __construct(
         protected PermissionService $permissionService,
+        protected InventoryService $inventoryService,
     ) {}
 
     /**
      * Authoritatively approve an eligible order.
      * Executes inside a PostgreSQL transaction with deterministic pessimistic row locking:
-     * Order -> Customer -> Order Items (ordered by ascending ID).
+     * Order -> Customer -> Order Items (ordered by ascending ID) -> Inventory Balances (ordered by ascending ID).
      *
      * @throws AuthorizationException
      * @throws ConflictHttpException
@@ -101,12 +103,10 @@ class OrderWorkflowService
                 ]);
             }
 
-            // Establish order-level reservation state across items
+            // Verify total fulfillable quantity > 0
             $totalFulfillable = 0;
             foreach ($lockedItems as $item) {
                 $fulfillable = $item->fulfillableQuantity();
-                $item->reserved_quantity = max(0, $fulfillable);
-                $item->save();
                 $totalFulfillable += $fulfillable;
             }
 
@@ -114,6 +114,16 @@ class OrderWorkflowService
                 throw ValidationException::withMessages([
                     'order' => 'Order has no fulfillable quantities remaining to approve.',
                 ]);
+            }
+
+            // Authoritatively reserve physical inventory across balances in deterministic lock order
+            $this->inventoryService->reserveStockForOrder($lockedOrder, $actor);
+
+            // Establish order-level reservation state across items
+            foreach ($lockedItems as $item) {
+                $fulfillable = $item->fulfillableQuantity();
+                $item->reserved_quantity = max(0, $fulfillable);
+                $item->save();
             }
 
             $previousStatus = $lockedOrder->status;
@@ -251,4 +261,91 @@ class OrderWorkflowService
 
         return $rejectedOrder;
     }
+
+    /**
+     * Authoritatively cancel an approved or pending order with mandatory documented reason.
+     * If the order has physical stock reserved, releases that reservation atomically.
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws ValidationException
+     */
+    public function cancelOrder(Order $order, User $actor, string $reason): Order
+    {
+        // 1. Authorize actor permissions
+        $this->permissionService->authorize($actor, Permission::ORDER_CANCEL);
+
+        if ($actor->role === UserRole::SALESMAN) {
+            throw new AuthorizationException('Salesmen are not authorized to cancel orders directly.');
+        }
+
+        if (! $actor->isActive()) {
+            throw new AuthorizationException('Your account is not active.');
+        }
+
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 5 || mb_strlen($reason) > 1000) {
+            throw ValidationException::withMessages([
+                'reason' => 'The cancellation reason must be between 5 and 1000 characters.',
+            ]);
+        }
+
+        $previousStatus = null;
+        $releasedStock = false;
+
+        // 2. Authoritative PostgreSQL Transaction
+        /** @var Order $cancelledOrder */
+        $cancelledOrder = DB::transaction(function () use ($order, $actor, $reason, &$previousStatus, &$releasedStock) {
+            /** @var Order|null $lockedOrder */
+            $lockedOrder = Order::where('id', $order->id)->lockForUpdate()->firstOrFail();
+
+            if (in_array($lockedOrder->status, [OrderStatus::CANCELLED, OrderStatus::REJECTED, OrderStatus::COMPLETED], true)) {
+                $currentLabel = $lockedOrder->status instanceof OrderStatus ? $lockedOrder->status->label() : (string) $lockedOrder->status;
+                throw new ConflictHttpException("Order {$lockedOrder->order_number} is in '{$currentLabel}' status and cannot be cancelled.");
+            }
+
+            $previousStatus = $lockedOrder->status;
+
+            // If order was approved and holds physical reservations, release stock atomically
+            if ($lockedOrder->status === OrderStatus::APPROVED || $lockedOrder->fulfillment_status === FulfillmentStatus::RESERVED) {
+                $this->inventoryService->releaseStockForOrder($lockedOrder, $actor);
+                $releasedStock = true;
+
+                // Update allocation records to CANCELLED
+                OrderItemAllocation::where('order_id', $lockedOrder->id)
+                    ->whereIn('status', [AllocationStatus::ALLOCATED, AllocationStatus::RESERVED])
+                    ->update([
+                        'status' => AllocationStatus::CANCELLED,
+                        'reserved_quantity' => 0,
+                    ]);
+            }
+
+            // Authoritative Order State Mutation
+            $lockedOrder->status = OrderStatus::CANCELLED;
+            $lockedOrder->fulfillment_status = FulfillmentStatus::UNALLOCATED;
+            $lockedOrder->cancelled_at = Carbon::now();
+            $lockedOrder->cancelled_by = $actor->id;
+            $lockedOrder->cancellation_reason = $reason;
+            $lockedOrder->save();
+
+            return $lockedOrder;
+        }, 3);
+
+        Log::info('commerce.order_event', [
+            'action' => 'ORDER_CANCELLED',
+            'order_id' => $cancelledOrder->id,
+            'order_number' => $cancelledOrder->order_number,
+            'actor_id' => $actor->id,
+            'actor_name' => $actor->name,
+            'previous_status' => $previousStatus instanceof OrderStatus ? $previousStatus->value : (string) $previousStatus,
+            'new_status' => OrderStatus::CANCELLED->value,
+            'fulfillment_status' => FulfillmentStatus::UNALLOCATED->value,
+            'released_stock' => $releasedStock,
+            'cancellation_reason' => $reason,
+            'timestamp' => Carbon::now()->toIso8601String(),
+        ]);
+
+        return $cancelledOrder;
+    }
 }
+
