@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import DeliveryLayout from '@/Layouts/DeliveryLayout';
+import DeliveryCompleteModal from '@/Components/Delivery/DeliveryCompleteModal';
+import DeliveryFailureModal from '@/Components/Delivery/DeliveryFailureModal';
 import { 
     Truck, 
     Navigation, 
@@ -17,7 +19,8 @@ import {
     XCircle,
     FileText,
     History,
-    Shield
+    Shield,
+    AlertTriangle
 } from 'lucide-react';
 
 interface DeliveryItem {
@@ -122,6 +125,8 @@ interface DeliveryShowProps {
 
 export default function DeliveryShow({ delivery, capabilities }: DeliveryShowProps) {
     const [submittingAction, setSubmittingAction] = useState<string | null>(null);
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+    const [isFailureModalOpen, setIsFailureModalOpen] = useState(false);
 
     const fullAddress = `${delivery.delivery_address_line1}, ${delivery.delivery_city}, ${delivery.delivery_state} ${delivery.delivery_postal_code}`;
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
@@ -240,6 +245,31 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
                     )}
                 </div>
 
+                {/* Failures / Exceptions Card */}
+                {delivery.failures && delivery.failures.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-900/50 shadow-sm space-y-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4 text-rose-400" />
+                            Delivery Exceptions & Issues ({delivery.failures.length})
+                        </h3>
+
+                        <div className="space-y-2">
+                            {delivery.failures.map((fail) => (
+                                <div key={fail.id} className="p-3 rounded-xl bg-slate-900/80 border border-rose-900/40 text-xs space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold text-rose-300">
+                                            {fail.failure_reason.replace(/_/g, ' ')}
+                                        </span>
+                                        <span className="text-slate-400 text-[11px]">{fail.reported_at}</span>
+                                    </div>
+                                    <p className="text-slate-200">{fail.driver_notes}</p>
+                                    <p className="text-[10px] text-slate-400">Reported by {fail.reporter?.name || 'Driver'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Items Manifest */}
                 <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-sm space-y-3">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -298,6 +328,23 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
                 </div>
             </div>
 
+            {/* Complete Delivery Modal */}
+            <DeliveryCompleteModal
+                isOpen={isCompleteModalOpen}
+                onClose={() => setIsCompleteModalOpen(false)}
+                deliveryId={delivery.id}
+                deliveryNumber={delivery.delivery_number}
+                defaultRecipientName={delivery.delivery_contact_name || delivery.customer?.name || ''}
+            />
+
+            {/* Delivery Failure Modal */}
+            <DeliveryFailureModal
+                isOpen={isFailureModalOpen}
+                onClose={() => setIsFailureModalOpen(false)}
+                deliveryId={delivery.id}
+                deliveryNumber={delivery.delivery_number}
+            />
+
             {/* Bottom Sticky Action Bar */}
             <div className="fixed bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-3 flex gap-2 max-w-3xl mx-auto shadow-2xl">
                 {capabilities.can_pickup && (
@@ -324,7 +371,7 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
 
                 {capabilities.can_complete && (
                     <button
-                        onClick={() => router.visit(`/delivery/${delivery.id}#complete`)}
+                        onClick={() => setIsCompleteModalOpen(true)}
                         className="flex-1 min-h-[48px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-all shadow-lg shadow-emerald-600/20"
                     >
                         <CheckCircle2 className="w-5 h-5" />
@@ -332,16 +379,17 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
                     </button>
                 )}
 
-                {capabilities.can_fail && capabilities.can_complete && (
+                {capabilities.can_fail && (
                     <button
-                        onClick={() => router.visit(`/delivery/${delivery.id}#fail`)}
+                        onClick={() => setIsFailureModalOpen(true)}
                         className="min-h-[48px] px-4 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-300 font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-all"
                     >
                         <XCircle className="w-5 h-5 text-rose-400" />
-                        <span>Fail</span>
+                        <span>Report Issue</span>
                     </button>
                 )}
             </div>
         </DeliveryLayout>
     );
 }
+

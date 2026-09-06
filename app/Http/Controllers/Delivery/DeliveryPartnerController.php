@@ -226,4 +226,26 @@ class DeliveryPartnerController extends Controller
 
         return back()->with('success', "Delivery {$updatedDelivery->delivery_number} successfully completed.");
     }
+
+    /**
+     * Record delivery failure / exception (FEAT-DEL-006).
+     */
+    public function fail(\App\Http\Requests\Delivery\RecordDeliveryFailureRequest $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->recordFailure(
+            $delivery,
+            $request->user(),
+            $request->validated()
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} recorded as failed.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('warning', "Delivery {$updatedDelivery->delivery_number} recorded as failed.");
+    }
 }

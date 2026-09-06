@@ -405,6 +405,111 @@ class DeliveryWorkflowService
     }
 
     /**
+     * Authoritative Delivery Failure Logging (FEAT-DEL-006).
+     *
+     * In Model B, recording a delivery failure transitions status to FAILED.
+     * Physical warehouse inventory balance remains unchanged (still reserved in warehouse balance).
+     *
+     * @param  array{
+     *     failure_reason: DeliveryFailureReason|string,
+     *     driver_notes: string,
+     * }  $data
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws ValidationException
+     */
+    public function recordFailure(Delivery $delivery, User $actor, array $data): Delivery
+    {
+        $this->authorizeDeliveryUpdate($delivery, $actor);
+
+        if (empty($data['failure_reason'])) {
+            throw ValidationException::withMessages([
+                'failure_reason' => 'Authoritative failure reason is strictly required.',
+            ]);
+        }
+
+        if (empty($data['driver_notes'])) {
+            throw ValidationException::withMessages([
+                'driver_notes' => 'Driver explanation notes are required when reporting a delivery failure.',
+            ]);
+        }
+
+        $failureReason = $data['failure_reason'] instanceof DeliveryFailureReason
+            ? $data['failure_reason']
+            : DeliveryFailureReason::from($data['failure_reason']);
+
+        return DB::transaction(function () use ($delivery, $actor, $failureReason, $data) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $delivery->order_id)->lockForUpdate()->firstOrFail();
+
+            /** @var Delivery $lockedDelivery */
+            $lockedDelivery = Delivery::where('id', $delivery->id)->lockForUpdate()->firstOrFail();
+
+            // Idempotency: If already FAILED, return latest state cleanly
+            if ($lockedDelivery->status === DeliveryStatus::FAILED) {
+                return $lockedDelivery->load(['items', 'order', 'customer', 'driver', 'failures', 'events']);
+            }
+
+            if (! $lockedDelivery->canBeFailed()) {
+                throw new ConflictHttpException("Delivery {$lockedDelivery->delivery_number} is in '{$lockedDelivery->status->value}' status and cannot be marked as failed.");
+            }
+
+            $now = Carbon::now();
+            $previousStatus = $lockedDelivery->status;
+
+            // Update delivery record
+            $lockedDelivery->status = DeliveryStatus::FAILED;
+            $lockedDelivery->failed_at = $now;
+            $lockedDelivery->updated_by = $actor->id;
+            $lockedDelivery->version += 1;
+            $lockedDelivery->save();
+
+            // Record structured failure record
+            DeliveryFailure::create([
+                'delivery_id' => $lockedDelivery->id,
+                'failure_reason' => $failureReason,
+                'driver_notes' => $data['driver_notes'],
+                'driver_id' => $lockedDelivery->driver_id ?? $actor->id,
+                'reported_at' => $now,
+            ]);
+
+            // Record immutable tracking event
+            DeliveryEvent::create([
+                'delivery_id' => $lockedDelivery->id,
+                'event_type' => DeliveryEventType::FAILED,
+                'from_status' => $previousStatus->value,
+                'to_status' => DeliveryStatus::FAILED->value,
+                'actor_id' => $actor->id,
+                'notes' => "Delivery failed: {$failureReason->label()}. Notes: {$data['driver_notes']}",
+                'metadata' => [
+                    'failure_reason' => $failureReason->value,
+                    'driver_notes' => $data['driver_notes'],
+                    'reported_at' => $now->toIso8601String(),
+                ],
+                'created_at' => $now,
+            ]);
+
+            // Synchronize order delivery status
+            $lockedOrder->delivery_status = DeliveryStatus::FAILED;
+            $lockedOrder->save();
+
+            Log::warning('logistics.delivery_failed', [
+                'delivery_id' => $lockedDelivery->id,
+                'delivery_number' => $lockedDelivery->delivery_number,
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'failure_reason' => $failureReason->value,
+                'driver_id' => $lockedDelivery->driver_id,
+                'actor_id' => $actor->id,
+                'timestamp' => $now->toIso8601String(),
+            ]);
+
+            return $lockedDelivery->load(['items', 'order', 'customer', 'driver', 'failures', 'events']);
+        }, 3);
+    }
+
+    /**
      * Authorize that the actor is either the assigned delivery driver or a privileged admin.
      *
      * @throws AuthorizationException
