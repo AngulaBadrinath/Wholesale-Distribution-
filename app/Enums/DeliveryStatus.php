@@ -11,6 +11,8 @@ enum DeliveryStatus: string
     case OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY';
     case DELIVERED = 'DELIVERED';
     case FAILED = 'FAILED';
+    case RESCHEDULED = 'RESCHEDULED';
+    case RETURNED_TO_WAREHOUSE = 'RETURNED_TO_WAREHOUSE';
 
     /**
      * Get the human-readable label for delivery status.
@@ -25,6 +27,8 @@ enum DeliveryStatus: string
             self::OUT_FOR_DELIVERY => 'Out for Delivery',
             self::DELIVERED => 'Delivered',
             self::FAILED => 'Failed',
+            self::RESCHEDULED => 'Rescheduled',
+            self::RETURNED_TO_WAREHOUSE => 'Returned to Warehouse',
         };
     }
 
@@ -41,6 +45,19 @@ enum DeliveryStatus: string
             self::OUT_FOR_DELIVERY => 'warning',
             self::DELIVERED => 'success',
             self::FAILED => 'destructive',
+            self::RESCHEDULED => 'warning',
+            self::RETURNED_TO_WAREHOUSE => 'outline',
+        };
+    }
+
+    /**
+     * Determine whether the delivery is in a terminal state.
+     */
+    public function isTerminal(): bool
+    {
+        return match ($this) {
+            self::DELIVERED => true,
+            default => false,
         };
     }
 

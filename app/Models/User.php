@@ -209,10 +209,20 @@ class User extends Authenticatable
     }
 
     /**
-     * Determine whether the user is eligible to be assigned as a customer's salesman.
+     * Get the deliveries assigned to this delivery partner.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Delivery, $this>
      */
-    public function canBeAssignedAsSalesman(): bool
+    public function assignedDeliveries(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->role === UserRole::SALESMAN && $this->isActive();
+        return $this->hasMany(\App\Models\Delivery::class, 'driver_id');
+    }
+
+    /**
+     * Determine whether the user is eligible to be assigned as a delivery driver.
+     */
+    public function canBeAssignedAsDeliveryDriver(): bool
+    {
+        return $this->role === UserRole::DELIVERY_PARTNER && $this->isActive();
     }
 }

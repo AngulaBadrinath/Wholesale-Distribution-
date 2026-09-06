@@ -331,7 +331,51 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('payment')
             ->name('admin.payments.reverse');
     });
+
+    // Delivery & Logistics Operations (FEAT-DEL-001 through FEAT-DEL-008)
+    Route::middleware('permission:delivery.view')->group(function () {
+        Route::get('/admin/deliveries', [\App\Http\Controllers\Admin\AdminDeliveryController::class, 'index'])
+            ->name('admin.deliveries.index');
+        Route::get('/delivery', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'index'])
+            ->name('delivery.index');
+        Route::get('/delivery/{delivery}', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'show'])
+            ->whereNumber('delivery')
+            ->name('delivery.show');
+        Route::get('/delivery/{delivery}/history', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'history'])
+            ->whereNumber('delivery')
+            ->name('delivery.history');
+    });
+
+    Route::middleware('permission:delivery.assign')->group(function () {
+        Route::post('/admin/deliveries/assign', [\App\Http\Controllers\Admin\AdminDeliveryController::class, 'assign'])
+            ->name('admin.deliveries.assign');
+        Route::post('/admin/orders/{order}/delivery/assign', [\App\Http\Controllers\Admin\AdminDeliveryController::class, 'assign'])
+            ->whereNumber('order')
+            ->name('admin.orders.delivery.assign');
+    });
+
+    Route::middleware('permission:delivery.update')->group(function () {
+        Route::post('/delivery/{delivery}/pickup', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'pickup'])
+            ->whereNumber('delivery')
+            ->name('delivery.pickup');
+        Route::post('/delivery/{delivery}/start-route', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'startRoute'])
+            ->whereNumber('delivery')
+            ->name('delivery.start-route');
+        Route::post('/delivery/{delivery}/complete', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'complete'])
+            ->whereNumber('delivery')
+            ->name('delivery.complete');
+        Route::post('/delivery/{delivery}/fail', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'fail'])
+            ->whereNumber('delivery')
+            ->name('delivery.fail');
+        Route::post('/delivery/{delivery}/reschedule', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'reschedule'])
+            ->whereNumber('delivery')
+            ->name('delivery.reschedule');
+        Route::post('/delivery/{delivery}/return-to-warehouse', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'returnToWarehouse'])
+            ->whereNumber('delivery')
+            ->name('delivery.return-warehouse');
+    });
 });
+
 
 
 

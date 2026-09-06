@@ -261,4 +261,14 @@ class Customer extends Model
     {
         return $this->hasMany(Payment::class, 'customer_id')->orderBy('payment_date', 'desc');
     }
+
+    /**
+     * Get all deliveries recorded for this customer.
+     *
+     * @return HasMany<Delivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Delivery::class, 'customer_id')->orderBy('scheduled_date', 'desc');
+    }
 }

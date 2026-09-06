@@ -183,6 +183,26 @@ class Order extends Model
     }
 
     /**
+     * Get all delivery records associated with this order.
+     *
+     * @return HasMany<Delivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Delivery::class, 'order_id')->orderBy('id', 'desc');
+    }
+
+    /**
+     * Get the latest delivery record for this order.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<Delivery, $this>
+     */
+    public function latestDelivery(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Delivery::class, 'order_id')->latestOfMany('id');
+    }
+
+    /**
      * Get the active submitted adjustment request for this order, if any.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne<OrderAdjustment, $this>
