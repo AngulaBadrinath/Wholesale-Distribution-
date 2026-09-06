@@ -860,6 +860,12 @@ export interface OrderAdjustmentReviewDetailData {
         name: string;
     } | null;
     reviewed_at: string | null;
+    applied_by?: {
+        id: number;
+        name: string;
+    } | null;
+    applied_at?: string | null;
+    applied_at_formatted?: string | null;
     rejection_reason: string | null;
     cancelled_by: {
         id: number;

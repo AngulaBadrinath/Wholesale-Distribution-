@@ -26,9 +26,11 @@ import {
     ChevronUp,
     Info,
     X,
+    Zap,
 } from 'lucide-react';
 import ApproveAdjustmentModal from './Partials/ApproveAdjustmentModal';
 import RejectAdjustmentModal from './Partials/RejectAdjustmentModal';
+import ApplyAdjustmentModal from './Partials/ApplyAdjustmentModal';
 
 interface AdjustmentReviewProps {
     adjustment: OrderAdjustmentReviewDetailData;
@@ -37,6 +39,7 @@ interface AdjustmentReviewProps {
         review: boolean;
         approve: boolean;
         reject: boolean;
+        apply?: boolean;
         is_requester?: boolean;
         is_super_admin?: boolean;
     };
@@ -50,6 +53,7 @@ export default function AdjustmentReview({
     const [expandedAllocations, setExpandedAllocations] = useState<Record<number, boolean>>({});
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
     const toggleAllocationExpand = (itemId: number) => {
         setExpandedAllocations((prev) => ({
@@ -172,9 +176,13 @@ export default function AdjustmentReview({
                     <div className="bg-muted border border-border rounded-lg p-4 flex items-start gap-3 text-muted-foreground">
                         <History className="h-5 w-5 shrink-0 mt-0.5" />
                         <div className="space-y-1">
-                            <h4 className="text-sm font-semibold text-foreground">Request Terminal ({adjustment.status_label})</h4>
+                            <h4 className="text-sm font-semibold text-foreground">
+                                {adjustment.status === 'APPLIED' ? 'Adjustment Applied' : `Request Inactive (${adjustment.status_label})`}
+                            </h4>
                             <p className="text-xs">
-                                This adjustment request is inactive ({adjustment.status_label}). It is displayed for historical audit and inspection purposes only.
+                                {adjustment.status === 'APPLIED'
+                                    ? `This adjustment has been atomically applied to Order ${adjustment.order_number}. Order quantities, allocations, and financials have been updated.`
+                                    : `This adjustment request is inactive (${adjustment.status_label}). It is displayed for historical audit and inspection purposes only.`}
                             </p>
                         </div>
                     </div>
@@ -292,6 +300,38 @@ export default function AdjustmentReview({
                                     )}
                                 </>
                             )}
+                        </div>
+                    ) : adjustment.status === 'APPROVED' ? (
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {can.apply ? (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => setIsApplyModalOpen(true)}
+                                    disabled={
+                                        evaluation.evaluation_status === 'CONFLICTED' ||
+                                        evaluation.evaluation_status === 'WARNING_PICKED_ENCROACHMENT' ||
+                                        evaluation.evaluation_status === 'INELIGIBLE_LIFECYCLE'
+                                    }
+                                    className="h-9 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium"
+                                >
+                                    <Zap className="h-3.5 w-3.5" />
+                                    <span>Apply Adjustment</span>
+                                </Button>
+                            ) : (
+                                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-3 py-1.5 rounded-lg text-xs">
+                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Approved. Awaiting administrator application.</span>
+                                </div>
+                            )}
+                        </div>
+                    ) : adjustment.status === 'APPLIED' ? (
+                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-2 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>
+                                Applied on <strong className="font-semibold">{adjustment.applied_at_formatted ?? 'recently'}</strong>
+                                {adjustment.applied_by?.name ? ` by ${adjustment.applied_by.name}` : ''}.
+                            </span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 bg-muted border border-border px-3.5 py-2 rounded-lg text-xs text-muted-foreground">
@@ -657,6 +697,19 @@ export default function AdjustmentReview({
                 isRequester={!!can.is_requester}
                 isSuperAdmin={!!can.is_super_admin}
                 onClose={() => setIsRejectModalOpen(false)}
+            />
+
+            {/* Apply Modal */}
+            <ApplyAdjustmentModal
+                isOpen={isApplyModalOpen}
+                orderId={adjustment.order_id}
+                orderNumber={adjustment.order_number}
+                adjustmentId={adjustment.id}
+                adjustmentNumber={adjustment.adjustment_number}
+                hasAllocationImpact={evaluation.has_allocation_impact}
+                totalAffectedAllocationQuantity={evaluation.total_affected_allocation_quantity}
+                projectedReductions={adjustment.projected_reductions}
+                onClose={() => setIsApplyModalOpen(false)}
             />
         </AppLayout>
     );

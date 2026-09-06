@@ -282,6 +282,8 @@ class AdminOrderAdjustmentController extends Controller
                 'name' => $adjustment->reviewer->name,
             ] : null,
             'reviewed_at' => $adjustment->reviewed_at?->toIso8601String(),
+            'applied_at' => $adjustment->applied_at?->toIso8601String(),
+            'applied_at_formatted' => $adjustment->applied_at?->format('M d, Y H:i:s'),
             'rejection_reason' => $adjustment->rejection_reason,
             'cancelled_by' => $adjustment->canceller ? [
                 'id' => $adjustment->canceller->id,
@@ -320,6 +322,7 @@ class AdminOrderAdjustmentController extends Controller
                 'review' => true,
                 'approve' => $actor->can('approve', [$adjustment, $order]),
                 'reject' => $actor->can('reject', [$adjustment, $order]),
+                'apply' => $actor->can('apply', [$adjustment, $order]),
                 'is_requester' => (int) $adjustment->requested_by === (int) $actor->id,
                 'is_super_admin' => $actor->isSuperAdmin(),
             ],
@@ -391,5 +394,37 @@ class AdminOrderAdjustmentController extends Controller
                 'adjustment' => $adjustment->id,
             ])
             ->with('success', "Adjustment {$rejectedAdjustment->adjustment_number} has been rejected.");
+    }
+
+    /**
+     * Authoritatively apply an approved order adjustment request.
+     */
+    public function apply(
+        Request $request,
+        Order $order,
+        OrderAdjustment $adjustment
+    ): RedirectResponse {
+        $actor = $request->user();
+
+        // Mismatched Order/Adjustment IDOR Guard
+        if ((int) $adjustment->order_id !== (int) $order->id) {
+            abort(404, 'Adjustment request does not belong to the specified order.');
+        }
+
+        Gate::authorize('apply', [$adjustment, $order]);
+
+        $appliedAdjustment = $this->workflowService->applyAdjustment(
+            $actor,
+            $order,
+            $adjustment,
+            $request->ip()
+        );
+
+        return redirect()
+            ->route('admin.orders.adjustments.review', [
+                'order' => $order->id,
+                'adjustment' => $adjustment->id,
+            ])
+            ->with('success', "Adjustment {$appliedAdjustment->adjustment_number} has been applied successfully.");
     }
 }

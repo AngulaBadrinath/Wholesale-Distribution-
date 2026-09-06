@@ -346,6 +346,35 @@
 - **Affected Tickets:** `FEAT-ADJ-003`, `FEAT-ADJ-004`.
 - **Consequences:** All adjustment requests transition to terminal `APPROVED` or `REJECTED` states, paving the way for `FEAT-ADJ-004` to apply approved adjustments atomically.
 
+### DEC-021: Atomic Adjustment Application Engine Architecture, Quantity Conservation, Case B Split Allocation History, Authoritative Financial Recalculation & Exactly-Once Mutation Guarantees
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Guarded State Transition & Exactly-Once Application:** Only adjustments in `OrderAdjustmentStatus::APPROVED` may enter the application engine. Valid transition is strictly `APPROVED -> APPLIED`. Any duplicate attempt or attempt on non-approved requests (whether `SUBMITTED`, `REJECTED`, `CANCELLED`, or already `APPLIED`) immediately returns **HTTP 409 Conflict**. No second version increment, allocation release, or financial deduction can ever execute.
+  2. **Canonical Transactional Lock Hierarchy:** Execution is strictly wrapped within `DB::transaction(..., 3)` acquiring row-level pessimistic locks in canonical deadlock-free order: `orders -> order_items ASC -> order_item_allocations ASC -> order_adjustments`. Locks are held until commit, preventing concurrent allocation progression or inventory mutation races.
+  3. **Live Re-Validation Under Lock:** All domain quantities and eligibility states are re-read and validated from the database under lock, never trusting client parameters or stale review snapshots. If live fulfillable quantity cannot satisfy requested reductions or allocations have progressed into picked status, the application is rejected with HTTP 409.
+  4. **Strict Quantity Conservation & Non-Destructive History (`RULE-DOM-001`):** `order_items.ordered_quantity` is strictly immutable. For every affected line, `cancelled_quantity` increases by requested reduction $R$, fulfillable quantity decreases by $R$, and the invariant $\text{ordered} = \text{cancelled} + \text{fulfillable}$ is verified.
+  5. **Critical Case B Allocation Release & Non-Destructive Split:** When reduction exceeds unallocated units ($A = R - \text{unallocated} > 0$), units are released from active, unpicked allocations. Allocations with $\text{picked} > 0$ are non-releasable. For a partial release of $A$ units from an allocation with allocated quantity $Q$ and reserved quantity $R$:
+     - Released reserved units: $r = \min(A, R)$.
+     - Active remainder row retains: $\text{allocated} = Q - A$, $\text{reserved} = R - r$, preserving $0 \le \text{reserved} \le \text{allocated}$.
+     - Released historical child row created with: $\text{allocated} = A$, $\text{reserved} = 0$, $\text{picked} = 0$, $\text{dispatched} = 0$, $\text{delivered} = 0$, $\text{returned} = 0$, $\text{status} = \text{RELEASED}$.
+     - Allocation number formatted as $\text{ALC-}\{\text{order\_number}\}\text{-}\{\text{order\_item\_id}\}\text{-}\{\text{sequence}\}$ with 2-digit zero padding (`%02d`), generated under the locked OrderItem boundary.
+  6. **Deterministic Release Priority:** Allocations are released least-progressed first (`ALLOCATED` before `RESERVED`), then by sequence `DESC` (newest supplemental allocations released before primary allocations).
+  7. **Authoritative Financial Recalculation:** Employs the existing authoritative `TaxCalculationService::calculateLineTax` for remaining fulfillable units (or `'0.00'` if fulfillable reaches zero). Line taxable amount, tax amount, and line totals are updated. Order `subtotal`, `tax_total`, and `grand_total` are summed authoritatively across items, and `orders.adjustment_total` accumulates reductions. Historical snapshot fields (`unit_price`, `tax_rate_snapshot`, `tax_profile_id`) are preserved intact.
+  8. **Order Version & Adjustment Status Synchronization:** Upon successful application, `orders.version` is incremented exactly once ($+1$) and `orders.adjustment_status` transitions to `APPLIED`.
+  9. **Strict Multi-Line Transactional Atomicity:** For multi-line adjustments, all lines are pre-validated under lock. If any single line fails (e.g. insufficient fulfillable quantity or unpicked capacity), the entire transaction rolls back completely: zero lines modified, zero allocations released, zero financial adjustments, zero version increment.
+  10. **RBAC & Authorization:** Governed by `Permission::ORDER_ADJUST_APPLY` (`order.adjust.apply`) restricted to Super Admin and Admin roles. Salesmen, Accountants, Warehouse Managers, and Delivery Partners are strictly forbidden (403). Anti-IDOR ownership validation enforces `adjustment.order_id == order.id`.
+- **Context:** Applying an approved adjustment requires modifying active commercial state while maintaining total auditability, financial consistency, and allocation integrity across Case A (unallocated reductions) and Case B (allocation releases).
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-ORD-002` (Order Adjustment Framework), `RULE-INV-001` (Atomic Inventory Reservation), `RULE-PRI-001` (Historical Price Snapshots), `RULE-SEC-001` (Server Authority), and `RULE-SEC-002` (Zero Client Trust).
+- **Alternatives Considered:**
+  - *Blindly decrementing reserved quantity (`reserved -= released`):* Rejected because `ALLOCATED` allocations may have $\text{reserved} = 0$, which would create invalid negative reserved quantities violating database CHECK constraints.
+  - *Deleting released allocation rows:* Rejected because historical traceability mandates auditability of all allocation actions; rows are split into active remainders and released historical rows.
+  - *Independently summing order totals with ad-hoc arithmetic:* Rejected in favor of the authoritative `TaxCalculationService` and line-item rollup synchronization to avoid rounding drift.
+- **Affected Domains:** Order Adjustments, Quantity Allocation, Pricing & Tax Engine, Orders & Invoicing, Security/RBAC.
+- **Affected Documents:** PRD §14, §15; Technical Architecture §14, §15, §18; Security & Access §18, §23.
+- **Affected Tickets:** `FEAT-ADJ-004`, `FEAT-ADJ-005`.
+- **Consequences:** Approved adjustments can now be atomically applied, modifying order quantities, allocations, and financials with full mathematical precision and exact-once concurrency protection.
+
 ---
 
 ## Open Decisions & TBD Register

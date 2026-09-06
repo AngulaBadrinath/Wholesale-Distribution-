@@ -223,6 +223,15 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('adjustment')
             ->name('admin.orders.adjustments.reject');
     });
+
+    // Authoritative Order Adjustment Application Engine (FEAT-ADJ-004)
+    Route::middleware('permission:order.adjust.apply')->group(function () {
+        Route::post('/admin/orders/{order}/adjustments/{adjustment}/apply', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'apply'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('admin.orders.adjustments.apply');
+    });
 });
+
 
 

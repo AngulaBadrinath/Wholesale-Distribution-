@@ -125,7 +125,7 @@
 - [x] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)
 - [x] `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
 - [x] `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow (Authoritative decision boundary, deterministic lock ordering, maker-checker segregation, Super Admin emergency override, Case B allocation acknowledgment, zero application mutations, 41 automated tests)
-- [ ] `FEAT-ADJ-004`: Atomic Adjustment Application Engine
+- [x] `FEAT-ADJ-004`: Atomic Adjustment Application Engine (Transactional deadlock-free execution, canonical row locks orders -> items -> allocations -> adjustments, strict quantity conservation ordered = cancelled + fulfillable, Case A & Case B support, deterministic release order, non-destructive allocation splits, authoritative line/order financial recalculation, version increment, exactly-once protection, Super Admin/Admin permission enforcement, accessible Apply modal, 20 automated tests, PostgreSQL 18.6 verified)
 - [ ] `FEAT-ADJ-005`: Controlled Adjustment Reversals
 - [ ] `FEAT-ADJ-006`: Admin Adjustment & Exception Processing Queue
 

@@ -536,6 +536,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** `FEAT-ADJ-003`.
 
+### CHANGE-019: Atomic Adjustment Application Engine (FEAT-ADJ-004)
+- **Change ID:** `CHANGE-019`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the authoritative transactional **Atomic Adjustment Application Engine** (`FEAT-ADJ-004`). Establish transactional application of approved adjustments in `DB::transaction(..., 3)` enforcing canonical row lock acquisition (`orders -> order_items ASC -> order_item_allocations ASC -> order_adjustments`), live re-validation under lock (rejecting stale versions, fulfillable quantity conflicts, picked encroaching allocations, and terminal states with 409 Conflict), strict quantity conservation $\text{ordered} = \text{cancelled} + \text{fulfillable}$ (`RULE-DOM-001`), Case A unallocated reductions and Case B allocation releases, partial release mathematics preserving $0 \le \text{reserved} \le \text{allocated}$ with zero negative intermediate state ($r = \min(A, R)$), non-destructive allocation split history creating active remainder + released historical child rows with canonical sequence `ALC-{order}-{item}-{seq}` (`%02d`), deterministic release priority (`ALLOCATED` before `RESERVED`, sequence `DESC`), absolute prohibition of picked allocation release (409 Conflict), authoritative line and order financial recalculation using `TaxCalculationService` without rounding drift, immutable historical price/tax snapshots, single order version increment (+1), order `adjustment_status` transition to `APPLIED`, exactly-once application protection (409 Conflict on re-apply), Super Admin / Admin RBAC enforcement (`Permission::ORDER_ADJUST_APPLY`), accessible interactive Apply modal in `Review.tsx`, structured post-commit observability events (`ADJUSTMENT_APPLIED`, `ALLOCATION_RELEASED`, `ORDER_FINANCIALS_RECALCULATED`, `ADJUSTMENT_APPLICATION_BLOCKED`), 20 new automated feature tests across application, security, and concurrency, and direct PostgreSQL 18.6 container verification.
+- **Reason:** Guarantee mathematical correctness, transactional atomicity, non-destructive history, and exactly-once execution when transforming approved adjustment requests into permanent commercial mutations.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Critical Financial & Operational Mutation Engine)
+- **Affected PRD Requirements:** §14 (Approval & Application Lifecycle), §15 (Quantity Conservation), §16 (Live State Revalidation & Concurrency), §17 (Financial Recalculation).
+- **Affected Architecture:** §14 (Workflow Services), §15 (Lock Ordering & Deadlock Prevention), §18 (Guarded State Transitions & Dual-Control).
+- **Affected Security:** Governed by `Permission::ORDER_ADJUST_APPLY` (`order.adjust.apply`) restricted to Super Admin and Admin roles; anti-IDOR order ownership validation; complete denial of Accountant, Salesman, Warehouse Manager, and Delivery Partner (403); structured post-commit audit logging.
+- **Affected Frontend:** `resources/js/Pages/Admin/Adjustments/Review.tsx`, `resources/js/Pages/Admin/Adjustments/Partials/ApplyAdjustmentModal.tsx`, `resources/js/types/order.ts`.
+- **Affected Tickets:** `FEAT-ADJ-004` completed. Unlocks `FEAT-ADJ-005: Controlled Adjustment Reversals`.
+- **Inventory Impact:** Zero physical warehouse inventory ledgering or bin stock movements (Phase 06 inventory deferred to `FEAT-INV-001..004`). Allocation row quantities released and preserved in non-destructive split history.
+- **Order Impact:** Orders atomically mutated: `orders.version += 1`, `orders.adjustment_status = 'APPLIED'`, `orders.subtotal`, `orders.tax_total`, `orders.grand_total` recalculated authoritatively, `orders.adjustment_total` accumulates reductions. Items updated with non-destructive quantity conservation (`cancelled_quantity += R`, fulfillable reduced, `ordered_quantity` immutable).
+- **Payment Impact:** None.
+- **Tax Impact:** Line taxable amount, tax amount, and line totals recalculated authoritatively using `TaxCalculationService::calculateLineTax` (or `0.00` if entire line is cancelled). Historical tax snapshots (`tax_rate_snapshot`, `tax_profile_id`) preserved intact.
+- **Accounting Impact:** None (GL journal entries and credit notes deferred to Phase 07/09).
+- **Data Migration Impact:** Zero database schema modifications (22 existing migration files unchanged).
+- **Testing Impact:** Added 20 automated tests across `AdminAdjustmentApplicationTest.php`, `AdminAdjustmentApplicationSecurityTest.php`, and `AdminAdjustmentApplicationConcurrencyTest.php`. Verified directly on live PostgreSQL 18.6 container. Full repository test suite at 915 tests (908 passed, 5,813 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-004`.
+
 ---
 
 ## 3. Template for Future Change Requests

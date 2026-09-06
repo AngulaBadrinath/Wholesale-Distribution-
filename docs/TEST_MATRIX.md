@@ -799,6 +799,28 @@
 - [x] **Approval Aborts on Order Version Drift Under Lock:** Order version drift during active transaction aborts approval with 409 Conflict (`test_approval_aborts_if_order_version_increments_before_lock`).
 - [x] **Duplicate Submit / Double-Click Retries Deterministically 409:** Second HTTP submit attempt receives 409 Conflict without side effects (`test_duplicate_browser_submit_or_network_retry_returns_409`).
 
+### 1.10.5 Atomic Adjustment Application Engine (`ADJUSTMENT APPLICATION` / `FEAT-ADJ-004`)
+- [x] **Valid Case A Application:** Admin applies approved unallocated reduction; item `cancelled_quantity` increases by $R$, `fulfillableQuantity()` decreases by $R$, allocations untouched, line/order financials recalculated, version incremented (+1), `orders.adjustment_status = 'APPLIED'` (`AdminAdjustmentApplicationTest::test_admin_can_apply_valid_case_a_adjustment`).
+- [x] **Valid Case B Full Allocation Release:** When unallocated capacity is exhausted, entire allocation transitions to `RELEASED`, retains historical allocated quantity, `reserved_quantity = 0`, rollups updated (`test_admin_can_apply_case_b_full_allocation_release`).
+- [x] **Valid Case B Partial Allocation Release & Split:** Active remainder row updated ($Q - A$, $R - r$), released child row created with status `RELEASED`, sequence `ALC-{order}-{item}-{seq}`, and mathematical conservation verified ($Q_{\text{rem}} + Q_{\text{rel}} = Q_{\text{orig}}$) (`test_admin_can_apply_case_b_partial_allocation_release_with_split`).
+- [x] **Zero / Low Reserved Quantity Math (Correction 1):** Releasing $A$ units from allocation with $R \le A$ calculates $r = \min(A, R)$ and prevents negative reserved quantities, maintaining $0 \le \text{reserved} \le \text{allocated}$ (`test_case_b_partial_release_with_zero_or_low_reserved_quantity`).
+- [x] **Deterministic Release Priority:** Less operationally progressed `ALLOCATED` allocations released before `RESERVED`, then sequence `DESC` (`test_deterministic_release_order_allocated_before_reserved`).
+- [x] **Multi-Line Transactional Atomicity:** One line exceeding fulfillable quantity completely rolls back all lines: zero quantities modified, zero allocations released, zero version increment (`AdminAdjustmentApplicationConcurrencyTest::test_multi_line_atomicity_all_or_nothing_rollback`).
+- [x] **Non-Approved Adjustment Guard (409):** Attempting to apply a `SUBMITTED`, `REJECTED`, or `CANCELLED` adjustment returns 409 Conflict (`test_cannot_apply_unapproved_adjustment`).
+- [x] **Exactly-Once Protection (409):** Second application attempt on already `APPLIED` adjustment returns 409 Conflict with zero double deduction or second version increment (`test_double_apply_returns_409_conflict`, `test_concurrent_apply_double_submission_protection`).
+- [x] **Picked Stock Progression Conflict (409):** Warehouse picking progress encroaching on required allocation reduction aborts transaction with 409 Conflict (`test_cannot_apply_if_allocation_picked_in_meantime`).
+- [x] **Ineligible Order Lifecycle Guard (409):** Order in terminal state (`CANCELLED`, `COMPLETED`) rejected with 409 Conflict (`test_cannot_apply_on_ineligible_order_lifecycle`).
+- [x] **Sequential Adjustments Financial Precision:** Multiple sequential adjustments recalculate live commercial totals without rounding drift; `adjustment_total` accumulates reductions accurately (`test_sequential_adjustments_maintain_accurate_financials`).
+- [x] **RBAC Super Admin Application Success:** Super Admin authorized to apply approved adjustment (`AdminAdjustmentApplicationSecurityTest::test_super_admin_can_apply_adjustment`).
+- [x] **RBAC Admin Application Success:** Admin authorized to apply approved adjustment (`test_admin_can_apply_adjustment`).
+- [x] **RBAC Salesman Application Denied (403):** Salesman lacking `order.adjust.apply` denied application with 403 Forbidden (`test_salesman_cannot_apply_adjustment`).
+- [x] **RBAC Warehouse Manager Application Denied (403):** Warehouse Manager denied application with 403 Forbidden (`test_warehouse_manager_cannot_apply_adjustment`).
+- [x] **RBAC Delivery Partner Application Denied (403):** Delivery Partner denied application with 403 Forbidden (`test_delivery_partner_cannot_apply_adjustment`).
+- [x] **RBAC Accountant Application Denied (403):** Accountant denied application with 403 Forbidden (`test_accountant_cannot_apply_adjustment`).
+- [x] **Inactive Account Guard (302 Redirect):** Disabled/inactive administrator redirected to `/login` by `CheckAccountActive` middleware (`test_inactive_admin_cannot_apply_adjustment`).
+- [x] **Anti-IDOR Ownership Protection (404):** Mismatched `{order}` and `{adjustment}` IDs in route fails closed (`test_idor_mismatched_order_and_adjustment_fails`).
+- [x] **Direct PostgreSQL 18.6 Live Container Verification:** All PostgreSQL CHECK constraints (`chk_order_items_quantities`, `chk_order_items_progression`, `chk_order_item_allocations_quantities`, `chk_order_item_allocations_progression`) verified satisfied on live PostgreSQL 18.6 container without errors.
+
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).
 - [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).

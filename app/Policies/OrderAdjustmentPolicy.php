@@ -96,4 +96,25 @@ class OrderAdjustmentPolicy
 
         return true;
     }
+
+    /**
+     * Determine whether the user can apply a specific approved adjustment.
+     */
+    public function apply(User $user, OrderAdjustment $adjustment, ?Order $order = null): bool
+    {
+        if (! $user->isActive()) {
+            return false;
+        }
+
+        if (! $this->permissionService->has($user, Permission::ORDER_ADJUST_APPLY)) {
+            return false;
+        }
+
+        if ($order !== null && (int) $adjustment->order_id !== (int) $order->id) {
+            return false;
+        }
+
+        return true;
+    }
 }
+
