@@ -252,7 +252,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Warehouse Stock Exception Reporting & Damage Quarantine (FEAT-INV-005)
-    Route::middleware('permission:inventory.exception.report')->group(function () {
+    Route::middleware('permission:inventory.exception.report,inventory.adjust')->group(function () {
         Route::post('/admin/inventory-exceptions', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'store'])
             ->name('admin.inventory.exceptions.store');
     });

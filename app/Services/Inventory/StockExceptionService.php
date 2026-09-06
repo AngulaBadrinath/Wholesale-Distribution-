@@ -58,11 +58,10 @@ class StockExceptionService
      */
     public function reportException(array $data, User $actor): StockException
     {
-        if (! $actor->isActive()) {
-            throw new AuthorizationException('Your account is not active.');
+        if (! $this->permissionService->hasPermission($actor, Permission::INVENTORY_EXCEPTION_REPORT) &&
+            ! $this->permissionService->hasPermission($actor, Permission::INVENTORY_ADJUST)) {
+            $this->permissionService->authorize($actor, Permission::INVENTORY_EXCEPTION_REPORT);
         }
-
-        $this->permissionService->authorize($actor, Permission::INVENTORY_EXCEPTION_REPORT);
 
         $warehouseId = (int) $data['warehouse_id'];
         $productId = (int) $data['product_id'];

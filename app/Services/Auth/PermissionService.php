@@ -212,7 +212,6 @@ class PermissionService
                 // Inventory
                 Permission::INVENTORY_VIEW,
                 Permission::INVENTORY_ADJUST,
-                Permission::INVENTORY_EXCEPTION_REPORT,
 
                 // Delivery
                 Permission::DELIVERY_VIEW,
