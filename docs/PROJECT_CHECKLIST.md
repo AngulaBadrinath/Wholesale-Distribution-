@@ -124,7 +124,7 @@
 ### Order Adjustments
 - [x] `FEAT-ADJ-001`: Order Adjustment Request Flow (Salesman / Warehouse exception)
 - [x] `FEAT-ADJ-002`: Adjustment Review Workspace with Real-Time Financial & Tax Impact Preview
-- [ ] `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow
+- [x] `FEAT-ADJ-003`: Adjustment Approval / Rejection Workflow (Authoritative decision boundary, deterministic lock ordering, maker-checker segregation, Super Admin emergency override, Case B allocation acknowledgment, zero application mutations, 41 automated tests)
 - [ ] `FEAT-ADJ-004`: Atomic Adjustment Application Engine
 - [ ] `FEAT-ADJ-005`: Controlled Adjustment Reversals
 - [ ] `FEAT-ADJ-006`: Admin Adjustment & Exception Processing Queue

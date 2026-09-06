@@ -25,7 +25,10 @@ import {
     ChevronDown,
     ChevronUp,
     Info,
+    X,
 } from 'lucide-react';
+import ApproveAdjustmentModal from './Partials/ApproveAdjustmentModal';
+import RejectAdjustmentModal from './Partials/RejectAdjustmentModal';
 
 interface AdjustmentReviewProps {
     adjustment: OrderAdjustmentReviewDetailData;
@@ -34,6 +37,8 @@ interface AdjustmentReviewProps {
         review: boolean;
         approve: boolean;
         reject: boolean;
+        is_requester?: boolean;
+        is_super_admin?: boolean;
     };
 }
 
@@ -43,6 +48,8 @@ export default function AdjustmentReview({
     can,
 }: AdjustmentReviewProps) {
     const [expandedAllocations, setExpandedAllocations] = useState<Record<number, boolean>>({});
+    const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
     const toggleAllocationExpand = (itemId: number) => {
         setExpandedAllocations((prev) => ({
@@ -243,11 +250,57 @@ export default function AdjustmentReview({
                         </p>
                     </div>
 
-                    {/* Review Mode Banner */}
-                    <div className="flex items-center gap-2 bg-muted/50 border border-border px-3 py-1.5 rounded-md text-xs text-muted-foreground">
-                        <Info className="h-4 w-4 text-primary shrink-0" />
-                        <span>Review Mode Only (Approval engine governed by FEAT-ADJ-003)</span>
-                    </div>
+                    {/* Header Action Controls */}
+                    {adjustment.status === 'SUBMITTED' ? (
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {can.is_requester && !can.is_super_admin ? (
+                                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs">
+                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <span>Maker-checker rule: As the requester, you cannot approve or reject your own request.</span>
+                                </div>
+                            ) : (
+                                <>
+                                    {can.reject && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsRejectModalOpen(true)}
+                                            className="h-9 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 gap-1.5"
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                            <span>Reject Request</span>
+                                        </Button>
+                                    )}
+
+                                    {can.approve && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => setIsApproveModalOpen(true)}
+                                            disabled={
+                                                evaluation.evaluation_status === 'CONFLICTED' ||
+                                                evaluation.evaluation_status === 'WARNING_PICKED_ENCROACHMENT' ||
+                                                evaluation.evaluation_status === 'INELIGIBLE_LIFECYCLE' ||
+                                                evaluation.evaluation_status === 'STALE'
+                                            }
+                                            className="h-9 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                        >
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                            <span>Approve Adjustment</span>
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 bg-muted border border-border px-3.5 py-2 rounded-lg text-xs text-muted-foreground">
+                            <History className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span>
+                                Request is in terminal state <strong className="text-foreground font-semibold">{adjustment.status_label}</strong>.
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Evaluation Status Banner */}
@@ -578,6 +631,33 @@ export default function AdjustmentReview({
                     </Link>
                 </div>
             </div>
+
+            {/* Approve Modal */}
+            <ApproveAdjustmentModal
+                isOpen={isApproveModalOpen}
+                orderId={adjustment.order_id}
+                orderNumber={adjustment.order_number}
+                adjustmentId={adjustment.id}
+                adjustmentNumber={adjustment.adjustment_number}
+                hasAllocationImpact={evaluation.has_allocation_impact}
+                totalAffectedAllocationQuantity={evaluation.total_affected_allocation_quantity}
+                projectedReductions={adjustment.projected_reductions}
+                isRequester={!!can.is_requester}
+                isSuperAdmin={!!can.is_super_admin}
+                onClose={() => setIsApproveModalOpen(false)}
+            />
+
+            {/* Reject Modal */}
+            <RejectAdjustmentModal
+                isOpen={isRejectModalOpen}
+                orderId={adjustment.order_id}
+                orderNumber={adjustment.order_number}
+                adjustmentId={adjustment.id}
+                adjustmentNumber={adjustment.adjustment_number}
+                isRequester={!!can.is_requester}
+                isSuperAdmin={!!can.is_super_admin}
+                onClose={() => setIsRejectModalOpen(false)}
+            />
         </AppLayout>
     );
 }

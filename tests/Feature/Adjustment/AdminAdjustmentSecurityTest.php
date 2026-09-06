@@ -248,17 +248,31 @@ class AdminAdjustmentSecurityTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_strict_review_boundary_can_approve_and_reject_are_false(): void
+    public function test_maker_checker_boundary_requester_cannot_approve_or_reject(): void
     {
         [$order, $adj] = $this->createOrderAndAdjustment();
 
+        // 1. When admin is non-requester (adjustment requested by salesman): can.approve = true, can.reject = true
         $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
-
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
             ->where('can.review', true)
+            ->where('can.approve', true)
+            ->where('can.reject', true)
+            ->where('can.is_requester', false)
+        );
+
+        // 2. When admin is the requester: can.approve = false, can.reject = false (maker-checker segregation)
+        $adj->requested_by = $this->admin->id;
+        $adj->save();
+
+        $selfResponse = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
+        $selfResponse->assertStatus(200);
+        $selfResponse->assertInertia(fn (Assert $page) => $page
+            ->where('can.review', true)
             ->where('can.approve', false)
             ->where('can.reject', false)
+            ->where('can.is_requester', true)
         );
     }
 }

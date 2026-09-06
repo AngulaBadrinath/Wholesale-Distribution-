@@ -511,6 +511,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-018: Adjustment Approval & Rejection Engine (FEAT-ADJ-003)
+- **Change ID:** `CHANGE-018`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Implement the authoritative dual-control **Adjustment Approval & Rejection Engine** (`FEAT-ADJ-003`). Establish deterministic deadlock-free row locking (`orders -> order_items ASC -> order_item_allocations ASC -> order_adjustments`), strict maker-checker segregation of duties preventing administrators from self-approving or self-rejecting requests they submitted, Super Admin emergency override requiring explicit 10-1000 character justification and dedicated `ADJUSTMENT_EMERGENCY_OVERRIDE` audit event, live state revalidation under lock (rejecting stale versions, fulfillable quantity conflicts, picking encroachments, and terminal states with 409 Conflict), deterministic duplicate decision semantics (guarded transitions returning 409 on subsequent attempts rather than idempotent replays), Case B allocation impact mandatory acknowledgment (`acknowledge_allocation_impact: true`), order `adjustment_status` maintenance (`REQUESTED` on approved, `NONE` on rejected unless earlier adjustment was `APPLIED`), strict read/decision-only boundary preserving quantities, allocations, and order financials without premature mutation (application reserved for `FEAT-ADJ-004`), accessible interactive modals (`ApproveAdjustmentModal`, `RejectAdjustmentModal`) in `Review.tsx`, and comprehensive automated testing.
+- **Reason:** Guarantee transactional correctness, maker-checker compliance, allocation integrity, and financial immutability during adjustment decisioning prior to downstream execution in FEAT-ADJ-004.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (High/Critical Transactional Decision Boundary)
+- **Affected PRD Requirements:** §14 (Approval & Rejection Authority), §15 (Maker-Checker Segregation), §16 (Live State Revalidation & Concurrency).
+- **Affected Architecture:** §14 (Workflow Services), §15 (Lock Ordering & Deadlock Prevention), §18 (Guarded State Transitions & Dual-Control).
+- **Affected Security:** Governed by `Permission::ORDER_ADJUST_APPROVE` (`order.adjust.approve`) for both approval and rejection; hard maker-checker server rejection for regular Admins; Super Admin emergency override validation; complete denial of Accountant, Salesman, Warehouse Manager, and Delivery Partner (403); structured post-commit audit logging.
+- **Affected Frontend:** `resources/js/Pages/Admin/Adjustments/Review.tsx`, `resources/js/Pages/Admin/Adjustments/Partials/ApproveAdjustmentModal.tsx`, `resources/js/Pages/Admin/Adjustments/Partials/RejectAdjustmentModal.tsx`.
+- **Affected Tickets:** `FEAT-ADJ-003` completed. Unlocks `FEAT-ADJ-004: Atomic Adjustment Application Engine`.
+- **Inventory Impact:** Zero inventory or stock balance mutations (`inventory_movements` untouched; allocation rows preserved).
+- **Order Impact:** `orders.adjustment_status` maintained as `REQUESTED` upon approval (awaiting FEAT-ADJ-004 application) and reset to `NONE` (or preserved `APPLIED`) upon rejection. Zero mutation of order quantities (`cancelled_quantity`, `reserved_quantity`) or financials (`subtotal`, `tax_total`, `grand_total`).
+- **Payment Impact:** None.
+- **Tax Impact:** Stored projected reductions remain immutable snapshots. Order and line tax figures remain unchanged.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** Zero database schema modifications (22 existing migration files unchanged).
+- **Testing Impact:** Added 41 automated tests across `AdminAdjustmentApprovalTest.php`, `AdminAdjustmentRejectionTest.php`, `AdminAdjustmentMakerCheckerTest.php`, and `AdminAdjustmentApprovalConcurrencyTest.php`. Full repository test suite at 895 tests (888 passed, 5,685 assertions, 7 skipped) passing 100%. TypeScript and Vite build clean.
+- **Deployment Impact:** None.
+- **Approved By:** Principal Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** `FEAT-ADJ-003`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

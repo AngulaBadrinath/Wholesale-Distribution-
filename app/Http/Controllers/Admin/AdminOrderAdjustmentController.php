@@ -9,15 +9,20 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Adjustment\AdminAdjustmentQueueRequest;
+use App\Http\Requests\Adjustment\ApproveOrderAdjustmentRequest;
+use App\Http\Requests\Adjustment\RejectOrderAdjustmentRequest;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderAdjustmentItem;
 use App\Services\Adjustment\OrderAdjustmentReviewService;
+use App\Services\Adjustment\OrderAdjustmentWorkflowService;
 use App\Services\Auth\PermissionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +31,7 @@ class AdminOrderAdjustmentController extends Controller
     public function __construct(
         protected PermissionService $permissionService,
         protected OrderAdjustmentReviewService $reviewService,
+        protected OrderAdjustmentWorkflowService $workflowService,
     ) {}
 
     /**
@@ -312,9 +318,78 @@ class AdminOrderAdjustmentController extends Controller
             'evaluation' => $evaluation->toArray(),
             'can' => [
                 'review' => true,
-                'approve' => false, // Read-only boundary: approval belongs to FEAT-ADJ-003
-                'reject' => false,  // Read-only boundary: rejection belongs to FEAT-ADJ-003
+                'approve' => $actor->can('approve', [$adjustment, $order]),
+                'reject' => $actor->can('reject', [$adjustment, $order]),
+                'is_requester' => (int) $adjustment->requested_by === (int) $actor->id,
+                'is_super_admin' => $actor->isSuperAdmin(),
             ],
         ]);
+    }
+
+    /**
+     * Authoritatively approve an order adjustment request.
+     */
+    public function approve(
+        ApproveOrderAdjustmentRequest $request,
+        Order $order,
+        OrderAdjustment $adjustment
+    ): RedirectResponse {
+        $actor = $request->user();
+
+        // Mismatched Order/Adjustment IDOR Guard
+        if ((int) $adjustment->order_id !== (int) $order->id) {
+            abort(404, 'Adjustment request does not belong to the specified order.');
+        }
+
+        Gate::authorize('approve', [$adjustment, $order]);
+
+        $approvedAdjustment = $this->workflowService->approveAdjustment(
+            $actor,
+            $order,
+            $adjustment,
+            $request->validated(),
+            $request->ip()
+        );
+
+        return redirect()
+            ->route('admin.orders.adjustments.review', [
+                'order' => $order->id,
+                'adjustment' => $adjustment->id,
+            ])
+            ->with('success', "Adjustment {$approvedAdjustment->adjustment_number} has been approved.");
+    }
+
+    /**
+     * Authoritatively reject an order adjustment request.
+     */
+    public function reject(
+        RejectOrderAdjustmentRequest $request,
+        Order $order,
+        OrderAdjustment $adjustment
+    ): RedirectResponse {
+        $actor = $request->user();
+
+        // Mismatched Order/Adjustment IDOR Guard
+        if ((int) $adjustment->order_id !== (int) $order->id) {
+            abort(404, 'Adjustment request does not belong to the specified order.');
+        }
+
+        Gate::authorize('reject', [$adjustment, $order]);
+
+        $rejectedAdjustment = $this->workflowService->rejectAdjustment(
+            $actor,
+            $order,
+            $adjustment,
+            $request->validated('reason'),
+            $request->validated(),
+            $request->ip()
+        );
+
+        return redirect()
+            ->route('admin.orders.adjustments.review', [
+                'order' => $order->id,
+                'adjustment' => $adjustment->id,
+            ])
+            ->with('success', "Adjustment {$rejectedAdjustment->adjustment_number} has been rejected.");
     }
 }

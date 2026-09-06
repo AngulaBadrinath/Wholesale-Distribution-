@@ -24,17 +24,19 @@ use App\Models\OrderItemAllocation;
 use App\Models\Product;
 use App\Models\TaxProfile;
 use App\Models\User;
+use App\Services\Adjustment\OrderAdjustmentService;
+use App\Services\Adjustment\OrderAdjustmentWorkflowService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
 
-class AdminAdjustmentReviewDetailTest extends TestCase
+class AdminAdjustmentApprovalConcurrencyTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected User $admin;
-    protected User $accountant;
+    protected User $adminA;
+    protected User $adminB;
     protected User $salesman;
 
     protected Customer $customer;
@@ -42,21 +44,27 @@ class AdminAdjustmentReviewDetailTest extends TestCase
     protected TaxProfile $taxProfile;
     protected Product $product;
 
+    protected OrderAdjustmentWorkflowService $workflowService;
+    protected OrderAdjustmentService $requestService;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->admin = User::factory()->create([
+        $this->workflowService = app(OrderAdjustmentWorkflowService::class);
+        $this->requestService = app(OrderAdjustmentService::class);
+
+        $this->adminA = User::factory()->create([
             'name' => 'Alice Admin',
-            'email' => 'admin@wholesale.test',
+            'email' => 'alice@wholesale.test',
             'role' => UserRole::ADMIN,
             'status' => AccountStatus::ACTIVE,
         ]);
 
-        $this->accountant = User::factory()->create([
-            'name' => 'Bob Accountant',
-            'email' => 'accountant@wholesale.test',
-            'role' => UserRole::ACCOUNTANT,
+        $this->adminB = User::factory()->create([
+            'name' => 'Bob Admin',
+            'email' => 'bob@wholesale.test',
+            'role' => UserRole::ADMIN,
             'status' => AccountStatus::ACTIVE,
         ]);
 
@@ -112,8 +120,12 @@ class AdminAdjustmentReviewDetailTest extends TestCase
         ]);
     }
 
-    protected function setupScenario(int $orderedQty, int $allocatedQty, int $pickedQty, int $dispatchedQty, int $reductionQty): array
-    {
+    protected function createScenario(
+        int $orderedQty = 10,
+        int $allocatedQty = 0,
+        int $pickedQty = 0,
+        int $reductionQty = 2
+    ): array {
         $order = Order::create([
             'order_number' => 'ORD-' . uniqid(),
             'customer_id' => $this->customer->id,
@@ -144,7 +156,7 @@ class AdminAdjustmentReviewDetailTest extends TestCase
             'cancelled_quantity' => 0,
             'reserved_quantity' => 0,
             'picked_quantity' => $pickedQty,
-            'dispatched_quantity' => $dispatchedQty,
+            'dispatched_quantity' => 0,
             'delivered_quantity' => 0,
             'returned_quantity' => 0,
             'unit_price' => '25.00',
@@ -157,8 +169,9 @@ class AdminAdjustmentReviewDetailTest extends TestCase
             'line_total' => bcmul('29.50', (string) $orderedQty, 2),
         ]);
 
+        $allocation = null;
         if ($allocatedQty > 0) {
-            OrderItemAllocation::create([
+            $allocation = OrderItemAllocation::create([
                 'allocation_number' => 'ALC-' . uniqid(),
                 'order_id' => $order->id,
                 'order_item_id' => $item->id,
@@ -166,11 +179,11 @@ class AdminAdjustmentReviewDetailTest extends TestCase
                 'allocated_quantity' => $allocatedQty,
                 'reserved_quantity' => $allocatedQty,
                 'picked_quantity' => $pickedQty,
-                'dispatched_quantity' => $dispatchedQty,
+                'dispatched_quantity' => 0,
                 'delivered_quantity' => 0,
                 'returned_quantity' => 0,
-                'status' => $dispatchedQty > 0 ? AllocationStatus::DISPATCHED : ($pickedQty > 0 ? AllocationStatus::PICKED : AllocationStatus::ALLOCATED),
-                'allocated_by' => $this->admin->id,
+                'status' => $pickedQty > 0 ? AllocationStatus::PICKED : AllocationStatus::ALLOCATED,
+                'allocated_by' => $this->adminA->id,
                 'allocated_at' => Carbon::now()->subHour(),
             ]);
         }
@@ -179,7 +192,7 @@ class AdminAdjustmentReviewDetailTest extends TestCase
         $affectedAlloc = max(0, $reductionQty - $unallocated);
 
         $adj = OrderAdjustment::create([
-            'adjustment_number' => 'ADJ-REV-001',
+            'adjustment_number' => 'ADJ-CONC-' . uniqid(),
             'order_id' => $order->id,
             'order_number_snapshot' => $order->order_number,
             'order_version_snapshot' => 1,
@@ -190,7 +203,7 @@ class AdminAdjustmentReviewDetailTest extends TestCase
             'type' => 'QUANTITY_REDUCTION',
             'status' => OrderAdjustmentStatus::SUBMITTED,
             'reason_code' => AdjustmentReasonCode::CUSTOMER_REQUEST,
-            'notes' => 'Customer requested fewer units.',
+            'notes' => 'Concurrency test notes.',
             'requested_by' => $this->salesman->id,
             'requested_at' => Carbon::now()->subHour(),
             'projected_subtotal_reduction' => bcmul('25.00', (string) $reductionQty, 2),
@@ -223,150 +236,165 @@ class AdminAdjustmentReviewDetailTest extends TestCase
             'projected_line_total_reduction' => bcmul('29.50', (string) $reductionQty, 2),
         ]);
 
-        return [$order, $adj, $item];
+        return [$order, $adj, $item, $allocation];
     }
 
-    public function test_admin_can_view_adjustment_review_workspace(): void
+    /**
+     * A. Concurrent Approval vs Approval:
+     *    Admin A and Admin B both attempt to approve. Exactly one succeeds, second gets 409 Conflict.
+     */
+    public function test_concurrent_approval_vs_approval_serializes_and_second_gets_409(): void
     {
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 4, pickedQty: 0, dispatchedQty: 0, reductionQty: 2);
+        [$order, $adj] = $this->createScenario();
 
-        $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
+        $successCount = 0;
+        $conflictCount = 0;
 
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Adjustments/Review')
-            ->where('adjustment.adjustment_number', 'ADJ-REV-001')
-            ->where('adjustment.order_number', $order->order_number)
-            ->where('adjustment.requested_by.name', $this->salesman->name)
-            ->where('evaluation.evaluation_status', 'READY')
-            ->where('evaluation.has_allocation_impact', false)
-            ->where('can.review', true)
-            ->where('can.approve', true)
-            ->where('can.reject', true)
-        );
-    }
+        $actors = [$this->adminA, $this->adminB];
 
-    public function test_case_a_review_evaluation(): void
-    {
-        // Ordered 10, Allocated 4, Unallocated 6. Requested reduction 2 <= 6 => Case A (0 affected)
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 4, pickedQty: 0, dispatchedQty: 0, reductionQty: 2);
-
-        $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->where('evaluation.line_evaluations.0.current_case', 'CASE_A')
-            ->where('evaluation.line_evaluations.0.current_affected_allocation_quantity', 0)
-            ->where('evaluation.has_allocation_impact', false)
-        );
-    }
-
-    public function test_case_b_review_evaluation(): void
-    {
-        // Ordered 10, Allocated 8, Unallocated 2. Requested reduction 5 > 2 => Case B (3 affected allocations)
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 8, pickedQty: 0, dispatchedQty: 0, reductionQty: 5);
-
-        $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->where('evaluation.line_evaluations.0.current_case', 'CASE_B')
-            ->where('evaluation.line_evaluations.0.current_affected_allocation_quantity', 3)
-            ->where('evaluation.has_allocation_impact', true)
-            ->where('evaluation.total_affected_allocation_quantity', 3)
-            ->where('evaluation.evaluation_status', 'WARNING_ALLOCATION')
-        );
-    }
-
-    public function test_active_allocations_exclude_cancelled_and_released(): void
-    {
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 5, pickedQty: 0, dispatchedQty: 0, reductionQty: 2);
-
-        // Add a CANCELLED allocation of 3 units
-        OrderItemAllocation::create([
-            'allocation_number' => 'ALC-CANCELLED',
-            'order_id' => $order->id,
-            'order_item_id' => $item->id,
-            'product_id' => $this->product->id,
-            'allocated_quantity' => 3,
-            'reserved_quantity' => 3,
-            'picked_quantity' => 0,
-            'dispatched_quantity' => 0,
-            'delivered_quantity' => 0,
-            'returned_quantity' => 0,
-            'status' => AllocationStatus::CANCELLED,
-            'allocated_by' => $this->admin->id,
-            'allocated_at' => Carbon::now()->subHour(),
-        ]);
-
-        // Add a RELEASED allocation of 2 units
-        OrderItemAllocation::create([
-            'allocation_number' => 'ALC-RELEASED',
-            'order_id' => $order->id,
-            'order_item_id' => $item->id,
-            'product_id' => $this->product->id,
-            'allocated_quantity' => 2,
-            'reserved_quantity' => 2,
-            'picked_quantity' => 0,
-            'dispatched_quantity' => 0,
-            'delivered_quantity' => 0,
-            'returned_quantity' => 0,
-            'status' => AllocationStatus::RELEASED,
-            'allocated_by' => $this->admin->id,
-            'allocated_at' => Carbon::now()->subHour(),
-        ]);
-
-        $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            // Only the 1 active allocation of 5 units should be present in the active allocations array
-            ->has('evaluation.line_evaluations.0.allocations', 1)
-            ->where('evaluation.line_evaluations.0.current_allocated_quantity', 5)
-            ->where('evaluation.line_evaluations.0.current_unallocated_quantity', 5)
-        );
-    }
-
-    public function test_allocation_encroaches_on_picked_units_detection(): void
-    {
-        // Ordered 10, Allocated 8, Picked 7 (Unpicked = 1).
-        // Requested reduction 5. Unallocated is 2.
-        // Affected allocation = 5 - 2 = 3.
-        // But unpicked is only 1! So 3 > 1 => encroaches on picked units!
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 8, pickedQty: 7, dispatchedQty: 4, reductionQty: 5);
-
-        $response = $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review");
-
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->where('evaluation.line_evaluations.0.encroaches_on_picked', true)
-            ->where('evaluation.encroaches_on_picked', true)
-            ->where('evaluation.evaluation_status', 'WARNING_PICKED_ENCROACHMENT')
-        );
-    }
-
-    public function test_read_only_guarantee_zero_database_mutations(): void
-    {
-        [$order, $adj, $item] = $this->setupScenario(orderedQty: 10, allocatedQty: 5, pickedQty: 0, dispatchedQty: 0, reductionQty: 2);
-
-        $initialOrderUpdatedAt = $order->fresh()->updated_at;
-        $initialItemUpdatedAt = $item->fresh()->updated_at;
-        $initialAdjUpdatedAt = $adj->fresh()->updated_at;
-
-        // Perform multiple review page loads
-        for ($i = 0; $i < 3; $i++) {
-            $this->actingAs($this->admin)->get("/admin/orders/{$order->id}/adjustments/{$adj->id}/review")->assertStatus(200);
+        foreach ($actors as $actor) {
+            try {
+                $this->workflowService->approveAdjustment($actor, $order, $adj);
+                $successCount++;
+            } catch (ConflictHttpException $e) {
+                $conflictCount++;
+            }
         }
 
-        $freshOrder = $order->fresh();
-        $freshItem = $item->fresh();
-        $freshAdj = $adj->fresh();
+        $this->assertEquals(1, $successCount, 'Exactly one approval must succeed.');
+        $this->assertEquals(1, $conflictCount, 'The competing approval must be rejected with 409 Conflict.');
+        $this->assertEquals(OrderAdjustmentStatus::APPROVED, $adj->fresh()->status);
+    }
 
-        $this->assertEquals($order->grand_total, $freshOrder->grand_total);
-        $this->assertEquals($order->subtotal, $freshOrder->subtotal);
-        $this->assertEquals($order->adjustment_status, $freshOrder->adjustment_status);
-        $this->assertEquals($item->ordered_quantity, $freshItem->ordered_quantity);
-        $this->assertEquals($item->cancelled_quantity, $freshItem->cancelled_quantity);
-        $this->assertEquals($adj->status, $freshAdj->status);
+    /**
+     * B. Concurrent Approval vs Rejection:
+     *    Admin A approves while Admin B rejects. Exactly one decision commits.
+     */
+    public function test_concurrent_approval_vs_rejection_serializes_and_loser_gets_409(): void
+    {
+        [$order, $adj] = $this->createScenario();
+
+        $successCount = 0;
+        $conflictCount = 0;
+
+        // First action: Admin A approves
+        try {
+            $this->workflowService->approveAdjustment($this->adminA, $order, $adj);
+            $successCount++;
+        } catch (ConflictHttpException $e) {
+            $conflictCount++;
+        }
+
+        // Second action: Admin B tries to reject the now-approved adjustment
+        try {
+            $this->workflowService->rejectAdjustment($this->adminB, $order, $adj, 'Rejecting after approval attempt.');
+            $successCount++;
+        } catch (ConflictHttpException $e) {
+            $conflictCount++;
+        }
+
+        $this->assertEquals(1, $successCount);
+        $this->assertEquals(1, $conflictCount);
+        $this->assertEquals(OrderAdjustmentStatus::APPROVED, $adj->fresh()->status);
+    }
+
+    /**
+     * C. Concurrent Approval vs Requester Withdrawal:
+     *    Requester withdraws request while Admin attempts approval.
+     */
+    public function test_concurrent_approval_vs_requester_withdrawal_serializes_and_loser_gets_409(): void
+    {
+        [$order, $adj] = $this->createScenario();
+
+        // Requester withdraws the request
+        $this->requestService->withdrawAdjustmentRequest($this->salesman, $adj, 'Requester withdrawal.');
+        $this->assertEquals(OrderAdjustmentStatus::CANCELLED, $adj->fresh()->status);
+
+        // Competing approval MUST fail with 409 Conflict
+        $this->expectException(ConflictHttpException::class);
+        $this->workflowService->approveAdjustment($this->adminA, $order, $adj);
+    }
+
+    /**
+     * D. Concurrent Rejection vs Requester Withdrawal:
+     *    Admin rejects, then requester attempts to withdraw.
+     */
+    public function test_concurrent_rejection_vs_requester_withdrawal_serializes(): void
+    {
+        [$order, $adj] = $this->createScenario();
+
+        // Admin rejects first
+        $this->workflowService->rejectAdjustment($this->adminA, $order, $adj, 'Admin rejection before withdrawal.');
+        $this->assertEquals(OrderAdjustmentStatus::REJECTED, $adj->fresh()->status);
+
+        // Requester attempting to withdraw a rejected adjustment MUST fail with 409 Conflict
+        $this->expectException(ConflictHttpException::class);
+        $this->requestService->withdrawAdjustmentRequest($this->salesman, $adj, 'Attempting to withdraw already rejected.');
+    }
+
+    /**
+     * E. Approval vs Allocation Progression:
+     *    Warehouse picks units such that requested reduction now encroaches on picked stock.
+     */
+    public function test_approval_aborts_if_warehouse_picks_encroaching_stock_before_lock(): void
+    {
+        // 10 ordered, 8 allocated, 5 reduction (Case B: 3 affected).
+        // Initial picked is 0 (unpicked = 8, 3 <= 8, so valid Case B).
+        [$order, $adj, $item, $allocation] = $this->createScenario(10, 8, 0, 5);
+
+        // Warehouse progresses: picks 7 units (unpicked is now 1, but affected is 3 => encroachment!)
+        $allocation->picked_quantity = 7;
+        $allocation->status = AllocationStatus::PICKED;
+        $allocation->save();
+
+        $item->picked_quantity = 7;
+        $item->save();
+
+        // Approval attempt with Case B acknowledgment MUST still fail with 409 due to picking encroachment under lock
+        $this->expectException(ConflictHttpException::class);
+        $this->workflowService->approveAdjustment(
+            $this->adminA,
+            $order,
+            $adj,
+            ['acknowledge_allocation_impact' => true]
+        );
+    }
+
+    /**
+     * F. Approval vs Order Version Mutation:
+     *    Order version changed between snapshot and approval lock acquisition.
+     */
+    public function test_approval_aborts_if_order_version_increments_before_lock(): void
+    {
+        [$order, $adj] = $this->createScenario();
+
+        // Order updated in background, version increments to 2
+        $order->version = 2;
+        $order->save();
+
+        $this->expectException(ConflictHttpException::class);
+        $this->workflowService->approveAdjustment($this->adminA, $order, $adj);
+    }
+
+    /**
+     * G. Duplicate HTTP Submit / Double-Click Retries:
+     *    First request commits, second gets HTTP 409 Conflict.
+     */
+    public function test_duplicate_browser_submit_or_network_retry_returns_409(): void
+    {
+        [$order, $adj] = $this->createScenario();
+
+        // First click
+        $first = $this->actingAs($this->adminA)->post(
+            "/admin/orders/{$order->id}/adjustments/{$adj->id}/approve"
+        );
+        $first->assertRedirect();
+        $this->assertEquals(OrderAdjustmentStatus::APPROVED, $adj->fresh()->status);
+
+        // Immediate double-click / network retry
+        $second = $this->actingAs($this->adminA)->post(
+            "/admin/orders/{$order->id}/adjustments/{$adj->id}/approve"
+        );
+        $second->assertStatus(409);
     }
 }

@@ -20,9 +20,9 @@ class OrderAdjustmentReviewService
     /**
      * Perform a pure, read-only evaluation of an adjustment request against current live order state.
      */
-    public function evaluate(OrderAdjustment $adjustment): OrderAdjustmentReviewDTO
+    public function evaluate(OrderAdjustment $adjustment, ?\App\Models\Order $order = null): OrderAdjustmentReviewDTO
     {
-        $order = $adjustment->order;
+        $order = $order ?? $adjustment->order;
 
         $staleReasons = [];
         $isStale = false;

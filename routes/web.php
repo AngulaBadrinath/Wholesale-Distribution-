@@ -210,6 +210,19 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('adjustment')
             ->name('admin.orders.adjustments.review');
     });
+
+    // Administrative Adjustment Approval & Rejection Engine (FEAT-ADJ-003)
+    Route::middleware('permission:order.adjust.approve')->group(function () {
+        Route::post('/admin/orders/{order}/adjustments/{adjustment}/approve', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'approve'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('admin.orders.adjustments.approve');
+
+        Route::post('/admin/orders/{order}/adjustments/{adjustment}/reject', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'reject'])
+            ->whereNumber('order')
+            ->whereNumber('adjustment')
+            ->name('admin.orders.adjustments.reject');
+    });
 });
 
 

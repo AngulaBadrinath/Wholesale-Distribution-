@@ -752,7 +752,52 @@
 - [x] **Salesman Review Workspace Denial (403):** Salesmen attempting to access review workspace for own customer order rejected with 403 (`test_salesman_denied_from_review_workspace`).
 - [x] **Warehouse Manager Review Denial (Option A - 403):** Warehouse Manager without review permission rejected with 403 (`test_warehouse_manager_denied_from_review_workspace`).
 - [x] **Delivery Partner Review Denial (403):** Delivery partner rejected with 403 (`test_delivery_partner_denied_from_review_workspace`).
-- [x] **Strict Read-Only Boundary:** Verification that viewing queue and review workspace causes zero mutations across orders, items, allocations, or adjustments (`test_strict_review_boundary_can_approve_and_reject_are_false`, `AdminAdjustmentReviewDetailTest::test_review_workspace_is_strictly_read_only_and_does_not_mutate_state`).
+- [x] **Strict Read-Only Boundary:** Verification that viewing queue and review workspace causes zero mutations across orders, items, allocations, or adjustments (`test_maker_checker_boundary_requester_cannot_approve_or_reject`, `AdminAdjustmentReviewDetailTest::test_review_workspace_is_strictly_read_only_and_does_not_mutate_state`).
+
+### 1.10.4 Adjustment Approval / Rejection Engine (`ADJUSTMENT DECISION` / `FEAT-ADJ-003`)
+- [x] **Valid Case A Approval:** Admin approves valid unallocated quantity reduction; status transitions to `APPROVED`, `reviewed_by` and `reviewed_at` recorded (`AdminAdjustmentApprovalTest::test_admin_can_approve_valid_case_a_adjustment`).
+- [x] **Valid Case B Approval with Acknowledgment:** Admin approves allocation-impacting adjustment with explicit acknowledgment `acknowledge_allocation_impact: true` (`test_admin_can_approve_valid_case_b_adjustment_with_acknowledgment`).
+- [x] **Case B Acknowledgment Mandatory (422):** Case B approval attempt without acknowledgment rejected with 422 Unprocessable Entity (`test_case_b_approval_fails_without_acknowledgment`).
+- [x] **Stale Order Version Guard (409):** Approval rejected with 409 Conflict when order version incremented since request snapshot (`test_approval_fails_when_order_version_is_stale`).
+- [x] **Fulfillable Quantity Conflict Guard (409):** Approval rejected with 409 Conflict when requested reduction exceeds current live fulfillable quantity (`test_approval_fails_when_fulfillable_quantity_conflicts`).
+- [x] **Picking Encroachment Guard (409):** Approval rejected with 409 Conflict when requested reduction encroaches on warehouse picked stock (`test_approval_fails_when_reduction_encroaches_on_picked_stock`).
+- [x] **Ineligible Lifecycle Guard (409):** Approval rejected with 409 Conflict when order transitions to terminal state (`COMPLETED`, `CANCELLED`) (`test_approval_fails_when_order_is_in_ineligible_lifecycle`).
+- [x] **Deterministic Duplicate Approval Guard (409):** Second approval attempt on already approved adjustment deterministically returns 409 Conflict (`test_duplicate_approval_attempt_returns_409_conflict`).
+- [x] **Approval Strict No-Mutation Invariant:** Approval leaves `order_items` quantities, `order_item_allocations`, and `orders` financial totals 100% unmutated (`test_approval_strictly_does_not_mutate_quantities_allocations_or_financials`).
+- [x] **Order Adjustment Status Maintenance on Approval:** `orders.adjustment_status` remains `REQUESTED` pending FEAT-ADJ-004 atomic application (`test_admin_can_approve_valid_case_a_adjustment`).
+- [x] **Approval IDOR Route Mismatch (404):** Mismatched `{order}` and `{adjustment}` in route returns 404 Not Found (`test_approval_fails_with_404_on_idor_mismatch`).
+- [x] **Valid Rejection Execution:** Admin rejects submitted adjustment with mandatory trimmed reason; status transitions to `REJECTED`, `rejection_reason` persisted (`AdminAdjustmentRejectionTest::test_admin_can_reject_submitted_adjustment_with_valid_reason`).
+- [x] **Rejection Reason Missing Validation (422):** Rejection payload without reason rejected with 422 (`test_rejection_fails_when_reason_is_missing`).
+- [x] **Rejection Reason Too Short (<5 chars) (422):** Reason shorter than 5 characters rejected with 422 (`test_rejection_fails_when_reason_is_too_short`).
+- [x] **Rejection Reason Too Long (>1000 chars) (422):** Reason longer than 1000 characters rejected with 422 (`test_rejection_fails_when_reason_is_too_long`).
+- [x] **Duplicate Rejection Attempt (409):** Rejection attempt on already rejected adjustment returns 409 Conflict (`test_rejection_fails_when_adjustment_is_already_rejected`).
+- [x] **Rejecting Already Approved Request (409):** Attempting to reject an approved adjustment returns 409 Conflict (`test_rejection_fails_when_adjustment_is_already_approved`).
+- [x] **Rejecting Cancelled Request (409):** Attempting to reject a withdrawn/cancelled adjustment returns 409 Conflict (`test_rejection_fails_when_adjustment_is_cancelled`).
+- [x] **Stale/Conflicted Request Rejection Success:** Admin can successfully reject requests even when stale, mathematically conflicted, or picked-encroaching (`test_rejection_succeeds_even_when_request_is_stale_or_conflicted`).
+- [x] **Order Adjustment Status Reset to NONE:** Rejection resets `orders.adjustment_status` to `NONE` (`test_admin_can_reject_submitted_adjustment_with_valid_reason`).
+- [x] **Prior APPLIED Status Preservation:** Rejection preserves `orders.adjustment_status = 'APPLIED'` if an earlier adjustment was previously applied on that order (`test_rejection_preserves_prior_applied_adjustment_status`).
+- [x] **Rejection Strict No-Mutation Invariant:** Rejection causes zero changes to line items, allocations, or order financials (`test_rejection_strictly_does_not_mutate_quantities_allocations_or_financials`).
+- [x] **Rejection IDOR Route Mismatch (404):** Mismatched `{order}` and `{adjustment}` in route returns 404 Not Found (`test_rejection_fails_with_404_on_idor_mismatch`).
+- [x] **Maker-Checker Admin Self-Approval Denied (403):** Admin who created adjustment request denied self-approval with 403 Forbidden (`AdminAdjustmentMakerCheckerTest::test_admin_cannot_approve_own_adjustment_request`).
+- [x] **Maker-Checker Admin Self-Rejection Denied (403):** Admin who created adjustment request denied self-rejection with 403 Forbidden (`test_admin_cannot_reject_own_adjustment_request`).
+- [x] **Peer Admin Approval Allowed:** Admin B can approve an adjustment requested by Admin A (`test_admin_can_approve_another_admins_adjustment_request`).
+- [x] **Peer Admin Rejection Allowed:** Admin B can reject an adjustment requested by Admin A (`test_admin_can_reject_another_admins_adjustment_request`).
+- [x] **Super Admin Self-Approval Override Mandatory Reason (422):** Super Admin self-approval without override reason rejected with 422 (`test_super_admin_cannot_self_approve_without_emergency_override_reason`).
+- [x] **Super Admin Self-Approval Override Reason Length (422):** Override reason shorter than 10 chars rejected with 422 (`test_super_admin_cannot_self_approve_with_short_override_reason`).
+- [x] **Super Admin Self-Approval Override Success:** Super Admin self-approval succeeds with valid reason and emits `ADJUSTMENT_EMERGENCY_OVERRIDE` audit event (`test_super_admin_can_self_approve_with_valid_emergency_override_reason`).
+- [x] **Super Admin Self-Rejection Override Mandatory Reason (422):** Super Admin self-rejection without override reason rejected with 422 (`test_super_admin_cannot_self_reject_without_emergency_override_reason`).
+- [x] **Super Admin Self-Rejection Override Success:** Super Admin self-rejection succeeds with valid reason and emits audit event (`test_super_admin_can_self_reject_with_valid_emergency_override_reason`).
+- [x] **Accountant Decision Denial (403):** Accountant lacking `order.adjust.approve` denied approval and rejection with 403 (`test_accountant_denied_approval_and_rejection`).
+- [x] **Salesman Decision Denial (403):** Salesman denied approval and rejection with 403 (`test_salesman_denied_approval_and_rejection`).
+- [x] **Warehouse Manager Decision Denial (403):** Warehouse Manager denied approval and rejection with 403 (`test_warehouse_manager_denied_approval_and_rejection`).
+- [x] **Delivery Partner Decision Denial (403):** Delivery Partner denied approval and rejection with 403 (`test_delivery_partner_denied_approval_and_rejection`).
+- [x] **Concurrent Approval vs Approval Serialization:** Competing approvals serialize under lock; first commits, second receives 409 Conflict (`AdminAdjustmentApprovalConcurrencyTest::test_concurrent_approval_vs_approval_serializes_and_second_gets_409`).
+- [x] **Concurrent Approval vs Rejection Serialization:** Competing approval and rejection serialize under lock; loser receives 409 Conflict (`test_concurrent_approval_vs_rejection_serializes_and_loser_gets_409`).
+- [x] **Concurrent Approval vs Withdrawal Serialization:** Competing approval and requester withdrawal serialize under lock; loser receives 409 Conflict (`test_concurrent_approval_vs_requester_withdrawal_serializes_and_loser_gets_409`).
+- [x] **Concurrent Rejection vs Withdrawal Serialization:** Competing rejection and withdrawal serialize under lock; loser receives 409 Conflict (`test_concurrent_rejection_vs_requester_withdrawal_serializes`).
+- [x] **Approval Aborts on Warehouse Picking Encroachment Under Lock:** Live allocation progression during active transaction aborts approval with 409 Conflict (`test_approval_aborts_if_warehouse_picks_encroaching_stock_before_lock`).
+- [x] **Approval Aborts on Order Version Drift Under Lock:** Order version drift during active transaction aborts approval with 409 Conflict (`test_approval_aborts_if_order_version_increments_before_lock`).
+- [x] **Duplicate Submit / Double-Click Retries Deterministically 409:** Second HTTP submit attempt receives 409 Conflict without side effects (`test_duplicate_browser_submit_or_network_retry_returns_409`).
 
 ### 1.11 Inventory Reservation & Warehouse (`INVENTORY`)
 - [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`).

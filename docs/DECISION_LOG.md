@@ -323,6 +323,29 @@
 - **Affected Tickets:** `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`.
 - **Consequences:** All future approval and rejection actions (`FEAT-ADJ-003`) will be triggered as explicit mutations from this review workspace.
 
+### DEC-020: Order Adjustment Approval & Rejection Engine Architecture, Maker-Checker Segregation, Super Admin Emergency Override, Deterministic Lock Ordering & Duplicate Decision Semantics
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Guarded State Transitions & Duplicate Decision Semantics:** Only `SUBMITTED -> APPROVED` and `SUBMITTED -> REJECTED` represent valid decision transitions. Any attempt to approve or reject a request that has already transitioned out of `SUBMITTED` (whether `APPROVED`, `REJECTED`, `CANCELLED`, `APPLIED`, or `REVERSED`) returns **HTTP 409 Conflict**. A decision endpoint represents a guarded state transition, not an idempotent resource creation; duplicate browser clicks or retries safely yield exactly one committed transition followed by HTTP 409.
+  2. **Maker-Checker Segregation of Duties:** An administrator who requested an adjustment cannot approve or reject it. `ADMIN` self-decision is strictly prohibited (403). `SUPER_ADMIN` self-decision is restricted exclusively to an audited emergency override requiring a mandatory `emergency_override_reason` (10–1,000 characters) and emitting a dedicated `ADJUSTMENT_EMERGENCY_OVERRIDE` audit event.
+  3. **Supervisory Decision Permission Model:** In alignment with the existing RBAC permission registry, `Permission::ORDER_ADJUST_APPROVE` (`order.adjust.approve`) governs BOTH approval and rejection. No separate `order.adjust.reject` permission is introduced.
+  4. **Canonical Transactional Lock Hierarchy:** All decision transitions execute within `DB::transaction(..., 3)` enforcing deterministic row lock acquisition: `orders -> order_items ASC -> order_item_allocations ASC -> order_adjustments`. Locks are held until commit, preventing concurrent allocation progression or order mutation deadlocks.
+  5. **Live Revalidation & Allocation Boundary:** Approvals re-read and evaluate authoritative live state under lock (`OrderAdjustmentReviewService::evaluate`). If live fulfillable quantity cannot satisfy requested reductions or allocations have progressed into picked status, approval is blocked (422) with `ADJUSTMENT_APPROVAL_BLOCKED` observability event. Case B adjustments (impacting active allocations) mandate explicit `acknowledge_allocation_impact = true`. Rejections require a validated reason (5–1,000 characters) but are permitted even on stale, conflicted, or picked-encroaching requests without requiring mathematical approvability.
+  6. **Strict Non-Mutation Boundary (FEAT-ADJ-004 Boundary):** `FEAT-ADJ-003` operates solely as the decision authority. It mutates ONLY adjustment decision fields (`status`, `reviewed_by`, `reviewed_at`, `rejection_reason`) and order `adjustment_status`. It MUST NOT mutate `order_items` quantities (`cancelled_quantity`, `reserved_quantity`, etc.), `order_item_allocations`, inventory tables, invoice lines, tax/financial totals, or GL entries. Actual application belongs strictly to `FEAT-ADJ-004`.
+  7. **Order Adjustment Status Management:** Upon `APPROVED`, `orders.adjustment_status` remains `REQUESTED` to indicate an approved adjustment is awaiting application and prevent new requests. Upon `REJECTED`, `orders.adjustment_status` resets to `NONE` (or preserves `APPLIED` if an earlier adjustment was applied).
+  8. **Zero Schema Migration:** Leverages existing PostgreSQL columns (`status`, `reviewed_by`, `reviewed_at`, `rejection_reason`) on `order_adjustments` without creating duplicate fields or running schema migrations.
+- **Context:** Transitioning order adjustments from review (`FEAT-ADJ-002`) into authoritative execution requires a resilient decision engine preventing dual-control bypasses, concurrency races, and premature inventory/financial mutations.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-ORD-002` (Order Adjustment Framework), `RULE-SEC-001` (Server Authority), `RULE-SEC-002` (Zero Client Trust), and `RULE-ORD-003` (Independent State Dimensions).
+- **Alternatives Considered:**
+  - *Returning HTTP 200 idempotent replay on duplicate approval:* Rejected because state transitions are guarded operations, and masking concurrent/duplicate decisions risks masking operational anomalies.
+  - *Introducing a separate `order.adjust.reject` permission:* Rejected to avoid bloating the core RBAC permission registry when supervisory approval authority naturally encompasses rejection.
+  - *Executing allocation cancellations (`releaseAllocation`) during approval:* Rejected because approval is a managerial authorization step; physical and allocation adjustments belong to the atomic application step (`FEAT-ADJ-004`).
+- **Affected Domains:** Order Adjustments, Quantity Allocation, Security/RBAC, Operational Admin.
+- **Affected Documents:** PRD §14, §15; Technical Architecture §14, §15, §18; Security & Access §18, §23.
+- **Affected Tickets:** `FEAT-ADJ-003`, `FEAT-ADJ-004`.
+- **Consequences:** All adjustment requests transition to terminal `APPROVED` or `REJECTED` states, paving the way for `FEAT-ADJ-004` to apply approved adjustments atomically.
+
 ---
 
 ## Open Decisions & TBD Register
