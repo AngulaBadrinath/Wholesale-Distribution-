@@ -374,6 +374,28 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('delivery')
             ->name('delivery.return-warehouse');
     });
+
+    // Invoices & Documents (FEAT-DOC-001 through FEAT-DOC-004)
+    Route::middleware('permission:invoice.view')->group(function () {
+        Route::get('/admin/invoices', [\App\Http\Controllers\Admin\AdminInvoiceController::class, 'index'])
+            ->name('admin.invoices.index');
+        Route::get('/admin/invoices/{invoice}', [\App\Http\Controllers\Admin\AdminInvoiceController::class, 'show'])
+            ->whereNumber('invoice')
+            ->name('admin.invoices.show');
+
+        // Salesman scoped invoices
+        Route::get('/salesman/invoices', [\App\Http\Controllers\Salesman\SalesmanInvoiceController::class, 'index'])
+            ->name('salesman.invoices.index');
+        Route::get('/salesman/invoices/{invoice}', [\App\Http\Controllers\Salesman\SalesmanInvoiceController::class, 'show'])
+            ->whereNumber('invoice')
+            ->name('salesman.invoices.show');
+    });
+
+    Route::middleware('permission:order.approve')->group(function () {
+        Route::post('/admin/orders/{order}/invoice', [\App\Http\Controllers\Admin\AdminInvoiceController::class, 'generate'])
+            ->whereNumber('order')
+            ->name('admin.orders.invoice.generate');
+    });
 });
 
 

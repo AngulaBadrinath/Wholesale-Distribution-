@@ -199,7 +199,17 @@ class Order extends Model
      */
     public function latestDelivery(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(Delivery::class, 'order_id')->latestOfMany('id');
+        return $this->hasOne(Delivery::class, 'order_id')->latestOfMany();
+    }
+
+    /**
+     * Get the authoritative invoice for this order.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<Invoice, $this>
+     */
+    public function invoice(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Invoice::class, 'order_id');
     }
 
     /**

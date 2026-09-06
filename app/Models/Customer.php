@@ -67,6 +67,16 @@ class Customer extends Model
     }
 
     /**
+     * Get all invoices issued to this customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Invoice, $this>
+     */
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invoice::class, 'customer_id');
+    }
+
+    /**
      * Scope query to active customers.
      */
     public function scopeActive(Builder $query): Builder
