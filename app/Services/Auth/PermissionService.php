@@ -233,6 +233,9 @@ class PermissionService
                 Permission::INVOICE_PRINT,
                 Permission::INVOICE_DOWNLOAD,
 
+                // Accounts Receivable
+                Permission::RECEIVABLE_VIEW,
+
                 // Accounting View
                 Permission::ACCOUNTING_VIEW,
 
@@ -246,7 +249,7 @@ class PermissionService
                 Permission::ROLE_MANAGE,
             ],
 
-            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (17 permissions)
+            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (18 permissions)
             UserRole::ACCOUNTANT->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::ORDER_VIEW,
@@ -262,12 +265,13 @@ class PermissionService
                 Permission::INVOICE_VIEW,
                 Permission::INVOICE_PRINT,
                 Permission::INVOICE_DOWNLOAD,
+                Permission::RECEIVABLE_VIEW,
                 Permission::ACCOUNTING_VIEW,
                 Permission::ACCOUNTING_POST,
                 Permission::ACCOUNTING_REVERSE,
             ],
 
-            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (12 permissions)
+            // SALESMAN: Field sales, customer portfolio, order entry, and collection receipt (13 permissions)
             UserRole::SALESMAN->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::PRODUCT_VIEW,
@@ -281,6 +285,7 @@ class PermissionService
                 Permission::PAYMENT_CREATE,
                 Permission::INVOICE_VIEW,
                 Permission::INVOICE_PRINT,
+                Permission::RECEIVABLE_VIEW,
             ],
 
             // WAREHOUSE_MANAGER: Stock levels, fulfillment, picking, and warehouse exceptions (8 permissions)

@@ -67,6 +67,9 @@ enum Permission: string
     case INVOICE_PRINT = 'invoice.print';
     case INVOICE_DOWNLOAD = 'invoice.download';
 
+    // Accounts Receivable
+    case RECEIVABLE_VIEW = 'receivable.view';
+
     // Accounting
     case ACCOUNTING_VIEW = 'accounting.view';
     case ACCOUNTING_POST = 'accounting.post';
@@ -141,6 +144,8 @@ enum Permission: string
             self::INVOICE_PRINT => 'Print Invoices',
             self::INVOICE_DOWNLOAD => 'Download Invoices',
 
+            self::RECEIVABLE_VIEW => 'View Accounts Receivable',
+
             self::ACCOUNTING_VIEW => 'View General Ledger',
             self::ACCOUNTING_POST => 'Post Journal Entries',
             self::ACCOUNTING_REVERSE => 'Reverse Journal Entries',
@@ -211,6 +216,8 @@ enum Permission: string
             self::INVOICE_VIEW => 'Access historical, snapshot-based customer invoices.',
             self::INVOICE_PRINT => 'Format and print clean financial invoices without catalog images.',
             self::INVOICE_DOWNLOAD => 'Export invoice documents as secure, immutable PDF files.',
+
+            self::RECEIVABLE_VIEW => 'Access and browse accounts receivable customer ledgers, aging buckets, and statements.',
 
             self::ACCOUNTING_VIEW => 'Inspect the double-entry chart of accounts and general ledger journals.',
             self::ACCOUNTING_POST => 'Post balanced double-entry accounting journals to the general ledger.',

@@ -30,13 +30,13 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-001: Exactly 48 canonical permission codes exist.
+     * RBAC-PERM-001: Exactly 49 canonical permission codes exist.
      */
     public function test_exactly_48_canonical_permission_codes_exist(): void
     {
         $cases = Permission::cases();
-        $this->assertCount(48, $cases);
-        $this->assertCount(48, Permission::values());
+        $this->assertCount(49, $cases);
+        $this->assertCount(49, Permission::values());
     }
 
     /**
@@ -103,12 +103,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-006: SUPER_ADMIN has exactly all 48 permissions.
+     * RBAC-PERM-006: SUPER_ADMIN has exactly all 49 permissions.
      */
     public function test_super_admin_has_all_48_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SUPER_ADMIN);
-        $this->assertCount(48, $permissions);
+        $this->assertCount(49, $permissions);
         $this->assertSame(Permission::cases(), $permissions);
 
         $superAdmin = User::factory()->superAdmin()->create();
@@ -121,12 +121,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 43 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 44 permissions.
      */
     public function test_admin_has_exactly_the_intended_42_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(43, $permissions);
+        $this->assertCount(44, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 
@@ -149,15 +149,16 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains(Permission::RETURN_REVIEW->value, $permissionValues);
         $this->assertContains(Permission::RETURN_APPROVE->value, $permissionValues);
         $this->assertContains(Permission::REFUND_REQUEST->value, $permissionValues);
+        $this->assertContains(Permission::RECEIVABLE_VIEW->value, $permissionValues);
     }
 
     /**
-     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 17 permissions.
+     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 18 permissions.
      */
     public function test_accountant_has_exactly_the_intended_16_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ACCOUNTANT);
-        $this->assertCount(17, $permissions);
+        $this->assertCount(18, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
@@ -174,6 +175,7 @@ class PermissionRegistryTest extends TestCase
             Permission::INVOICE_VIEW,
             Permission::INVOICE_PRINT,
             Permission::INVOICE_DOWNLOAD,
+            Permission::RECEIVABLE_VIEW,
             Permission::ACCOUNTING_VIEW,
             Permission::ACCOUNTING_POST,
             Permission::ACCOUNTING_REVERSE,
@@ -183,12 +185,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-009: SALESMAN has exactly the intended 12 permissions.
+     * RBAC-PERM-009: SALESMAN has exactly the intended 13 permissions.
      */
     public function test_salesman_has_exactly_the_intended_11_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SALESMAN);
-        $this->assertCount(12, $permissions);
+        $this->assertCount(13, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
@@ -203,6 +205,7 @@ class PermissionRegistryTest extends TestCase
             Permission::PAYMENT_CREATE,
             Permission::INVOICE_VIEW,
             Permission::INVOICE_PRINT,
+            Permission::RECEIVABLE_VIEW,
         ];
 
         $this->assertEqualsCanonicalizing($expected, $permissions);
@@ -504,7 +507,7 @@ class PermissionRegistryTest extends TestCase
 
         $permissions = $this->permissionService->getPermissionsForUser($salesman);
         $this->assertIsArray($permissions);
-        $this->assertCount(12, $permissions);
+        $this->assertCount(13, $permissions);
         $this->assertContains('customer.view', $permissions);
         $this->assertContains('payment.view', $permissions);
         $this->assertNotContains('order.approve', $permissions);

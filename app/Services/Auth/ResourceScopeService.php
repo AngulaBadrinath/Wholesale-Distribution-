@@ -17,6 +17,7 @@ use App\Models\Order;
 use App\Models\OrderAdjustment;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\ReceivableTransaction;
 use App\Models\RefundRequest;
 use App\Models\RefundTransaction;
 use App\Models\ReturnItem;
@@ -456,6 +457,51 @@ class ResourceScopeService
      */
     public function scopeInventoryBalances(Builder $query, User $user): Builder
     {
+        return $query;
+    }
+
+    /**
+     * Determine whether the authenticated user has access to a specific customer's receivables / statements.
+     */
+    public function canAccessCustomerReceivables(User $user, Customer|int $customer): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        if (! $this->permissionService->has($user, Permission::RECEIVABLE_VIEW)) {
+            return false;
+        }
+
+        $customerId = $customer instanceof Customer ? $customer->id : (int) $customer;
+        $salesmanId = $customer instanceof Customer ? $customer->salesman_id : Customer::where('id', $customerId)->value('salesman_id');
+
+        if ($user->role === UserRole::SALESMAN) {
+            return (int) $salesmanId === (int) $user->id;
+        }
+
+        return true;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative accounts receivable ledger query scope.
+     */
+    public function scopeReceivableTransactions(Builder $query, User $user): Builder
+    {
+        if (! $this->isUserActive($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $this->permissionService->has($user, Permission::RECEIVABLE_VIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->role === UserRole::SALESMAN) {
+            return $query->whereHas('customer', function (Builder $cq) use ($user) {
+                $cq->where('salesman_id', $user->id);
+            });
+        }
+
         return $query;
     }
 

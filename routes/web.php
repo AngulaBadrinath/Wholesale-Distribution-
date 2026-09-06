@@ -498,6 +498,18 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('id')
             ->name('admin.refunds.process');
     });
+
+    // Accounts Receivable Ledger, Aging, and Statements (FEAT-AR-001 through FEAT-AR-003)
+    Route::middleware('permission:receivable.view')->group(function () {
+        Route::get('/admin/receivables', [\App\Http\Controllers\Admin\AdminReceivableController::class, 'index'])
+            ->name('admin.receivables.index');
+        Route::get('/admin/receivables/{id}', [\App\Http\Controllers\Admin\AdminReceivableController::class, 'show'])
+            ->whereNumber('id')
+            ->name('admin.receivables.show');
+        Route::get('/admin/receivables/{id}/statement', [\App\Http\Controllers\Admin\AdminReceivableController::class, 'statement'])
+            ->whereNumber('id')
+            ->name('admin.receivables.statement');
+    });
 });
 
 
