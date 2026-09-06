@@ -252,4 +252,14 @@ class Order extends Model
                 });
         });
     }
+
+    /**
+     * Get all payments recorded for this order.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'order_id')->orderBy('payment_date', 'desc');
+    }
 }

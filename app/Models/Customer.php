@@ -7,6 +7,7 @@ use App\Enums\PaymentTerms;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
@@ -249,5 +250,15 @@ class Customer extends Model
         ]);
 
         return implode(', ', $parts);
+    }
+
+    /**
+     * Get all payments recorded for this customer.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'customer_id')->orderBy('payment_date', 'desc');
     }
 }
