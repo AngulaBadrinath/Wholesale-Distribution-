@@ -179,12 +179,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-009: SALESMAN has exactly the intended 9 permissions.
+     * RBAC-PERM-009: SALESMAN has exactly the intended 10 permissions.
      */
-    public function test_salesman_has_exactly_the_intended_9_permissions(): void
+    public function test_salesman_has_exactly_the_intended_10_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SALESMAN);
-        $this->assertCount(9, $permissions);
+        $this->assertCount(10, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
@@ -193,6 +193,7 @@ class PermissionRegistryTest extends TestCase
             Permission::ORDER_CREATE,
             Permission::ORDER_SUBMIT,
             Permission::ORDER_ADJUST_REQUEST,
+            Permission::PAYMENT_VIEW,
             Permission::PAYMENT_CREATE,
             Permission::INVOICE_VIEW,
             Permission::INVOICE_PRINT,
@@ -496,8 +497,9 @@ class PermissionRegistryTest extends TestCase
 
         $permissions = $this->permissionService->getPermissionsForUser($salesman);
         $this->assertIsArray($permissions);
-        $this->assertCount(9, $permissions);
+        $this->assertCount(10, $permissions);
         $this->assertContains('customer.view', $permissions);
+        $this->assertContains('payment.view', $permissions);
         $this->assertNotContains('order.approve', $permissions);
     }
 
