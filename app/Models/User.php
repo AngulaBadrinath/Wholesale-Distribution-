@@ -219,6 +219,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine whether the user is eligible to be assigned as a salesman.
+     */
+    public function canBeAssignedAsSalesman(): bool
+    {
+        return $this->role === UserRole::SALESMAN && $this->isActive();
+    }
+
+    /**
      * Determine whether the user is eligible to be assigned as a delivery driver.
      */
     public function canBeAssignedAsDeliveryDriver(): bool
