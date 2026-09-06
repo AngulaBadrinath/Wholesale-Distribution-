@@ -882,28 +882,31 @@
 - [x] **Filtering, Multi-Column Search, and Sorting:** Search by SKU, product name, and bin location; filter by warehouse and stock status; allowlisted sorting with bounded pagination (`test_inventory_workspace_search_and_stock_status_filters`).
 - [x] **Query Stability & Zero N+1 Scaling:** Constant query count regardless of page size (2 vs 10 items) using selective eager loading (`test_inventory_workspace_query_count_remains_stable_without_n_plus_one`).
 
-### 1.11.1 Inventory Reservation & Warehouse Operations (Future Phase 06 Scope)
-- [ ] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`, `FEAT-INV-003`).
-- [ ] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).
-- [ ] **Constraint Assertion:** Normal reservation never allows `available < 0` (`RULE-INV-002`).
-- [ ] **Movement Ledger:** Stock movement record created (`AVAILABLE` → `RESERVED`) in `inventory_movements` (`FEAT-INV-004`).
-- [ ] **Damaged Stock:** Warehouse stock exception moves stock from `RESERVED` to `DAMAGED` (`RULE-INV-004`, `FEAT-INV-005`).
-- [ ] **Security:** Direct manual editing of available stock via API prohibited (`FEAT-INV-006`).
+### 1.11.1 Inventory Reservation & Warehouse Operations (`FEAT-INV-001` → `FEAT-INV-006`)
+- [x] **Happy Path:** Order approval atomically reserves stock; `reserved` increases, `available` decreases (`RULE-INV-001`, `FEAT-INV-003`, `StockReservationTest`).
+- [x] **Concurrency (Race Test):** Two concurrent orders competing for last unit of available stock: exactly one succeeds, one fails cleanly (`EDGE-004`, `QA-005`).
+- [x] **Constraint Assertion:** Normal reservation never allows `available < 0` (`RULE-INV-002`, `InventoryFoundationTest`).
+- [x] **Movement Ledger:** Stock movement record created (`AVAILABLE` → `RESERVED`) in `inventory_movements` with immutable ledger (`FEAT-INV-004`, `InventoryMovementLedgerTest`).
+- [x] **Damaged Stock:** Warehouse stock exception moves stock from `RESERVED` to `DAMAGED` (`RULE-INV-004`, `FEAT-INV-005`, `StockExceptionReportingTest`).
+- [x] **Authorized Adjustment:** Direct manual balance adjustment strictly requires authorization, optimistic version lock, and movement auditing (`FEAT-INV-006`, `InventoryAdjustmentTest`).
 
-### 1.12 Payment Entry & Verification (`PAYMENT`)
-- [ ] **Happy Path (Cash):** Cash payment recorded; customer outstanding balance decreases.
-- [ ] **Happy Path (Cheque):** Cheque recorded with mandatory JPEG image, cheque number, date, and bank name.
-- [ ] **Happy Path (Money Order):** Money order recorded with mandatory JPEG image and reference.
-- [ ] **Validation:** Cheque or Money Order submitted without JPEG evidence rejected with 422 (`RULE-PAY-002`).
-- [ ] **Verification:** Authorized accountant verifies payment (`payment.verify`); status transitions to `VERIFIED`.
-- [ ] **Idempotency:** Repeated payment submission prevented via unique payment idempotency token (`EDGE-002`).
-- [ ] **Reversal / Bounce:** Bounced cheque transitions to `BOUNCED`, reverses customer credit, and logs audit record (`FEAT-PAY-009`).
+### 1.12 Payment Entry & Verification (`PAYMENT` / `FEAT-PAY-001` → `FEAT-PAY-009`)
+- [x] **Happy Path (Cash):** Cash payment recorded; customer outstanding balance decreases (`FEAT-PAY-002`, `CashPaymentEntryTest`).
+- [x] **Happy Path (Cheque):** Cheque recorded with mandatory JPEG image, cheque number, date, and bank name (`FEAT-PAY-003`, `ChequePaymentEntryTest`).
+- [x] **Happy Path (Money Order):** Money order recorded with mandatory JPEG image, issuer name, and serial number (`FEAT-PAY-004`, `MoneyOrderPaymentEntryTest`).
+- [x] **Validation:** Cheque or Money Order submitted without JPEG evidence rejected with 422 (`RULE-PAY-002`, `ChequePaymentEntryTest`, `MoneyOrderPaymentEntryTest`).
+- [x] **Duplicate Detection:** Race-safe duplicate cheque/money order detection on customer + number (`ChequePaymentEntryTest`, `MoneyOrderPaymentEntryTest`).
+- [x] **Verification:** Authorized accountant verifies payment (`payment.verify`); status transitions to `VERIFIED` with aggregate Customer -> Order -> Payment row locking (`FEAT-PAY-007`, `PaymentVerificationTest`).
+- [x] **Maker-Checker Segregation:** Payment creator cannot verify own recorded payment (`PaymentVerificationTest`).
+- [x] **Rejection & Correction:** Structured rejection reasons, optional correction and resubmission preserving audit history (`FEAT-PAY-008`, `PaymentRejectionCorrectionTest`).
+- [x] **Reversal / Bounce:** Bounced cheque or NSF transitions to `REVERSED`, restores order balance and rolls back order payment status (`FEAT-PAY-009`, `PaymentReversalTest`).
 
-### 1.13 Payment Evidence Storage (`PAYMENT EVIDENCE`)
-- [ ] **Security (MIME Sniffing):** Uploading executable or script renamed to `.jpg` rejected by server-side magic byte inspection (`RULE-FILE-001`, `EDGE-014`).
-- [ ] **Security (Storage Isolation):** S3 bucket blocks public ACLs; direct HTTP access to S3 object returns 403.
-- [ ] **Security (Access Control):** Previewing evidence generates short-lived presigned URL ($\le 15\text{ mins}$) accessible only to authorized roles (`QA-006`).
-- [ ] **Security (IDOR):** Salesman cannot access payment evidence for unassigned customer.
+### 1.13 Payment Evidence Storage & Security (`PAYMENT EVIDENCE` / `FEAT-PAY-005`, `FEAT-PAY-006`, `UI-008`)
+- [x] **Security (MIME & Magic Bytes):** Uploading executable or script renamed to `.jpg` rejected by server-side binary magic byte inspection (`\xFF\xD8\xFF`), MIME `finfo`, and structural `getimagesize()` (`RULE-FILE-001`, `EDGE-014`, `FEAT-PAY-005`, `PaymentEvidenceUploadTest`).
+- [x] **Security (Storage Isolation):** Private S3 storage with unguessable keys `payments/{year}/{month}/{uuid}.jpg` and zero public object access.
+- [x] **Security (Access Control):** Previewing evidence generates short-lived presigned URL ($\le 15\text{ mins}$) accessible only to authorized roles (`QA-006`, `FEAT-PAY-006`, `PaymentEvidencePreviewTest`).
+- [x] **Security (IDOR):** Salesman cannot access payment evidence for unassigned customer (`PaymentEvidencePreviewTest`).
+- [x] **UI & Accessibility:** React uploader with drag-and-drop, touch targets >= 44px, client pre-validation, accessible preview modal with zoom/pan/rotate (`UI-008`, `PaymentEvidenceUploader.tsx`, `PaymentEvidencePreviewModal.tsx`).
 
 ### 1.14 Invoicing & Document Generation (`INVOICE`)
 - [ ] **Happy Path:** Invoice generated with unique number (`INV-XXXXXX`) from historical line snapshots.

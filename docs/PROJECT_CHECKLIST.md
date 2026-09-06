@@ -142,15 +142,15 @@
 ## 8. FINANCIAL TRANSACTIONS & DOCUMENTS
 
 ### Payments & Payment Evidence
-- [ ] `FEAT-PAY-001`: Payment Entity & Multi-Method Domain Model (`CASH`, `CHEQUE`, `MONEY_ORDER`)
-- [ ] `FEAT-PAY-002`: Cash Payment Entry Flow
-- [ ] `FEAT-PAY-003`: Cheque Payment Entry Flow
-- [ ] `FEAT-PAY-004`: Money Order Payment Entry Flow
-- [ ] `FEAT-PAY-005`: Payment Evidence Upload & Server-Side JPEG Magic-Byte Verification
-- [ ] `FEAT-PAY-006`: Payment Evidence Preview with Secure Presigned URLs
-- [ ] `FEAT-PAY-007`: Payment Verification & Reconciliation Workflow
-- [ ] `FEAT-PAY-008`: Payment Rejection & Correction Flow
-- [ ] `FEAT-PAY-009`: Payment Reversal & Bounced Cheque Operational Flow
+- [x] `FEAT-PAY-001`: Payment Entity & Multi-Method Domain Model (`CASH`, `CHEQUE`, `MONEY_ORDER`)
+- [x] `FEAT-PAY-002`: Cash Payment Entry Flow
+- [x] `FEAT-PAY-003`: Cheque Payment Entry Flow
+- [x] `FEAT-PAY-004`: Money Order Payment Entry Flow
+- [x] `FEAT-PAY-005`: Payment Evidence Upload & Server-Side JPEG Magic-Byte Verification
+- [x] `FEAT-PAY-006`: Payment Evidence Preview with Secure Presigned URLs
+- [x] `FEAT-PAY-007`: Payment Verification & Reconciliation Workflow
+- [x] `FEAT-PAY-008`: Payment Rejection & Correction Flow
+- [x] `FEAT-PAY-009`: Payment Reversal & Bounced Cheque Operational Flow
 
 ### Invoices & Documents
 - [ ] `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots
@@ -237,7 +237,7 @@
 - [ ] `UI-005`: Delivery Partner Portal Shell (Mobile-first driver workspace)
 - [ ] `UI-006`: Responsive Table System (Desktop dense table, mobile stacked cards)
 - [ ] `UI-007`: Unified Form State System (Default, loading skeleton, error, empty)
-- [ ] `UI-008`: Payment Evidence Upload & Preview UI Component
+- [x] `UI-008`: Payment Evidence Upload & Preview UI Component
 - [ ] `UI-009`: Order Creation Mobile/Tablet Flow
 - [ ] `UI-010`: Responsive QA Width Matrix Verification (320px to 1920px)
 
