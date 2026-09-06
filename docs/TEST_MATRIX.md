@@ -929,13 +929,20 @@
 - [x] **Admin Operations & Audit History:** Comprehensive administrative workspace at `GET /admin/deliveries`, driver assign/reassign modal, live metric summary cards, and chronological event timeline component (`FEAT-DEL-008`, `DeliveryHistoryTest`, `DeliveryTimeline.tsx`, `Admin/Deliveries/Index.tsx`).
 - [x] **Responsive:** Mobile driver view tested with touch-first interactions (min 44px targets), bottom sheets, and responsive desktop/tablet tables (`UI-005`, `DeliveryLayout.tsx`, `Index.tsx`, `Show.tsx`).
 
-### 1.16 Returns, Credits & Refunds (`RETURNS`, `CREDITS`, `REFUNDS`)
-- [ ] **Happy Path:** Customer returns 2 delivered units; warehouse inspects, accepts 1 good, accepts 1 damaged.
-- [ ] **Validation:** Return quantity > delivered quantity rejected.
-- [ ] **Inventory Movement:** Accepted good unit returned to `AVAILABLE`; damaged unit moved to `DAMAGED`.
-- [ ] **Credit Note:** Credit Note (`CR-XXXXXX`) issued strictly for accepted units.
-- [ ] **Refund Approval:** Cash refund requires explicit approval by separate authorized user (`RULE-CR-003`).
-- [ ] **Constraint Assertion:** Refund cannot exceed eligible customer credit balance (`EDGE-017`).
+### 1.16 Returns & Reverse Logistics (`RETURNS` / `FEAT-RET-001`..`004`)
+- [x] **Return Request Creation:** Customer delivered order items evaluated for exact returnable quantity $\max(0, \text{delivered} - (\text{returned} + \text{pending}))$; multi-line creation, sequential numbering `RET-{YEAR}-{00000X}`, idempotency replay protection (`FEAT-RET-001`, `ReturnRequestTest`).
+- [x] **Salesman Portfolio Scoping:** Salesman can only initiate returns for assigned customers; fail-closed 404 on unassigned customer orders (`FEAT-RET-001`, `ReturnRequestTest`).
+- [x] **Validation & Quantities:** Return quantity exceeding returnable quantity or non-delivered orders rejected with 422 (`FEAT-RET-001`, `ReturnRequestTest`).
+- [x] **Warehouse Physical Inspection:** Recording received quantity ($0 \le \text{received} \le \text{requested}$), condition notes, and server-validated JPEG/PNG evidence in private storage; zero premature inventory mutation (`FEAT-RET-002`, `ReturnInspectionTest`).
+- [x] **Approval & Disposition Conservation:** Enforcing $\text{accepted\_good} + \text{accepted\_damaged} + \text{rejected} = \text{received\_quantity} \le \text{requested\_quantity}$; line rejection reasons; maker-checker segregation (`approver != requester`) (`FEAT-RET-003`, `ReturnApprovalDispositionTest`).
+- [x] **Inventory Movement & Ledger Execution:** Atomic physical stock mutation (`ACCEPTED_GOOD` -> `AVAILABLE`, `ACCEPTED_DAMAGED` -> `DAMAGED`), immutable `InventoryMovement` entries, and `order_items`/`order_item_allocations` `returned_quantity` synchronization (`FEAT-RET-004`, `ReturnInventoryMovementTest`).
+- [x] **Concurrency & Race Conditions:** Concurrent return requests and duplicate approvals serialized via pessimistic row locking without over-return or negative inventory (`FEAT-RET-004`, `ReturnConcurrencyTest`).
+- [x] **Strict Financial Boundary:** Returns calculate estimated credit eligibility without generating premature Credit Notes or GL entries (`FEAT-RET-001`..`004`).
+
+### 1.16.1 Credits & Refunds (`CREDITS`, `REFUNDS` — Phase 10)
+- [ ] **Credit Note:** Credit Note (`CR-XXXXXX`) issued strictly for accepted units (`FEAT-CR-001`, `FEAT-CR-002`).
+- [ ] **Refund Approval:** Cash refund requires explicit approval by separate authorized user (`RULE-CR-003`, `FEAT-CR-003`, `FEAT-CR-004`).
+- [ ] **Constraint Assertion:** Refund cannot exceed eligible customer credit balance (`EDGE-017`, `FEAT-CR-005`).
 
 ### 1.17 Receivables & Customer Statements (`AR`)
 - [ ] **Happy Path:** Customer statement lists chronological invoices, payments, credits, and running balance.

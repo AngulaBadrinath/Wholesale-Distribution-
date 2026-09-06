@@ -13,20 +13,20 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **57.8%** (74 / 128 tickets) | FEAT-DOC-001 through FEAT-DOC-004 verified complete; 1,178 automated tests (1,168 passed, 7,380 assertions, 10 skipped) |
+| **Overall Code Completion** | **60.9%** (78 / 128 tickets) | FEAT-RET-001 through FEAT-RET-004 verified complete; 1,201 automated tests (1,191 passed, 7,453 assertions, 10 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 09 — Invoicing, Credit Notes & Receipts (Documents & PDF Engine)** | Status: `COMPLETED` (FEAT-DOC-001 through FEAT-DOC-004 complete; dual-layer immutability triggers, distinct sequential numbering, complete historical snapshots, zero product images, responsive HTML/print view, headless Chromium vector PDF generation and streaming download) |
-| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07 and Phase 09 complete; Phase 10 / reporting pending) |
-| **Current Active Ticket** | **FEAT-DOC-004** (Complete) | Ready to begin Phase 10 (`FEAT-REP-001: Sales & Commercial Performance Reporting`) |
+| **Current Phase** | **Phase 09.5 — Returns & Warehouse Return Operations** | Status: `COMPLETED` (FEAT-RET-001 through FEAT-RET-004 complete; server-side returnable quantity calculation, inspection vs disposition separation, atomic inventory movement ledger execution, allocation synchronization, maker-checker authorization, strict financial boundary) |
+| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `IN_PROGRESS` (Phase 07, 08, 09, and 09.5 complete; Credits/Refunds and General Ledger pending) |
+| **Current Active Ticket** | **FEAT-RET-004** (Complete) | Ready to begin Phase 10 / Credits (`FEAT-CR-001: Customer Credit Eligibility Calculation Engine`) |
 | **Git Working Tree** | Clean / Ready to Commit | Main branch tracking remote origin |
-| **Active Blockers** | **0** | All Phase 09 document domain models landed |
+| **Active Blockers** | **0** | All Returns domain models and workflows landed |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **74** (`TECH-FOUND-001`, `TECH-FOUND-002`, `TECH-FOUND-003`, `TECH-FOUND-004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`, `FEAT-AUTH-002`, `FEAT-AUTH-003`, `FEAT-AUTH-004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`, `FEAT-CUS-002`, `FEAT-CUS-003`, `FEAT-CUS-004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`, `FEAT-PROD-002`, `FEAT-PROD-003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`, `FEAT-ORD-002`, `FEAT-ORD-003`, `FEAT-ORD-004`, `FEAT-ORD-005`, `FEAT-ORD-006`, `FEAT-ORD-010`, `FEAT-ORD-011`, `FEAT-ORD-012`, `FEAT-ORD-013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`, `FEAT-ADJ-002`, `FEAT-ADJ-003`, `FEAT-ADJ-004`, `FEAT-ADJ-005`, `FEAT-ADJ-006`, `FEAT-INV-001`, `FEAT-INV-002`, `FEAT-INV-003`, `FEAT-INV-004`, `FEAT-INV-005`, `FEAT-INV-006`, `FEAT-PAY-001`, `FEAT-PAY-002`, `FEAT-PAY-003`, `FEAT-PAY-004`, `FEAT-PAY-005`, `FEAT-PAY-006`, `FEAT-PAY-007`, `FEAT-PAY-008`, `FEAT-PAY-009`, `FEAT-DEL-001`, `FEAT-DEL-002`, `FEAT-DEL-003`, `FEAT-DEL-004`, `FEAT-DEL-005`, `FEAT-DEL-006`, `FEAT-DEL-007`, `FEAT-DEL-008`, `FEAT-DOC-001`, `FEAT-DOC-002`, `FEAT-DOC-003`, `FEAT-DOC-004`).
-- Current progress: **57.8%** (74 / 128).
+- Completed tickets: **78** (`TECH-FOUND-001`..`004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`, `FEAT-RBAC-002`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`).
+- Current progress: **60.9%** (78 / 128).
 
 ---
 
@@ -105,13 +105,17 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   70. `FEAT-DEL-008`: Delivery History & Admin Operations Workspace (Chronological audit history timeline component `DeliveryTimeline.tsx`, full administrative operations queue at `GET /admin/deliveries`, driver assign/reassign modal, live metric summary cards, 7 automated tests)
   71. `FEAT-DOC-001`: Invoice Generation Engine from Historical Line Snapshots (PostgreSQL sequence `invoice_number_seq` generating `INV-{YEAR}-{00000X}`, atomic generator `InvoiceGeneratorService::generateForOrder()`, complete customer and company snapshots, zero product images, anti-IDOR scoped API endpoints, 10 automated tests)
   72. `FEAT-DOC-002`: Invoice HTML Presentation & Print View (Zero product images [RULE-DOC-001], print CSS stylesheet with clean page-breaks, customer and issuer metadata, line item tax breakdowns, React admin index and detail workspaces, print route `GET /invoices/{invoice}/print`, 8 automated tests)
-  73:   73. `FEAT-DOC-003`: Invoice PDF Generation Pipeline & Binary Streaming (Headless Chromium vector PDF generation via `InvoicePdfService`, cached private storage `storage/app/private/invoices/`, valid `%PDF-` binary signature check, streaming download route `GET /invoices/{invoice}/pdf`, 8 automated tests)
+  73. `FEAT-DOC-003`: Invoice PDF Generation Pipeline & Binary Streaming (Headless Chromium vector PDF generation via `InvoicePdfService`, cached private storage `storage/app/private/invoices/`, valid `%PDF-` binary signature check, streaming download route `GET /invoices/{invoice}/pdf`, 8 automated tests)
   74. `FEAT-DOC-004`: Historical Document Immutability Protection (Dual-layer immutability architecture: PostgreSQL triggers `trg_protect_invoices` and `trg_protect_invoice_items` blocking DELETE and commercial updates; Eloquent model event listeners raising `LogicException` on illegal mutations; operational updates allowed for status and payment tracking, 8 automated tests)
+  75. `FEAT-RET-001`: Return Request Creation Flow (Canonical `return_requests`, `return_request_items`, `return_request_events` schema, PostgreSQL sequence `return_number_seq` generating `RET-{YEAR}-{00000X}`, server-side authoritative returnable quantity math `returnable = max(0, delivered - (returned + open_pending))`, multi-line request creation, Salesman assigned-customer scoping with fail-closed 404, Admin broad scope, idempotency protection, 6 targeted automated tests)
+  76. `FEAT-RET-002`: Return Review & Warehouse Physical Inspection (Authoritative inspection transition at `POST /admin/returns/{return}/inspect`, received quantity capture `0 <= received <= requested`, condition notes, multi-file server-side JPEG/PNG evidence upload with magic-byte validation and private S3 storage, state transition `REQUESTED`/`UNDER_REVIEW` -> `INSPECTED`, zero premature stock or returned_quantity mutation, 5 targeted automated tests)
+  77. `FEAT-RET-003`: Return Approval & Good/Damaged Stock Disposition (Authoritative approval engine at `POST /admin/returns/{return}/approve` and rejection at `POST /admin/returns/{return}/reject`, mandatory maker-checker segregation of duties `approver != requester` with Super Admin emergency override, strict disposition conservation `accepted_good + accepted_damaged + rejected = received_quantity <= requested_quantity`, line-level rejection reasons, 8 targeted automated tests)
+  78. `FEAT-RET-004`: Return Inventory Movement Ledger Execution (Atomic transactional physical stock mutation in `DB::transaction(..., 3)` following lock hierarchy Customer -> Order -> OrderItems ASC -> OrderItemAllocations ASC -> InventoryBalances ASC -> ReturnRequest; accepted good stock increments `on_hand += Q` and `available += Q` with `from_state=EXTERNAL` to `to_state=AVAILABLE`; accepted damaged stock increments `on_hand += Q` and `damaged += Q` with `from_state=EXTERNAL` to `to_state=DAMAGED`; synchronizes `order_items.returned_quantity` and `order_item_allocations.returned_quantity` preserving `returned <= delivered`; writes immutable return events and audit logs; strictly NO premature credit notes or GL entries; 4 targeted tests across inventory and concurrency)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (0):** None.
-- **Upcoming Tickets (Phase 10 — Reporting & Audit Logging):**
-  1. `FEAT-REP-001`: Sales & Commercial Performance Reporting
-  2. `FEAT-REP-002`: Inventory Valuation & Stock Movement Reporting
+- **Upcoming Tickets (Phase 10 — Credits & Refunds / Reporting):**
+  1. `FEAT-CR-001`: Customer Credit Eligibility Calculation Engine
+  2. `FEAT-CR-002`: Credit Note Generation (`CR-XXXXXX`)
 
 ---
 

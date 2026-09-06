@@ -691,6 +691,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-017: Implementation of Returns & Warehouse Return Operations Section (FEAT-RET-001 through FEAT-RET-004)
+- **Change ID:** `CHANGE-017`
+- **Date:** September 6, 2026
+- **Requested By:** Principal Software Architect & Solo Developer
+- **Request:** Implement complete Phase 09.5 Returns & Reverse Logistics subsystem encompassing `FEAT-RET-001` through `FEAT-RET-004`: database schemas (`return_requests`, `return_request_items`, `return_request_events`, `return_number_seq`), server-side authoritative returnable quantity mathematics $\max(0, \text{delivered} - (\text{returned} + \text{pending}))$, warehouse physical inspection workflow with server-validated JPEG/PNG evidence, approval and disposition conservation engine ($\text{accepted\_good} + \text{accepted\_damaged} + \text{rejected} = \text{received} \le \text{requested}$), maker-checker segregation of duties (`approver != requester`), atomic physical inventory movement ledger execution (`InventoryMovementType::RETURN`, `from_state=EXTERNAL`), allocation returned quantity synchronization (`order_items.returned_quantity` and `order_item_allocations.returned_quantity`), admin/salesman controllers and Inertia/React operational interfaces (`Index.tsx`, `Create.tsx`, `Show.tsx`, `InspectReturnModal.tsx`, `ApproveReturnModal.tsx`), and strict financial boundary preservation (zero premature credit notes or GL entries).
+- **Reason:** Complete core reverse-logistics milestone providing deterministic stock recovery and commercial tracking for customer merchandise returns without inventory or financial corruption.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P0` (Phase 09.5 Section Milestone)
+- **Affected PRD Requirements:** Document 01 §16.
+- **Affected Architecture:** Document 02 §16.5.
+- **Affected Security:** Document 03 §14.5.
+- **Affected Frontend:** Document 04 §15.5.
+- **Affected Tickets:** `FEAT-RET-001`, `FEAT-RET-002`, `FEAT-RET-003`, `FEAT-RET-004`.
+- **Inventory Impact:** Accepted good items restore warehouse physical stock (`on_hand += Q`, `available += Q`); accepted damaged items increment damaged quarantine (`on_hand += Q`, `damaged += Q`). Immutable `InventoryMovement` records written.
+- **Order Impact:** Order items and item allocations track `returned_quantity += Q`, strictly bounded by `delivered_quantity`. Original `ordered_quantity` and baseline allocations preserved non-destructively.
+- **Payment Impact:** None. Payments remain historically immutable.
+- **Tax Impact:** Returns snapshot historical unit prices, tax rates, and line totals for credit eligibility without retroactive tax calculation drift.
+- **Accounting Impact:** Prepares clean credit eligibility figures for future `FEAT-CR-001` without posting premature GL journals.
+- **Data Migration Impact:** Migration `2026_09_07_000001_create_return_requests_and_items_tables.php` creating tables, foreign keys, sequence `return_number_seq`, and PostgreSQL check constraints.
+- **Testing Impact:** Added 23 targeted feature and concurrency tests across return request creation, inspection, approval disposition, inventory movement, and race-condition serialization. Total test suite: 1,201 tests (1,191 passed, 7,453 assertions, 10 skipped). TypeScript check and Vite production build 100% clean.
+- **Deployment Impact:** Run `php artisan migrate`.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Commits on branch `feature/SECTION-RET-001-004-returns`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

@@ -527,6 +527,32 @@
 
 ---
 
+### DEC-017: Multi-Stage Return Architecture, Strict Inspection vs. Disposition Separation & Zero Premature Financial Mutation
+- **Date:** September 2026
+- **Status:** `CONFIRMED`
+- **Decision:**
+  1. **Strict Separation of Returnable Quantity, Inspection, and Stock Disposition:**
+     - **Stage 1: Return Request Creation (`FEAT-RET-001`):** Server strictly computes returnable quantity inside transaction as $\max(0, \text{delivered} - (\text{returned} + \sum \text{open\_pending\_requests}))$. Prevents overselling or duplicate consumption across concurrent requests.
+     - **Stage 2: Warehouse Physical Inspection (`FEAT-RET-002`):** Records actual `received_quantity` ($\le \text{requested\_quantity}$), condition notes, and server-validated JPEG/PNG evidence in private storage. Zero mutation of physical stock or `order_items.returned_quantity`.
+     - **Stage 3: Approval & Disposition Reconciliation (`FEAT-RET-003`):** Enforces hard conservation invariant: $\text{accepted\_good} + \text{accepted\_damaged} + \text{rejected} = \text{received\_quantity} \le \text{requested\_quantity}$. Maker-checker segregation strictly enforced (`approver != requester` unless Super Admin emergency override).
+     - **Stage 4: Atomic Physical Stock & Allocation Execution (`FEAT-RET-004`):** In a single transaction under deterministic lock ordering (Customer $\to$ Order $\to$ OrderItems ASC $\to$ OrderItemAllocations ASC $\to$ InventoryBalances ASC $\to$ ReturnRequest), increments physical stock (`ACCEPTED_GOOD`: `on_hand += Q`, `available += Q`; `ACCEPTED_DAMAGED`: `on_hand += Q`, `damaged += Q`), writes immutable `InventoryMovement` entries (`from_state=EXTERNAL`), and updates `returned_quantity` on both `order_items` and `order_item_allocations`.
+  2. **Absolute Financial Boundary:**
+     - Returns in Phase 09.5 calculate and expose estimated credit eligibility figures (`estimated_refund_subtotal`, `estimated_refund_tax`, `estimated_refund_total`) as preparation data for the future Credits & Refunds section (`FEAT-CR-001`..`005`). Returns strictly DO NOT generate Credit Notes (`CR-XXXXXX`), issue cash refunds, reverse payments, or post GL journal entries.
+  3. **Strict Separation Between Delivery Return-to-Warehouse and Merchandise Return:**
+     - Delivery return-to-warehouse handles failed deliveries where customer custody never occurred (stock was not relieved as customer merchandise).
+     - Customer merchandise returns handle post-delivery returns of previously relieved stock, restoring warehouse physical inventory.
+- **Context:** Establishing the reverse-logistics and return operations architecture for Phase 09.5.
+- **Reason:** Enforces `RULE-DOM-001` (Non-Destructive History), `RULE-INV-001` (Atomic Inventory Reservation), `RULE-SEC-001` (Server Authority), `RULE-SEC-002` (Zero Client Trust), and `RULE-SEC-003` (Resource Scope).
+- **Alternatives Considered:**
+     - *Equating physical inspection directly to inventory restock:* Rejected because returned items may be damaged, unmerchantable, or rejected upon detailed warehouse evaluation.
+     - *Issuing credit notes directly inside the return approval controller:* Rejected to maintain strict domain boundaries between physical reverse logistics and financial accounting receivables.
+- **Affected Domains:** Returns, Inventory, Orders, Logistics, Security/RBAC, Financial Boundary.
+- **Affected Documents:** PRD §16; Technical Architecture §16.5; Security & Access §14.5; Frontend Specification §15.5; Feature Ticket List §16.
+- **Affected Tickets:** `FEAT-RET-001`, `FEAT-RET-002`, `FEAT-RET-003`, `FEAT-RET-004`.
+- **Consequences:** Inventory balances reflect true physical warehouse reality without financial contamination or duplicate quantity drift.
+
+---
+
 ## Open Decisions & TBD Register
 
 The following items are recognized as open client policy items and must remain configurable until confirmed:

@@ -173,10 +173,10 @@
 - [x] `FEAT-DEL-008`: Delivery History & Tracking Audit
 
 ### Returns
-- [ ] `FEAT-RET-001`: Return Request Creation (Linked to delivered orders)
-- [ ] `FEAT-RET-002`: Return Review & Warehouse Physical Inspection
-- [ ] `FEAT-RET-003`: Return Approval & Good/Damaged Stock Disposition
-- [ ] `FEAT-RET-004`: Return Inventory Movement Ledger Execution
+- [x] `FEAT-RET-001`: Return Request Creation (Linked to delivered orders)
+- [x] `FEAT-RET-002`: Return Review & Warehouse Physical Inspection
+- [x] `FEAT-RET-003`: Return Approval & Good/Damaged Stock Disposition
+- [x] `FEAT-RET-004`: Return Inventory Movement Ledger Execution
 
 ### Credits & Refunds
 - [ ] `FEAT-CR-001`: Customer Credit Eligibility Calculation Engine
