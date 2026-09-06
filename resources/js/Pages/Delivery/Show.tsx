@@ -3,6 +3,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import DeliveryLayout from '@/Layouts/DeliveryLayout';
 import DeliveryCompleteModal from '@/Components/Delivery/DeliveryCompleteModal';
 import DeliveryFailureModal from '@/Components/Delivery/DeliveryFailureModal';
+import DeliveryRescheduleModal from '@/Components/Delivery/DeliveryRescheduleModal';
+import DeliveryReturnModal from '@/Components/Delivery/DeliveryReturnModal';
 import { 
     Truck, 
     Navigation, 
@@ -127,6 +129,8 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
     const [submittingAction, setSubmittingAction] = useState<string | null>(null);
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [isFailureModalOpen, setIsFailureModalOpen] = useState(false);
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
     const fullAddress = `${delivery.delivery_address_line1}, ${delivery.delivery_city}, ${delivery.delivery_state} ${delivery.delivery_postal_code}`;
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
@@ -345,6 +349,23 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
                 deliveryNumber={delivery.delivery_number}
             />
 
+            {/* Delivery Reschedule Modal */}
+            <DeliveryRescheduleModal
+                isOpen={isRescheduleModalOpen}
+                onClose={() => setIsRescheduleModalOpen(false)}
+                deliveryId={delivery.id}
+                deliveryNumber={delivery.delivery_number}
+                currentScheduledDate={delivery.scheduled_date}
+            />
+
+            {/* Delivery Return Modal */}
+            <DeliveryReturnModal
+                isOpen={isReturnModalOpen}
+                onClose={() => setIsReturnModalOpen(false)}
+                deliveryId={delivery.id}
+                deliveryNumber={delivery.delivery_number}
+            />
+
             {/* Bottom Sticky Action Bar */}
             <div className="fixed bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-3 flex gap-2 max-w-3xl mx-auto shadow-2xl">
                 {capabilities.can_pickup && (
@@ -386,6 +407,26 @@ export default function DeliveryShow({ delivery, capabilities }: DeliveryShowPro
                     >
                         <XCircle className="w-5 h-5 text-rose-400" />
                         <span>Report Issue</span>
+                    </button>
+                )}
+
+                {capabilities.can_reschedule && !capabilities.can_start_route && !capabilities.can_pickup && (
+                    <button
+                        onClick={() => setIsRescheduleModalOpen(true)}
+                        className="flex-1 min-h-[48px] rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-all shadow-lg shadow-amber-600/20"
+                    >
+                        <Calendar className="w-5 h-5" />
+                        <span>Reschedule</span>
+                    </button>
+                )}
+
+                {capabilities.can_return_warehouse && (
+                    <button
+                        onClick={() => setIsReturnModalOpen(true)}
+                        className="min-h-[48px] px-4 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-all"
+                    >
+                        <RotateCcw className="w-5 h-5 text-purple-400" />
+                        <span>Return to Hub</span>
                     </button>
                 )}
             </div>

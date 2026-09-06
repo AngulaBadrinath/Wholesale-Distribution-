@@ -248,4 +248,48 @@ class DeliveryPartnerController extends Controller
 
         return back()->with('warning', "Delivery {$updatedDelivery->delivery_number} recorded as failed.");
     }
+
+    /**
+     * Reschedule delivery mission for a future date (FEAT-DEL-007).
+     */
+    public function reschedule(\App\Http\Requests\Delivery\RescheduleDeliveryRequest $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->reschedule(
+            $delivery,
+            $request->user(),
+            $request->validated()
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} rescheduled to {$updatedDelivery->scheduled_date->toDateString()}.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('success', "Delivery {$updatedDelivery->delivery_number} rescheduled to {$updatedDelivery->scheduled_date->toDateString()}.");
+    }
+
+    /**
+     * Return undelivered shipment back to warehouse custody (FEAT-DEL-007).
+     */
+    public function returnToWarehouse(\App\Http\Requests\Delivery\ReturnToWarehouseRequest $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->returnToWarehouse(
+            $delivery,
+            $request->user(),
+            $request->validated()
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} safely returned to warehouse custody.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('success', "Delivery {$updatedDelivery->delivery_number} safely returned to warehouse custody.");
+    }
 }

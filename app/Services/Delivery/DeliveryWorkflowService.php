@@ -510,6 +510,186 @@ class DeliveryWorkflowService
     }
 
     /**
+     * Authoritative Delivery Reschedule Workflow (FEAT-DEL-007).
+     *
+     * @param  array{
+     *     scheduled_date: string,
+     *     delivery_window?: string|null,
+     *     notes?: string|null,
+     * }  $data
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     * @throws ValidationException
+     */
+    public function reschedule(Delivery $delivery, User $actor, array $data): Delivery
+    {
+        $this->authorizeDeliveryUpdate($delivery, $actor);
+
+        if (empty($data['scheduled_date'])) {
+            throw ValidationException::withMessages([
+                'scheduled_date' => 'Rescheduled delivery date is strictly required.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($delivery, $actor, $data) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $delivery->order_id)->lockForUpdate()->firstOrFail();
+
+            /** @var Delivery $lockedDelivery */
+            $lockedDelivery = Delivery::where('id', $delivery->id)->lockForUpdate()->firstOrFail();
+
+            if (! $lockedDelivery->canBeRescheduled()) {
+                throw new ConflictHttpException("Delivery {$lockedDelivery->delivery_number} is in '{$lockedDelivery->status->value}' status and cannot be rescheduled.");
+            }
+
+            $now = Carbon::now();
+            $previousStatus = $lockedDelivery->status;
+            $newDate = Carbon::parse($data['scheduled_date']);
+
+            $lockedDelivery->status = DeliveryStatus::RESCHEDULED;
+            $lockedDelivery->scheduled_date = $newDate;
+            if (! empty($data['delivery_window'])) {
+                $lockedDelivery->delivery_window = $data['delivery_window'];
+            }
+            $lockedDelivery->updated_by = $actor->id;
+            $lockedDelivery->version += 1;
+            $lockedDelivery->save();
+
+            // Record immutable event
+            DeliveryEvent::create([
+                'delivery_id' => $lockedDelivery->id,
+                'event_type' => DeliveryEventType::RESCHEDULED,
+                'from_status' => $previousStatus->value,
+                'to_status' => DeliveryStatus::RESCHEDULED->value,
+                'actor_id' => $actor->id,
+                'notes' => "Delivery rescheduled to {$newDate->toDateString()}" . (! empty($data['notes']) ? " - {$data['notes']}" : ''),
+                'metadata' => [
+                    'previous_date' => $lockedDelivery->getOriginal('scheduled_date')?->toDateString(),
+                    'new_scheduled_date' => $newDate->toDateString(),
+                    'delivery_window' => $data['delivery_window'] ?? null,
+                    'notes' => $data['notes'] ?? null,
+                ],
+                'created_at' => $now,
+            ]);
+
+            // Sync order delivery status
+            $lockedOrder->delivery_status = DeliveryStatus::RESCHEDULED;
+            $lockedOrder->save();
+
+            Log::info('logistics.delivery_rescheduled', [
+                'delivery_id' => $lockedDelivery->id,
+                'delivery_number' => $lockedDelivery->delivery_number,
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'new_scheduled_date' => $newDate->toDateString(),
+                'actor_id' => $actor->id,
+            ]);
+
+            return $lockedDelivery->load(['items', 'order', 'customer', 'driver', 'failures', 'events']);
+        }, 3);
+    }
+
+    /**
+     * Authoritative Return to Warehouse Workflow (FEAT-DEL-007).
+     *
+     * In Model B:
+     * - Physical inventory was never deducted from warehouse balance during transit (custody was with driver).
+     * - Returning custody to the warehouse resets dispatched_quantity to 0 on allocations.
+     * - Stock remains safely in the warehouse reserved balance (no double restock, no double deduction).
+     * - Unresolved failures are marked resolved with 'RETURNED_TO_WAREHOUSE'.
+     *
+     * @param  array{notes?: string|null}  $options
+     *
+     * @throws AuthorizationException
+     * @throws ConflictHttpException
+     */
+    public function returnToWarehouse(Delivery $delivery, User $actor, array $options = []): Delivery
+    {
+        $this->authorizeDeliveryUpdate($delivery, $actor);
+
+        // Deterministic Lock Hierarchy: Order -> Delivery -> Allocations
+        return DB::transaction(function () use ($delivery, $actor, $options) {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::where('id', $delivery->order_id)->lockForUpdate()->firstOrFail();
+
+            /** @var Delivery $lockedDelivery */
+            $lockedDelivery = Delivery::where('id', $delivery->id)->lockForUpdate()->firstOrFail();
+
+            // Idempotency: If already RETURNED_TO_WAREHOUSE, return authoritative state
+            if ($lockedDelivery->status === DeliveryStatus::RETURNED_TO_WAREHOUSE) {
+                return $lockedDelivery->load(['items', 'order', 'customer', 'driver', 'failures', 'events']);
+            }
+
+            if (! $lockedDelivery->canBeReturnedToWarehouse()) {
+                throw new ConflictHttpException("Delivery {$lockedDelivery->delivery_number} is in '{$lockedDelivery->status->value}' status and cannot be returned to warehouse.");
+            }
+
+            $now = Carbon::now();
+            $previousStatus = $lockedDelivery->status;
+
+            // Reset dispatched allocations
+            $allocations = OrderItemAllocation::where('order_id', $lockedOrder->id)
+                ->lockForUpdate()
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($allocations as $alloc) {
+                $alloc->dispatched_quantity = 0;
+                $alloc->status = AllocationStatus::ALLOCATED;
+                $alloc->save();
+            }
+
+            // Update delivery record
+            $lockedDelivery->status = DeliveryStatus::RETURNED_TO_WAREHOUSE;
+            $lockedDelivery->returned_at = $now;
+            $lockedDelivery->updated_by = $actor->id;
+            $lockedDelivery->version += 1;
+            $lockedDelivery->save();
+
+            // Mark any pending failures as resolved by warehouse return
+            DeliveryFailure::where('delivery_id', $lockedDelivery->id)
+                ->whereNull('resolved_at')
+                ->update([
+                    'resolved_at' => $now,
+                    'resolution_action' => 'RETURNED_TO_WAREHOUSE',
+                    'resolved_by' => $actor->id,
+                ]);
+
+            // Record immutable event
+            DeliveryEvent::create([
+                'delivery_id' => $lockedDelivery->id,
+                'event_type' => DeliveryEventType::RETURNED_TO_WAREHOUSE,
+                'from_status' => $previousStatus->value,
+                'to_status' => DeliveryStatus::RETURNED_TO_WAREHOUSE->value,
+                'actor_id' => $actor->id,
+                'notes' => $options['notes'] ?? 'Goods safely returned to warehouse inventory custody',
+                'metadata' => [
+                    'returned_at' => $now->toIso8601String(),
+                    'notes' => $options['notes'] ?? null,
+                ],
+                'created_at' => $now,
+            ]);
+
+            // Synchronize order fulfillment and delivery statuses
+            $lockedOrder->fulfillment_status = FulfillmentStatus::RESERVED;
+            $lockedOrder->delivery_status = DeliveryStatus::RETURNED_TO_WAREHOUSE;
+            $lockedOrder->save();
+
+            Log::info('logistics.delivery_returned_to_warehouse', [
+                'delivery_id' => $lockedDelivery->id,
+                'delivery_number' => $lockedDelivery->delivery_number,
+                'order_id' => $lockedOrder->id,
+                'order_number' => $lockedOrder->order_number,
+                'actor_id' => $actor->id,
+                'timestamp' => $now->toIso8601String(),
+            ]);
+
+            return $lockedDelivery->load(['items', 'order', 'customer', 'driver', 'failures', 'events']);
+        }, 3);
+    }
+
+    /**
      * Authorize that the actor is either the assigned delivery driver or a privileged admin.
      *
      * @throws AuthorizationException
