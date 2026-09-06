@@ -119,7 +119,7 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
     const getStatusBadge = (st: string) => {
         switch (st) {
             case 'PAID':
-                return <Badge variant="success">Paid</Badge>;
+                return <Badge variant="default" className="bg-emerald-600 text-white">Paid</Badge>;
             case 'ISSUED':
                 return <Badge variant="default">Issued</Badge>;
             case 'VOID':
@@ -143,6 +143,7 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
     };
 
     const verifiedPayments = invoice.order?.payments?.filter(p => p.status === 'VERIFIED') || [];
+    const backUrl = isSalesmanView ? '/salesman/invoices' : '/admin/invoices';
 
     return (
         <AppLayout>
@@ -152,12 +153,13 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                 {/* Navigation and Top Actions Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <Button asChild variant="outline" size="sm">
-                            <Link href={isSalesmanView ? route('salesman.invoices.index') : route('admin.invoices.index')}>
-                                <ArrowLeft className="w-4 h-4 mr-1.5" />
-                                {isSalesmanView ? "Customer Invoices" : "All Invoices"}
-                            </Link>
-                        </Button>
+                        <Link
+                            href={backUrl}
+                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium border border-input bg-background hover:bg-accent text-slate-800 dark:text-slate-200"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-1.5" />
+                            {isSalesmanView ? "Customer Invoices" : "All Invoices"}
+                        </Link>
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-xl font-bold font-mono text-slate-900 dark:text-white">
@@ -173,18 +175,24 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm">
-                            <a href={route('invoices.print', invoice.id)} target="_blank" rel="noopener noreferrer">
-                                <Printer className="w-4 h-4 mr-1.5" />
-                                Print HTML
-                            </a>
-                        </Button>
-                        <Button asChild size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                            <a href={`/invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                                <Download className="w-4 h-4 mr-1.5" />
-                                Download PDF
-                            </a>
-                        </Button>
+                        <a
+                            href={`/invoices/${invoice.id}/print`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium border border-input bg-background hover:bg-accent text-slate-800 dark:text-slate-200"
+                        >
+                            <Printer className="w-4 h-4 mr-1.5" />
+                            Print HTML
+                        </a>
+                        <a
+                            href={`/invoices/${invoice.id}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                            <Download className="w-4 h-4 mr-1.5" />
+                            Download PDF
+                        </a>
                     </div>
                 </div>
 
@@ -221,7 +229,7 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                                 {invoice.order && (
                                     <div>
                                         <span className="text-slate-400">Order Ref:</span>{' '}
-                                        <Link href={route('orders.show', invoice.order.id)} className="text-indigo-600 hover:underline">
+                                        <Link href={`/orders/${invoice.order.id}`} className="text-indigo-600 hover:underline">
                                             {invoice.order.order_number}
                                         </Link>
                                     </div>

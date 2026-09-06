@@ -104,9 +104,9 @@ export default function InvoiceIndex({
 
     const handleFilter = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        const routeName = isSalesmanView ? 'salesman.invoices.index' : 'admin.invoices.index';
+        const basePath = isSalesmanView ? '/salesman/invoices' : '/admin/invoices';
         router.get(
-            route(routeName),
+            basePath,
             {
                 search: search || undefined,
                 status: status || undefined,
@@ -122,14 +122,14 @@ export default function InvoiceIndex({
         setStatus('');
         setPaymentStatus('');
         setCustomerId('');
-        const routeName = isSalesmanView ? 'salesman.invoices.index' : 'admin.invoices.index';
-        router.get(route(routeName), {}, { preserveState: true });
+        const basePath = isSalesmanView ? '/salesman/invoices' : '/admin/invoices';
+        router.get(basePath, {}, { preserveState: true });
     };
 
     const getStatusBadge = (invoiceStatus: string) => {
         switch (invoiceStatus) {
             case 'PAID':
-                return <Badge variant="success">Paid</Badge>;
+                return <Badge variant="default" className="bg-emerald-600 text-white">Paid</Badge>;
             case 'ISSUED':
                 return <Badge variant="default">Issued</Badge>;
             case 'VOID':
@@ -151,6 +151,8 @@ export default function InvoiceIndex({
                 return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">{paymentSt}</span>;
         }
     };
+
+    const getItemUrl = (id: number) => isSalesmanView ? `/salesman/invoices/${id}` : `/admin/invoices/${id}`;
 
     return (
         <AppLayout>
@@ -270,7 +272,7 @@ export default function InvoiceIndex({
                                         <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-4 py-3 font-semibold font-mono text-slate-900 dark:text-white">
                                                 <Link
-                                                    href={isSalesmanView ? route('salesman.invoices.show', inv.id) : route('admin.invoices.show', inv.id)}
+                                                    href={getItemUrl(inv.id)}
                                                     className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1.5"
                                                 >
                                                     <FileText className="w-3.5 h-3.5" />
@@ -288,7 +290,7 @@ export default function InvoiceIndex({
                                             <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">
                                                 {inv.order ? (
                                                     <Link
-                                                        href={route('orders.show', inv.order.id)}
+                                                        href={`/orders/${inv.order.id}`}
                                                         className="hover:underline text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
                                                     >
                                                         {inv.order.order_number}
@@ -317,39 +319,31 @@ export default function InvoiceIndex({
                                                 {getPaymentBadge(inv.payment_status)}
                                             </td>
                                             <td className="px-4 py-3 text-right space-x-1 whitespace-nowrap">
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
+                                                <Link
+                                                    href={getItemUrl(inv.id)}
+                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                                                     title="View Details"
                                                 >
-                                                    <Link href={isSalesmanView ? route('salesman.invoices.show', inv.id) : route('admin.invoices.show', inv.id)}>
-                                                        <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
+                                                    <Eye className="w-4 h-4" />
+                                                </Link>
+                                                <a
+                                                    href={`/invoices/${inv.id}/print`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                                                     title="Print HTML Document"
                                                 >
-                                                    <a href={route('invoices.print', inv.id)} target="_blank" rel="noopener noreferrer">
-                                                        <Printer className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                                                    </a>
-                                                </Button>
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 text-indigo-600 dark:text-indigo-400"
+                                                    <Printer className="w-4 h-4" />
+                                                </a>
+                                                <a
+                                                    href={`/invoices/${inv.id}/pdf`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-slate-800"
                                                     title="Download PDF"
                                                 >
-                                                    <a href={`/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                                                        <Download className="w-4 h-4" />
-                                                    </a>
-                                                </Button>
+                                                    <Download className="w-4 h-4" />
+                                                </a>
                                             </td>
                                         </tr>
                                     ))
@@ -366,20 +360,24 @@ export default function InvoiceIndex({
                             </div>
                             <div className="flex gap-1">
                                 {invoices.links.map((link, i) => (
-                                    <Button
-                                        key={i}
-                                        asChild={Boolean(link.url)}
-                                        variant={link.active ? "default" : "outline"}
-                                        size="sm"
-                                        disabled={!link.url}
-                                        className="h-8 min-w-[32px] px-2 text-xs"
-                                    >
-                                        {link.url ? (
-                                            <Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
-                                        ) : (
-                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                        )}
-                                    </Button>
+                                    link.url ? (
+                                        <Link
+                                            key={i}
+                                            href={link.url}
+                                            className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-xs rounded-md border ${
+                                                link.active
+                                                    ? 'bg-primary text-primary-foreground border-primary'
+                                                    : 'border-input bg-background hover:bg-accent'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ) : (
+                                        <span
+                                            key={i}
+                                            className="inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-xs rounded-md border border-input opacity-50 cursor-not-allowed"
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    )
                                 ))}
                             </div>
                         </div>

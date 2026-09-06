@@ -65,6 +65,14 @@ class CompanyInformationService
     }
 
     /**
+     * Clear request-local memory cache.
+     */
+    public static function clearCache(): void
+    {
+        self::$cachedInstance = null;
+    }
+
+    /**
      * Retrieve safe public company information for frontend presentation.
      *
      * @return array<string, mixed>

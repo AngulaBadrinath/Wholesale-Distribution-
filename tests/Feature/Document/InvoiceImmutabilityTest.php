@@ -39,6 +39,8 @@ class InvoiceImmutabilityTest extends TestCase
     {
         parent::setUp();
 
+        \App\Services\System\CompanyInformationService::clearCache();
+
         $this->admin = User::factory()->create([
             'role' => UserRole::ADMIN,
             'status' => 'ACTIVE',
