@@ -20,6 +20,7 @@ class DeliveryPartnerController extends Controller
 {
     public function __construct(
         protected PermissionService $permissionService,
+        protected DeliveryWorkflowService $workflowService,
     ) {}
 
     /**
@@ -158,5 +159,27 @@ class DeliveryPartnerController extends Controller
             'delivery_number' => $delivery->delivery_number,
             'events' => $events,
         ]);
+    }
+
+    /**
+     * Confirm pickup of goods from warehouse.
+     */
+    public function pickup(Request $request, Delivery $delivery): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $updatedDelivery = $this->workflowService->confirmPickup(
+            $delivery,
+            $request->user(),
+            $request->only(['notes'])
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Delivery {$updatedDelivery->delivery_number} confirmed as picked up from warehouse.",
+                'delivery' => $updatedDelivery,
+            ]);
+        }
+
+        return back()->with('success', "Delivery {$updatedDelivery->delivery_number} confirmed as picked up.");
     }
 }
