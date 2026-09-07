@@ -576,7 +576,7 @@ export default function InventoryShow({
                                 <select
                                     value={adjustForm.data.adjustment_type}
                                     onChange={(e) => adjustForm.setData('adjustment_type', e.target.value)}
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
                                     {adjustment_types.map((type) => (
                                         <option key={type.value} value={type.value}>
@@ -596,7 +596,7 @@ export default function InventoryShow({
                                 <select
                                     value={adjustForm.data.reason_code}
                                     onChange={(e) => adjustForm.setData('reason_code', e.target.value)}
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
                                     {adjustment_reasons.map((reason) => (
                                         <option key={reason.value} value={reason.value}>
