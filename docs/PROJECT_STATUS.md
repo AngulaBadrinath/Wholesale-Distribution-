@@ -14,14 +14,14 @@
 | Metric | Current Value | Notes |
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **90.6%** (116 / 128 tickets) | Phase 17 Responsive Order Creation & System-Wide Matrix QA complete; 1,443 automated tests (1,431 passed, 8,358 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
+| **Overall Code Completion** | **90.6%** (116 / 128 tickets) | Wave 1 Operational, Role, Responsive & A11y Hardening complete; 1,472 automated tests (1,460 passed, 8,559 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 17 — Responsive Flow & Matrix QA** | Status: `COMPLETED` (UI-009 Order Creation Mobile/Tablet Flow, UI-010 Responsive QA Width Matrix Verification, ManualTestingSeeder & QA docs) |
-| **Current Milestone Gate** | **GATE G — Flagship Responsive UX & QA Baseline** | Status: `COMPLETED` (3-step mobile wizard, desktop split-workspace with sticky summary panel, tablet adaptive grid, 10-viewport responsive verification, non-production test dataset) |
-| **Current Active Ticket** | **UI-010** (Complete) | Phase 17 complete. Next phase awaiting authorization. |
-| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/UI-009-010-responsive-order-flow` |
-| **Active Blockers** | **0** | Full test suite passed (1,431 passing), TypeScript verified, Vite build clean, QA seed verified |
+| **Current Phase** | **Hardening Wave 1 — Operational & Responsive** | Status: `COMPLETED` (BUG-001 Salesman payment scope, BUG-002 Credit notes nav, BUG-004 GL/TB mobile cards, BUG-005 Price override a11y, BUG-008 POD signature smoothing) |
+| **Current Milestone Gate** | **Wave 1 Gate — Hardening Complete** | Status: `COMPLETED` (Automated regression suite passing, responsive viewports validated, zero business logic mutations) |
+| **Current Active Ticket** | **WAVE-1** (Complete) | Ready for Wave 2 authorization |
+| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/WAVE-1-operational-hardening-20260908` |
+| **Active Blockers** | **0** | Full test suite passed (1,460 passing), TypeScript verified, Vite build clean |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$

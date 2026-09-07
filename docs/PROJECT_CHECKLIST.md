@@ -266,3 +266,15 @@
 - [x] `DEPLOY-003`: GitHub Actions CI/CD Pipeline Configuration (Foundation CI pipeline implemented)
 - [ ] `DEPLOY-004`: Disaster Recovery, Automated Backups & Restore Verification
 - [ ] `DEPLOY-005`: Production Security Hardening Checklist (HTTPS, SSL Labs A+, least privilege)
+
+---
+
+## 15. ROADMAP HARDENING PASSES
+
+### Wave 1: Operational, Role, Responsive & Accessibility Hardening
+- [x] `BUG-001`: Payment Navigation & Scoped Badge Count (Salesman maker-checker isolation, user-scoped query counts)
+- [x] `BUG-002`: Credit Notes Navigation Discoverability (Sidebar link for Admin/Super Admin/Accountant, Enum options method)
+- [x] `BUG-004`: GL & Trial Balance Mobile Presentation (Responsive stacked cards `< 768px`, desktop table preserved)
+- [x] `BUG-005`: Price Override Modal Accessibility (WCAG 2.1 AA focus trap, autoFocus, Tab cycle, Escape dismiss, focus return)
+- [x] `BUG-008`: Delivery Signature Canvas Smoothness (Quadratic bezier curve midpoint interpolation, high-DPI scaling)
+

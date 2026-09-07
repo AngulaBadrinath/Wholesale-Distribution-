@@ -1053,3 +1053,29 @@
 | **Delivery Driver** | Touch cards | Touch cards | Split view | Desktop view | Desktop view |
 | **Invoice View** | Responsive fit | Responsive fit | Standard page | A4 preview | A4 preview |
 | **General Ledger** | Summary cards | Summary cards | Scrollable table | Dense ledger table | Dense ledger table |
+
+---
+
+## 4. Wave 1 Operational & Role Hardening Coverage Matrix (`WAVE-1`)
+
+### 4.1 Payment Navigation & Scoped Badge Count (`BUG-001`)
+- [x] **Badge Count Scope:** Salesman badge count query strictly scopes counts to assigned customers (`Wave1OperationalHardeningTest::test_salesman_badge_counts_are_scoped_to_assigned_customers`).
+- [x] **Maker-Checker Navigation Isolation:** Admin Payment Verification link hidden from Salesman in `AppLayout.tsx`.
+
+### 4.2 Credit Notes Discoverability & Authorization (`BUG-002`)
+- [x] **Navigation Presence:** Super Admin, Admin, and Accountant see Credit Notes in Financial section of `AppLayout.tsx`.
+- [x] **Unauthorized Role Isolation:** Salesman and Delivery Partner are denied access (403) and cannot see Credit Notes navigation (`Wave1OperationalHardeningTest::test_credit_notes_navigation_and_controller_authorization`).
+- [x] **Enum Status Listing:** `CreditNoteStatus::options()` returns complete array of value/label pairs.
+
+### 4.3 General Ledger & Trial Balance Mobile Presentation (`BUG-004`)
+- [x] **Endpoint Operationality:** `/admin/accounting/general-ledger` and `/admin/accounting/trial-balance` return 200 OK for Accountant and Super Admin (`Wave1OperationalHardeningTest::test_general_ledger_and_trial_balance_endpoints_operational_for_authorized_roles`).
+- [x] **Responsive Mobile Cards:** `< 768px` renders stacked mobile cards with Dr/Cr badges, net balances, and transaction summaries without horizontal clipping.
+- [x] **Desktop Table Preservation:** $\ge 768\text{px}$ retains high-density tabular accounting view.
+
+### 4.4 Price Override Modal Accessibility (`BUG-005`)
+- [x] **WCAG 2.1 AA Focus Management:** Reason textarea receives autoFocus on open, focus is trapped (Tab / Shift+Tab), Escape key dismisses, and focus restores to trigger.
+
+### 4.5 Delivery Signature Pad Smoothness (`BUG-008`)
+- [x] **Quadratic Bezier Interpolation:** Midpoint curve calculation eliminates jagged lines during fast touch gestures.
+- [x] **High-DPI Canvas:** Canvas scales dynamically with `window.devicePixelRatio` for sharp rendering on Retina/OLED screens.
+

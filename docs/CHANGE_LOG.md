@@ -904,6 +904,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** Feature branch `feature/UI-009-010-responsive-order-flow`.
 
+### CHANGE-020: Wave 1 Operational, Role, Responsive & Accessibility Hardening
+- **Change ID:** `CHANGE-020`
+- **Date:** September 8, 2026
+- **Requested By:** Principal Product Architect & QA Lead
+- **Request:** Implement Wave 1 operational, role, responsive, and input quality hardening resolving `BUG-001` (Salesman payment navigation/badge scoping), `BUG-002` (Credit Notes navigation discoverability), `BUG-004` (General Ledger & Trial Balance responsive mobile presentation `< 768px`), `BUG-005` (Price Override modal focus trap & keyboard accessibility), and `BUG-008` (Delivery POD signature smoothness via quadratic bezier canvas interpolation).
+- **Reason:** Guarantee strict maker-checker segregation of duties (`RULE-PAY-004`), ensure discoverability of credit note workflows for accounting roles, eliminate mobile horizontal overflow on GL and Trial Balance financial pages, guarantee WCAG 2.1 AA keyboard accessibility, and deliver smooth high-DPI signature drawing on delivery tablets/smartphones.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Wave 1 Master Roadmap)
+- **Affected PRD Requirements:** Document 01 Section 7 (Payments & Collections), Section 11 (General Ledger & Accounting), Section 12 (Frontend & UX), Section 8 (Delivery Operations).
+- **Affected Architecture:** Document 02 Section 7 (Payment Architecture), Section 11 (Accounting Subsystem), Section 12 (Frontend Architecture).
+- **Affected Security:** Document 03 Section 2 (Zero Client Trust), Section 3 (RBAC & Permissions), Section 7 (Resource Scoping & Anti-IDOR).
+- **Affected Frontend:** Document 04 Section 3 (Design Tokens & Responsive Breakpoints), Section 4 (Component Standards & Accessibility), Section 5 (Admin Portal Layout), Section 6 (Salesman Flow), Section 8 (Delivery Flow).
+- **Affected Tickets:** `BUG-001`, `BUG-002`, `BUG-004`, `BUG-005`, `BUG-008`.
+- **Inventory Impact:** None.
+- **Order Impact:** Enhanced price override request dialog accessibility in salesman order flow.
+- **Payment Impact:** Scoped unverified badge queries to actor assigned customers; hidden admin verification hub from salesman.
+- **Tax Impact:** None.
+- **Accounting Impact:** Added responsive mobile breakdown for GL and Trial Balance; exposed Credit Notes in sidebar for Admin/Super Admin/Accountant.
+- **Data Migration Impact:** None.
+- **Testing Impact:** `Wave1OperationalHardeningTest.php` created (3 tests, 12 assertions); full test suite passing (1,472 tests, 1,460 passed, 12 skipped, 8,559 assertions, 0 failures); `npm run type-check` (0 errors); `npm run build` (clean bundle in 2.51s).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Feature branch `feature/WAVE-1-operational-hardening-20260908`.
+
 ---
 
 ## 3. Template for Future Change Requests
