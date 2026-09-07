@@ -12,13 +12,16 @@ use App\Enums\PaymentStatus;
 use App\Enums\Permission;
 use App\Enums\ProductStatus;
 use App\Enums\UserRole;
+use App\Exceptions\Inventory\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\AdminOrderQueueRequest;
 use App\Http\Requests\Order\RejectOrderRequest;
+use App\Models\InventoryBalance;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemAllocation;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Services\Auth\PermissionService;
 use App\Services\Order\OrderWorkflowService;
 use Carbon\Carbon;
@@ -27,8 +30,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class AdminOrderController extends Controller
 {
@@ -908,6 +913,53 @@ class AdminOrderController extends Controller
                 'title' => 'Product Deactivated in Catalog',
                 'description' => "The following ordered product(s) were deactivated in the product master after submission: {$names}.",
             ];
+        }
+
+        // 7. Inventory Physical Stock Feasibility (Blocker if any item has insufficient available physical stock)
+        $warehouse = Warehouse::getDefault() ?: Warehouse::first();
+        if ($warehouse) {
+            $productIds = $order->items->pluck('product_id')->unique()->filter()->values()->all();
+            if (! empty($productIds)) {
+                $balances = InventoryBalance::where('warehouse_id', $warehouse->id)
+                    ->whereIn('product_id', $productIds)
+                    ->get()
+                    ->keyBy('product_id');
+
+                $insufficientLines = [];
+                foreach ($order->items as $item) {
+                    $fulfillable = $item->fulfillableQuantity();
+                    if ($fulfillable <= 0) {
+                        continue;
+                    }
+
+                    $balance = $balances->get($item->product_id);
+                    $available = (int) ($balance?->available_quantity ?? 0);
+
+                    if ($available < $fulfillable) {
+                        $insufficientLines[] = [
+                            'sku' => $item->sku_snapshot,
+                            'name' => $item->product_name_snapshot,
+                            'required' => $fulfillable,
+                            'available' => $available,
+                        ];
+                    }
+                }
+
+                if (! empty($insufficientLines)) {
+                    $details = collect($insufficientLines)
+                        ->map(fn ($l) => "{$l['sku']} (Required: {$l['required']}, Available: {$l['available']})")
+                        ->implode(', ');
+
+                    $warnings[] = [
+                        'code' => 'INSUFFICIENT_STOCK',
+                        'severity' => 'blocker',
+                        'title' => 'Insufficient Warehouse Stock',
+                        'description' => "Order cannot be approved due to insufficient physical stock at {$warehouse->name} ({$warehouse->code}): {$details}.",
+                        'action_text' => 'View Stock Balances',
+                        'action_url' => '/admin/inventory',
+                    ];
+                }
+            }
         }
 
         return $warnings;
