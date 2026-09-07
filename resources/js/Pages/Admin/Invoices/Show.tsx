@@ -17,7 +17,7 @@ import {
     User,
     MapPin,
     CreditCard,
-    ExternalLink
+    ExternalLink,
 } from 'lucide-react';
 
 interface InvoiceItemRow {
@@ -119,11 +119,11 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
     const getStatusBadge = (st: string) => {
         switch (st) {
             case 'PAID':
-                return <Badge variant="default" className="bg-emerald-600 text-white">Paid</Badge>;
+                return <Badge variant="success" className="gap-1 font-medium"><CheckCircle2 className="h-3 w-3" /> Paid</Badge>;
             case 'ISSUED':
-                return <Badge variant="default">Issued</Badge>;
+                return <Badge variant="default" className="gap-1 font-medium"><FileText className="h-3 w-3" /> Issued</Badge>;
             case 'VOID':
-                return <Badge variant="destructive">Void</Badge>;
+                return <Badge variant="destructive" className="gap-1 font-medium"><AlertCircle className="h-3 w-3" /> Void</Badge>;
             default:
                 return <Badge variant="secondary">{st}</Badge>;
         }
@@ -132,13 +132,25 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
     const getPaymentBadge = (pst: string) => {
         switch (pst) {
             case 'PAID':
-                return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Settled</span>;
+                return (
+                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 font-medium">
+                        Settled
+                    </Badge>
+                );
             case 'PARTIALLY_PAID':
-                return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Partially Paid</span>;
+                return (
+                    <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10 font-medium">
+                        Partially Paid
+                    </Badge>
+                );
             case 'UNPAID':
-                return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">Unpaid</span>;
+                return (
+                    <Badge variant="outline" className="border-rose-500/30 text-rose-700 dark:text-rose-400 bg-rose-500/10 font-medium">
+                        Unpaid
+                    </Badge>
+                );
             default:
-                return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">{pst}</span>;
+                return <Badge variant="outline">{pst}</Badge>;
         }
     };
 
@@ -146,30 +158,30 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
     const backUrl = isSalesmanView ? '/salesman/invoices' : '/admin/invoices';
 
     return (
-        <AppLayout>
-            <Head title={`Invoice ${invoice.invoice_number}`} />
+        <AppLayout title={`Invoice ${invoice.invoice_number}`}>
+            <Head title={`Invoice ${invoice.invoice_number} — Formal Billing Document`} />
 
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-6 pb-16">
                 {/* Navigation and Top Actions Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Link
                             href={backUrl}
-                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium border border-input bg-background hover:bg-accent text-slate-800 dark:text-slate-200"
+                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-xs font-medium border border-input bg-background hover:bg-accent text-foreground transition-colors"
                         >
-                            <ArrowLeft className="w-4 h-4 mr-1.5" />
+                            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                             {isSalesmanView ? "Customer Invoices" : "All Invoices"}
                         </Link>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-bold font-mono text-slate-900 dark:text-white">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h1 className="text-xl sm:text-2xl font-bold font-mono text-foreground">
                                     {invoice.invoice_number}
                                 </h1>
                                 {getStatusBadge(invoice.status)}
                                 {getPaymentBadge(invoice.payment_status)}
                             </div>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Issued on {new Date(invoice.invoice_date).toLocaleDateString()} &bull; Payment Terms: {invoice.payment_terms}
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Issued on {new Date(invoice.invoice_date).toLocaleDateString()} &bull; Terms: {invoice.payment_terms}
                             </p>
                         </div>
                     </div>
@@ -179,37 +191,37 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                             href={`/invoices/${invoice.id}/print`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium border border-input bg-background hover:bg-accent text-slate-800 dark:text-slate-200"
+                            className="inline-flex items-center justify-center h-9 px-3.5 rounded-md text-xs font-medium border border-input bg-background hover:bg-accent text-foreground transition-colors"
                         >
-                            <Printer className="w-4 h-4 mr-1.5" />
+                            <Printer className="w-3.5 h-3.5 mr-1.5" />
                             Print HTML
                         </a>
                         <a
                             href={`/invoices/${invoice.id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-9 px-3 rounded-md text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white"
+                            className="inline-flex items-center justify-center h-9 px-3.5 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-colors"
                         >
-                            <Download className="w-4 h-4 mr-1.5" />
+                            <Download className="w-3.5 h-3.5 mr-1.5" />
                             Download PDF
                         </a>
                     </div>
                 </div>
 
                 {/* Main Invoice Card (Document Presentation) */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-8">
+                <div className="bg-card rounded-xl border border-border shadow-xs p-6 sm:p-8 space-y-6">
                     {/* Company and Document Meta Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-border pb-6">
                         <div>
-                            <h2 className="text-lg font-bold uppercase tracking-wide text-slate-900 dark:text-white">
+                            <h2 className="text-base sm:text-lg font-bold uppercase tracking-wide text-foreground">
                                 {invoice.company_legal_name_snapshot}
                             </h2>
                             {invoice.company_dba_name_snapshot && (
-                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                <p className="text-xs font-semibold text-muted-foreground">
                                     d/b/a {invoice.company_dba_name_snapshot}
                                 </p>
                             )}
-                            <div className="text-xs text-slate-500 mt-2 space-y-0.5">
+                            <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
                                 <div>{invoice.company_address_snapshot}</div>
                                 {invoice.company_phone_snapshot && <div>Phone: {invoice.company_phone_snapshot}</div>}
                                 {invoice.company_email_snapshot && <div>Email: {invoice.company_email_snapshot}</div>}
@@ -219,17 +231,17 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                         </div>
 
                         <div className="text-left sm:text-right">
-                            <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white block mb-2">
+                            <span className="text-2xl font-black tracking-tight text-foreground block mb-1">
                                 TAX INVOICE
                             </span>
                             <div className="text-xs space-y-1 font-mono">
-                                <div><span className="text-slate-400">Invoice #:</span> <strong>{invoice.invoice_number}</strong></div>
-                                <div><span className="text-slate-400">Invoice Date:</span> {new Date(invoice.invoice_date).toLocaleDateString()}</div>
-                                <div><span className="text-slate-400">Due Date:</span> {new Date(invoice.due_date).toLocaleDateString()}</div>
+                                <div><span className="text-muted-foreground">Invoice #:</span> <strong className="text-foreground">{invoice.invoice_number}</strong></div>
+                                <div><span className="text-muted-foreground">Invoice Date:</span> {new Date(invoice.invoice_date).toLocaleDateString()}</div>
+                                <div><span className="text-muted-foreground">Due Date:</span> {new Date(invoice.due_date).toLocaleDateString()}</div>
                                 {invoice.order && (
                                     <div>
-                                        <span className="text-slate-400">Order Ref:</span>{' '}
-                                        <Link href={`/orders/${invoice.order.id}`} className="text-indigo-600 hover:underline">
+                                        <span className="text-muted-foreground">Order Ref:</span>{' '}
+                                        <Link href={`/orders/${invoice.order.id}`} className="text-primary hover:underline">
                                             {invoice.order.order_number}
                                         </Link>
                                     </div>
@@ -239,18 +251,18 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                     </div>
 
                     {/* Customer Billed / Shipped Addresses Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-1">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                                 Billed To
                             </h3>
-                            <div className="font-semibold text-slate-900 dark:text-white">
+                            <div className="font-semibold text-foreground text-sm">
                                 {invoice.customer_name_snapshot}
                             </div>
-                            <div className="text-xs text-slate-500 font-mono mt-0.5">
+                            <div className="text-xs text-muted-foreground font-mono">
                                 Customer Code: {invoice.customer_code_snapshot}
                             </div>
-                            <div className="text-xs text-slate-600 dark:text-slate-300 mt-2 space-y-0.5">
+                            <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
                                 {invoice.customer_contact_snapshot && <div>Attn: {invoice.customer_contact_snapshot}</div>}
                                 <div>{invoice.billing_address_line1_snapshot}</div>
                                 {invoice.billing_address_line2_snapshot && <div>{invoice.billing_address_line2_snapshot}</div>}
@@ -260,14 +272,14 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-1">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                                 Shipped To
                             </h3>
-                            <div className="font-semibold text-slate-900 dark:text-white">
+                            <div className="font-semibold text-foreground text-sm">
                                 {invoice.customer_name_snapshot}
                             </div>
-                            <div className="text-xs text-slate-600 dark:text-slate-300 mt-2 space-y-0.5">
+                            <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
                                 <div>{invoice.shipping_address_line1_snapshot}</div>
                                 {invoice.shipping_address_line2_snapshot && <div>{invoice.shipping_address_line2_snapshot}</div>}
                                 <div>{invoice.shipping_city_snapshot}, {invoice.shipping_state_snapshot} {invoice.shipping_postal_code_snapshot}</div>
@@ -278,9 +290,9 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                     </div>
 
                     {/* Line Items Table (RULE-DOC-001: STRICTLY ZERO PRODUCT IMAGES) */}
-                    <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                    <div className="border border-border rounded-lg overflow-hidden">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-muted/50 border-b border-border text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">
                                 <tr>
                                     <th className="px-3 py-2.5 text-center w-10">#</th>
                                     <th className="px-3 py-2.5">SKU</th>
@@ -293,24 +305,24 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                                     <th className="px-3 py-2.5 text-right">Line Total</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                            <tbody className="divide-y divide-border">
                                 {invoice.items.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                        <td className="px-3 py-2.5 text-center text-xs text-slate-400 font-mono">{index + 1}</td>
-                                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-900 dark:text-white">{item.sku_snapshot}</td>
-                                        <td className="px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">{item.product_name_snapshot}</td>
-                                        <td className="px-3 py-2.5 text-center text-xs text-slate-500">{item.unit_snapshot}</td>
-                                        <td className="px-3 py-2.5 text-right font-mono font-semibold text-slate-900 dark:text-white">{item.quantity}</td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-slate-600 dark:text-slate-300">
+                                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                        <td className="px-3 py-2.5 text-center text-xs text-muted-foreground font-mono">{index + 1}</td>
+                                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-foreground">{item.sku_snapshot}</td>
+                                        <td className="px-3 py-2.5 font-medium text-foreground">{item.product_name_snapshot}</td>
+                                        <td className="px-3 py-2.5 text-center text-xs text-muted-foreground">{item.unit_snapshot}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono font-semibold text-foreground">{item.quantity}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-muted-foreground">
                                             ${Number(item.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-slate-500">
+                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-muted-foreground">
                                             {(Number(item.tax_rate_snapshot) * 100).toFixed(2)}%
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-slate-600 dark:text-slate-300">
+                                        <td className="px-3 py-2.5 text-right font-mono text-xs text-muted-foreground">
                                             ${Number(item.tax_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-foreground">
                                             ${Number(item.line_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
                                     </tr>
@@ -320,30 +332,30 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                     </div>
 
                     {/* Summary and Financial Totals */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                         {/* Remittance and Payments Summary */}
                         <div className="space-y-4">
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                            <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                                     Payment Instructions
                                 </h4>
-                                <p className="text-xs text-slate-600 dark:text-slate-300">
+                                <p className="text-xs text-foreground">
                                     Payment is due upon <strong>{invoice.payment_terms}</strong> terms on or before <strong>{new Date(invoice.due_date).toLocaleDateString()}</strong>.
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Please reference invoice <strong>{invoice.invoice_number}</strong> on all remittances.
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Please reference invoice <strong className="text-foreground">{invoice.invoice_number}</strong> on all remittances.
                                 </p>
                             </div>
 
                             {verifiedPayments.length > 0 && (
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
+                                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-2">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                                         Verified Payments Applied
                                     </h4>
                                     <div className="space-y-1.5">
                                         {verifiedPayments.map(p => (
                                             <div key={p.id} className="flex justify-between items-center text-xs font-mono">
-                                                <span className="text-slate-700 dark:text-slate-300 font-semibold">{p.payment_number} ({p.payment_method})</span>
+                                                <span className="text-foreground font-semibold">{p.payment_number} ({p.payment_method})</span>
                                                 <span className="text-emerald-600 font-bold">+${Number(p.amount).toFixed(2)}</span>
                                             </div>
                                         ))}
@@ -353,23 +365,23 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                         </div>
 
                         {/* Totals Breakdown */}
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                            <div className="space-y-2.5 font-mono text-sm">
-                                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                        <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                            <div className="space-y-2 font-mono text-xs">
+                                <div className="flex justify-between text-muted-foreground">
                                     <span>Subtotal:</span>
-                                    <span>${Number(invoice.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-foreground">${Number(invoice.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                 </div>
-                                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                <div className="flex justify-between text-muted-foreground">
                                     <span>Tax Total:</span>
-                                    <span>${Number(invoice.tax_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-foreground">${Number(invoice.tax_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                 </div>
                                 {Number(invoice.adjustment_total) !== 0 && (
-                                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                    <div className="flex justify-between text-muted-foreground">
                                         <span>Adjustments:</span>
-                                        <span>${Number(invoice.adjustment_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                        <span className="text-foreground">${Number(invoice.adjustment_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                     </div>
                                 )}
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between text-base font-bold text-slate-900 dark:text-white">
+                                <div className="border-t border-border pt-2 flex justify-between text-sm font-bold text-foreground">
                                     <span>Grand Total ({invoice.currency}):</span>
                                     <span>${Number(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                 </div>
@@ -377,9 +389,13 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                                     <span>Amount Paid:</span>
                                     <span>${Number(invoice.amount_paid).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                                 </div>
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between text-base font-bold text-rose-600 dark:text-rose-400">
-                                    <span>Balance Due:</span>
-                                    <span>${Number(invoice.amount_due).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                <div className="border-t border-border pt-2 flex justify-between text-sm font-bold">
+                                    <span className={Number(invoice.amount_due) > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>
+                                        Balance Due:
+                                    </span>
+                                    <span className={Number(invoice.amount_due) > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>
+                                        ${Number(invoice.amount_due).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -387,7 +403,7 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
 
                     {/* Footer note */}
                     {invoice.invoice_footer_note_snapshot && (
-                        <div className="border-t border-slate-200 dark:border-slate-800 pt-4 text-center text-xs text-slate-500">
+                        <div className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
                             {invoice.invoice_footer_note_snapshot}
                         </div>
                     )}
