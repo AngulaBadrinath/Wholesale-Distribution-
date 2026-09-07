@@ -36,12 +36,13 @@ Route::middleware('guest')->group(function () {
 // Authenticated routes with active account enforcement
 Route::middleware(['auth', 'account.active'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-    Route::get('/dashboard', function () {
+    Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)->name('dashboard');
+    Route::get('/foundation', function () {
         return Inertia::render('Welcome', [
             'phpVersion' => PHP_VERSION,
             'laravelVersion' => app()->version(),
         ]);
-    })->name('dashboard');
+    })->name('foundation');
 
     // Active session tracking and revocation
     Route::get('/security/sessions', [SessionManagementController::class, 'index'])->name('sessions.index');
