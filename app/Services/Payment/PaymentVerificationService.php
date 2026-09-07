@@ -187,9 +187,14 @@ class PaymentVerificationService
      *
      * @return array<string, int>
      */
-    public static function getBadgeCounts(): array
+    public static function getBadgeCounts(?User $actor = null): array
     {
-        $rows = Payment::selectRaw('status, count(*) as count')
+        $query = Payment::query();
+        if ($actor) {
+            $query->forUser($actor);
+        }
+
+        $rows = $query->selectRaw('status, count(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();

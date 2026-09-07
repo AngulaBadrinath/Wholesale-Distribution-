@@ -52,7 +52,7 @@ class AdminPaymentController extends Controller
         $actor = $request->user();
         $this->permissionService->authorize($actor, Permission::PAYMENT_VIEW);
 
-        $badgeCounts = PaymentVerificationService::getBadgeCounts();
+        $badgeCounts = PaymentVerificationService::getBadgeCounts($actor);
         $activeTab = $request->validated('tab', 'all');
         $statusFilter = $request->validated('status');
         $methodFilter = $request->validated('method');
