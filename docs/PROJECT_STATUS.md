@@ -13,20 +13,20 @@
 
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **68.0%** (87 / 128 tickets) | Phase 11 Accounts Receivable (FEAT-AR-001..003) complete; 1,305 automated tests (1,295 passed, 7,788 assertions, 10 skipped) |
+| **Overall Code Completion** | **68.8%** (88 / 128 tickets) | Phase 12 Accounts Payable (FEAT-AP-001) complete; 1,332 automated tests (1,320 passed, 7,921 assertions, 12 skipped) |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Phase 11 — Accounts Receivable** | Status: `COMPLETED` (FEAT-AR-001 through FEAT-AR-003 complete; Immutable Customer Receivable Transaction Ledger, Aging Exposure Buckets 0-30/31-60/61-90/90+ days, Chronological Statement Generation with Opening/Closing Running Balance Reconciliation, Separation of Receivable vs Customer Credit Balances) |
-| **Current Milestone Gate** | **GATE D — Finance & Receivables** | Status: `COMPLETED` (Payments, Invoices, Credits, Refunds, Accounts Receivable & Aging complete; General Ledger & Payables next) |
-| **Current Active Ticket** | **FEAT-AR-003** (Complete) | Ready to begin Phase 12 General Ledger Accounting (`FEAT-ACC-001: Standard Chart of Accounts Setup`) |
-| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/SECTION-AR-001-003-receivables` |
-| **Active Blockers** | **0** | Complete financial integrity, append-only immutability, customer credit separation, and concurrency safety verified |
+| **Current Phase** | **Phase 12 — Accounts Payable** | Status: `COMPLETED` (FEAT-AP-001 complete; Immutable Supplier Payables Sub-Ledger, Draft/Posted Supplier Bills, Partial Payments, Overpayment Protection, Payment Reversals, PostgreSQL Triggers, RBAC-003 Scoping, Admin UI Workspaces) |
+| **Current Milestone Gate** | **GATE D — Finance, Receivables & Payables** | Status: `COMPLETED` (Payments, Invoices, Credits, Refunds, Receivables, Aging, Statements, and Payables complete; General Ledger next) |
+| **Current Active Ticket** | **FEAT-AP-001** (Complete) | Ready to begin Phase 13 General Ledger Accounting (`FEAT-ACC-001: Standard Chart of Accounts Setup`) |
+| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/FEAT-AP-001-supplier-payables` |
+| **Active Blockers** | **0** | Complete financial integrity, append-only immutability, payment reversal recovery, and concurrency safety verified |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **87** (`TECH-FOUND-001`..`004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`..`003`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`, `FEAT-CR-001`..`005`, `FEAT-AR-001`..`003`, `QA-002`).
-- Current progress: **68.0%** (87 / 128).
+- Completed tickets: **88** (`TECH-FOUND-001`..`004`, `UI-001`, `UI-002`, `UI-008`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`..`003`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`, `FEAT-CR-001`..`005`, `FEAT-AR-001`..`003`, `FEAT-AP-001`, `QA-002`).
+- Current progress: **68.8%** (88 / 128).
 
 ---
 
@@ -116,11 +116,15 @@ $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets
   81. `FEAT-CR-003`: Customer Refund Request Flow & Available Credit Validation (Authoritative refund request creation workflow via `RefundWorkflowService`, deterministic number generation `REF-{YEAR}-{00000X}`, credit balance validation `requested_amount <= remaining_balance`, fail-closed 404 anti-IDOR resource scoping, idempotency protection, 6 targeted automated tests)
   82. `FEAT-CR-004`: Refund Approval Workflow & Maker-Checker (Segregation of duties enforcing `approver != requester` with Super Admin emergency override, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, and `CANCELLED` state machines, structured audit logging, 7 targeted automated tests)
   83. `FEAT-CR-005`: Authoritative Refund Processing, Idempotency & Double-Refund Prevention (Deterministic row locking Customer -> CreditNote -> RefundRequest -> RefundTransaction, atomic credit note remaining balance deduction and allocated_to_refunds increment, double-refund prevention under concurrent load, unique transaction generation `RTX-{YEAR}-{00000X}`, 10 targeted automated tests across processing, idempotency, and race conditions)
+  84. `FEAT-AR-001`: Customer Receivable Transaction Ledger (Append-only immutable AR ledger, PostgreSQL sequence `receivable_transaction_number_seq` generating `AR-{YEAR}-{00000X}`, duplicate posting prevention via `uq_ar_source_type_id_type`, complete lifecycle integration, 26 targeted automated tests)
+  85. `FEAT-AR-002`: Accounts Receivable Aging Buckets (0-30, 31-60, 61-90, 90+ days past authoritative `Invoice::due_date`, customer credit balance separation, 12 targeted automated tests)
+  86. `FEAT-AR-003`: Chronological Customer Statement Generation (Statement date filtering, opening balance aggregation, deterministic transaction_date/id order, running balance reconciliation, print stylesheet, 10 targeted automated tests)
+  87. `FEAT-AP-001`: Supplier Payables Foundation (Immutable accounts payable ledger `payable_transactions`, PostgreSQL sequences `AP-{YYYY}-{SEQ}`, `SUP-{SEQ}`, `BILL-{YYYY}-{SEQ}`, `SP-{YYYY}-{SEQ}`, draft/posted supplier bills, partial payments, overpayment protection, payment reversals with restored liabilities, DB immutability triggers, RBAC-003 scoping, Admin UI workspaces, 27 targeted automated tests)
 - **In-Progress Tickets (0):** None.
 - **Blocked / Deferred Tickets (0):** None.
-- **Upcoming Tickets (Phase 10 — General Ledger / Reporting / Auditing):**
-  1. `FEAT-REP-001`: Sales & Commercial Performance Reporting
-  2. `FEAT-AR-001`: Customer Receivable Transaction Ledger
+- **Upcoming Tickets (Phase 13 — General Ledger / Reporting / Auditing):**
+  1. `FEAT-ACC-001`: Standard Chart of Accounts Setup
+  2. `FEAT-ACC-002`: Double-Entry Journal Entry Foundation
 
 ---
 

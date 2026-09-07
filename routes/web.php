@@ -510,6 +510,30 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('id')
             ->name('admin.receivables.statement');
     });
+
+    // Accounts Payable Sub-Ledger, Bills, and Payments (FEAT-AP-001)
+    Route::middleware('permission:payable.view')->group(function () {
+        Route::get('/admin/payables', [\App\Http\Controllers\Admin\AdminPayableController::class, 'index'])
+            ->name('admin.payables.index');
+        Route::get('/admin/payables/{id}', [\App\Http\Controllers\Admin\AdminPayableController::class, 'show'])
+            ->whereNumber('id')
+            ->name('admin.payables.show');
+    });
+
+    Route::middleware('permission:payable.manage')->group(function () {
+        Route::post('/admin/payables/suppliers', [\App\Http\Controllers\Admin\AdminPayableController::class, 'storeSupplier'])
+            ->name('admin.payables.suppliers.store');
+        Route::post('/admin/payables/bills', [\App\Http\Controllers\Admin\AdminPayableController::class, 'storeBill'])
+            ->name('admin.payables.bills.store');
+        Route::post('/admin/payables/bills/{id}/post', [\App\Http\Controllers\Admin\AdminPayableController::class, 'postBill'])
+            ->whereNumber('id')
+            ->name('admin.payables.bills.post');
+        Route::post('/admin/payables/payments', [\App\Http\Controllers\Admin\AdminPayableController::class, 'storePayment'])
+            ->name('admin.payables.payments.store');
+        Route::post('/admin/payables/payments/{id}/reverse', [\App\Http\Controllers\Admin\AdminPayableController::class, 'reversePayment'])
+            ->whereNumber('id')
+            ->name('admin.payables.payments.reverse');
+    });
 });
 
 

@@ -784,6 +784,33 @@ When a new business requirement, client change request, or technical modificatio
 
 ---
 
+### CHANGE-012: Supplier Payables Foundation Sub-Ledger & Vendor Master (FEAT-AP-001)
+- **Change ID:** `CHANGE-012`
+- **Date:** September 7, 2026
+- **Requested By:** Principal Software Architect
+- **Request:** Establish the foundational accounts payable domain: `suppliers` master entity with `SUP-{00000X}` sequential codes, `supplier_bills` with draft/posted lifecycles, `supplier_payments` with partial payment and reversal workflows, and immutable `payable_transactions` sub-ledger with PostgreSQL sequence `payable_transaction_number_seq` (`AP-{YEAR}-{00000X}`).
+- **Reason:** Provide an authoritative, immutable financial sub-ledger for tracking supplier liabilities, vendor bill settlements, payment reversals, and outstanding balances without prematurely expanding into full procurement or General Ledger journal postings.
+- **Status:** `APPROVED & IMPLEMENTED`
+- **Priority:** `P1` (Financial Core Spine)
+- **Affected PRD Requirements:** Document 01 §26, §27.
+- **Affected Architecture:** Document 02 §25 (Sub-Ledger Architecture).
+- **Affected Security:** Document 03 §4, §5, §6 (Resource Scope, Permissions `payable.view`, `payable.manage`, and Anti-IDOR).
+- **Affected Frontend:** Document 04 §6 (Accounts Payable & Vendor Workspaces).
+- **Affected Tickets:** `FEAT-AP-001`.
+- **Inventory Impact:** None (Strict inventory boundary: physical receipts do not automatically create financial liabilities without authoritative vendor bill).
+- **Order Impact:** None (Customer sales orders isolated from supplier payables).
+- **Payment Impact:** Supported supplier payment methods (`BANK_TRANSFER`, `CHEQUE`, `CASH`, `MONEY_ORDER`); payments decrease liability; reversals restore liability.
+- **Tax Impact:** Supplier bills capture itemized subtotal and tax amounts with exact BCMath precision.
+- **Accounting Impact:** AP sub-ledger serves as supplier-level subsidiary ledger for General Ledger integration in Phase 13.
+- **Data Migration Impact:** Migration `2026_09_10_000001_create_suppliers_and_payables_tables.php` creating `suppliers`, `supplier_bills`, `supplier_payments`, `payable_transactions`, sequences `supplier_code_seq`, `supplier_bill_number_seq`, `supplier_payment_number_seq`, `payable_transaction_number_seq`, and PostgreSQL immutability trigger `trg_protect_payable_transactions`.
+- **Testing Impact:** Added 27 targeted automated feature, integration, concurrency, security, and PostgreSQL constraint tests across `tests/Feature/Payable/*`. Total repository test suite: 1,332 tests (1,320 passed, 7,921 assertions, 12 skipped).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Commits on branch `feature/FEAT-AP-001-supplier-payables`.
+
+---
+
 ## 3. Template for Future Change Requests
 
 ```markdown

@@ -506,6 +506,94 @@ class ResourceScopeService
     }
 
     /**
+     * Determine whether the authenticated user has access to view supplier payables.
+     */
+    public function canAccessSupplierPayables(User $user): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        return $this->permissionService->has($user, Permission::PAYABLE_VIEW);
+    }
+
+    /**
+     * Determine whether the authenticated user has access to manage supplier payables.
+     */
+    public function canManageSupplierPayables(User $user): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        return $this->permissionService->has($user, Permission::PAYABLE_MANAGE);
+    }
+
+    /**
+     * Query scoping helper: apply authoritative accounts payable ledger query scope.
+     */
+    public function scopePayableTransactions(Builder $query, User $user): Builder
+    {
+        if (! $this->isUserActive($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $this->permissionService->has($user, Permission::PAYABLE_VIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative supplier bills query scope.
+     */
+    public function scopeSupplierBills(Builder $query, User $user): Builder
+    {
+        if (! $this->isUserActive($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $this->permissionService->has($user, Permission::PAYABLE_VIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative supplier payments query scope.
+     */
+    public function scopeSupplierPayments(Builder $query, User $user): Builder
+    {
+        if (! $this->isUserActive($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $this->permissionService->has($user, Permission::PAYABLE_VIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative suppliers query scope.
+     */
+    public function scopeSuppliers(Builder $query, User $user): Builder
+    {
+        if (! $this->isUserActive($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (! $this->permissionService->has($user, Permission::PAYABLE_VIEW)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
      * Nested resource verification: CreditNote -> CreditNoteItem.
      */
     public function verifyCreditNoteItemOwnership(CreditNoteItem $item, CreditNote $creditNote): bool

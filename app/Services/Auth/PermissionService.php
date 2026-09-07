@@ -236,6 +236,10 @@ class PermissionService
                 // Accounts Receivable
                 Permission::RECEIVABLE_VIEW,
 
+                // Accounts Payable
+                Permission::PAYABLE_VIEW,
+                Permission::PAYABLE_MANAGE,
+
                 // Accounting View
                 Permission::ACCOUNTING_VIEW,
 
@@ -249,7 +253,7 @@ class PermissionService
                 Permission::ROLE_MANAGE,
             ],
 
-            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (18 permissions)
+            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (20 permissions)
             UserRole::ACCOUNTANT->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::ORDER_VIEW,
@@ -266,6 +270,8 @@ class PermissionService
                 Permission::INVOICE_PRINT,
                 Permission::INVOICE_DOWNLOAD,
                 Permission::RECEIVABLE_VIEW,
+                Permission::PAYABLE_VIEW,
+                Permission::PAYABLE_MANAGE,
                 Permission::ACCOUNTING_VIEW,
                 Permission::ACCOUNTING_POST,
                 Permission::ACCOUNTING_REVERSE,

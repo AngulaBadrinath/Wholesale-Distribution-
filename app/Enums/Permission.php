@@ -70,6 +70,10 @@ enum Permission: string
     // Accounts Receivable
     case RECEIVABLE_VIEW = 'receivable.view';
 
+    // Accounts Payable
+    case PAYABLE_VIEW = 'payable.view';
+    case PAYABLE_MANAGE = 'payable.manage';
+
     // Accounting
     case ACCOUNTING_VIEW = 'accounting.view';
     case ACCOUNTING_POST = 'accounting.post';
@@ -146,6 +150,9 @@ enum Permission: string
 
             self::RECEIVABLE_VIEW => 'View Accounts Receivable',
 
+            self::PAYABLE_VIEW => 'View Accounts Payable',
+            self::PAYABLE_MANAGE => 'Manage Accounts Payable',
+
             self::ACCOUNTING_VIEW => 'View General Ledger',
             self::ACCOUNTING_POST => 'Post Journal Entries',
             self::ACCOUNTING_REVERSE => 'Reverse Journal Entries',
@@ -218,6 +225,9 @@ enum Permission: string
             self::INVOICE_DOWNLOAD => 'Export invoice documents as secure, immutable PDF files.',
 
             self::RECEIVABLE_VIEW => 'Access and browse accounts receivable customer ledgers, aging buckets, and statements.',
+
+            self::PAYABLE_VIEW => 'Access and browse accounts payable supplier ledgers, bills, and payments.',
+            self::PAYABLE_MANAGE => 'Create and manage suppliers, supplier bills, supplier payments, and reversals.',
 
             self::ACCOUNTING_VIEW => 'Inspect the double-entry chart of accounts and general ledger journals.',
             self::ACCOUNTING_POST => 'Post balanced double-entry accounting journals to the general ledger.',

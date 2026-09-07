@@ -30,13 +30,13 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-001: Exactly 49 canonical permission codes exist.
+     * RBAC-PERM-001: Exactly 51 canonical permission codes exist.
      */
     public function test_exactly_48_canonical_permission_codes_exist(): void
     {
         $cases = Permission::cases();
-        $this->assertCount(49, $cases);
-        $this->assertCount(49, Permission::values());
+        $this->assertCount(51, $cases);
+        $this->assertCount(51, Permission::values());
     }
 
     /**
@@ -83,6 +83,9 @@ class PermissionRegistryTest extends TestCase
         $pricingCases = Permission::casesForModule('pricing');
         $this->assertCount(1, $pricingCases);
         $this->assertSame([Permission::PRICING_OVERRIDE], $pricingCases);
+
+        $payableCases = Permission::casesForModule('payable');
+        $this->assertCount(2, $payableCases);
     }
 
     /**
@@ -103,12 +106,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-006: SUPER_ADMIN has exactly all 49 permissions.
+     * RBAC-PERM-006: SUPER_ADMIN has exactly all 51 permissions.
      */
     public function test_super_admin_has_all_48_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SUPER_ADMIN);
-        $this->assertCount(49, $permissions);
+        $this->assertCount(51, $permissions);
         $this->assertSame(Permission::cases(), $permissions);
 
         $superAdmin = User::factory()->superAdmin()->create();
@@ -121,12 +124,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 44 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 46 permissions.
      */
     public function test_admin_has_exactly_the_intended_42_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(44, $permissions);
+        $this->assertCount(46, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 
@@ -150,15 +153,17 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains(Permission::RETURN_APPROVE->value, $permissionValues);
         $this->assertContains(Permission::REFUND_REQUEST->value, $permissionValues);
         $this->assertContains(Permission::RECEIVABLE_VIEW->value, $permissionValues);
+        $this->assertContains(Permission::PAYABLE_VIEW->value, $permissionValues);
+        $this->assertContains(Permission::PAYABLE_MANAGE->value, $permissionValues);
     }
 
     /**
-     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 18 permissions.
+     * RBAC-PERM-008: ACCOUNTANT has exactly the intended 20 permissions.
      */
     public function test_accountant_has_exactly_the_intended_16_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ACCOUNTANT);
-        $this->assertCount(18, $permissions);
+        $this->assertCount(20, $permissions);
 
         $expected = [
             Permission::CUSTOMER_VIEW,
@@ -176,6 +181,8 @@ class PermissionRegistryTest extends TestCase
             Permission::INVOICE_PRINT,
             Permission::INVOICE_DOWNLOAD,
             Permission::RECEIVABLE_VIEW,
+            Permission::PAYABLE_VIEW,
+            Permission::PAYABLE_MANAGE,
             Permission::ACCOUNTING_VIEW,
             Permission::ACCOUNTING_POST,
             Permission::ACCOUNTING_REVERSE,

@@ -967,6 +967,17 @@
 - [x] **Resource Scoping & Anti-IDOR:** Strict fail-closed anti-IDOR checks restricting salesmen to assigned customer portfolios while granting Admin/Accountant system-wide access (`FEAT-AR-001`..`003`, `ReceivableSecurityAndConcurrencyTest`).
 - [x] **PostgreSQL 18 Database Constraints:** Immutability triggers and FK RESTRICT blocking update/delete on posted transactions and customer deletions (`FEAT-AR-001`, `ReceivablePostgresConstraintTest`).
 
+### 1.17.1 Supplier Payables Foundation (`AP` — Phase 12)
+- [x] **Supplier Master & Sequential Code:** Unique `SUP-{00000X}` code generation via PostgreSQL sequence `supplier_code_seq`, active/inactive lifecycle (`FEAT-AP-001`, `PayableLedgerTest`).
+- [x] **Supplier Bills & AP Liability:** Draft bills create zero liability; posted bills create immutable `SUPPLIER_BILL` credit transactions in `payable_transactions` ledger with `AP-{YYYY}-{SEQ}` (`FEAT-AP-001`, `PayableLedgerTest`).
+- [x] **Supplier Payments & Partial Settlement:** Completed supplier payments create `SUPPLIER_PAYMENT` debit transactions, atomically reducing bill `amount_due` and supplier balance (`FEAT-AP-001`, `PayableLedgerTest`).
+- [x] **Overpayment Protection:** Payments exceeding remaining bill `amount_due` are strictly rejected with 422 domain validation error (`FEAT-AP-001`, `PayableLedgerTest`, `PayableConcurrencyTest`).
+- [x] **Payment Reversals & Liability Restoration:** Reversing a completed payment posts an immutable `PAYMENT_REVERSAL` credit transaction and restores bill `amount_due` (`FEAT-AP-001`, `PayableLedgerTest`).
+- [x] **Duplicate Reversal & Posting Idempotency:** DB unique constraint `uq_ap_source_type_id_type` prevents duplicate event postings; repeat reversals fail closed (`FEAT-AP-001`, `PayableLedgerTest`, `PayableConcurrencyTest`).
+- [x] **PostgreSQL 18 Immutability Trigger:** Trigger `trg_protect_payable_transactions` blocks raw `DELETE` and unauthorized `UPDATE` on core financial attributes (`FEAT-AP-001`, `PayablePostgresConstraintTest`).
+- [x] **RBAC-003 & Anti-IDOR Authorization:** Canonical permissions `Permission::PAYABLE_VIEW` and `Permission::PAYABLE_MANAGE` grant access to Super Admin, Admin, and Accountant, while Salesman, Warehouse Manager, and Delivery Partner are strictly forbidden (`FEAT-AP-001`, `PayableSecurityTest`).
+- [x] **Administrative UI Workspaces:** React/Inertia workspaces (`Admin/Payables/Index.tsx`, `Admin/Payables/Show.tsx`) providing supplier search, summary metrics, bill recording, payment recording, and reversal workflows (`FEAT-AP-001`, `PayableIntegrationTest`).
+
 ### 1.18 General Ledger Accounting (`ACCOUNTING`)
 - [ ] **Happy Path:** Invoice issuance automatically generates balanced double-entry journal (Debit AR, Credit Revenue, Credit Tax Liability) (`FEAT-ACC-003`).
 - [ ] **Happy Path:** Payment verification generates balanced journal (Debit Cash, Credit AR).

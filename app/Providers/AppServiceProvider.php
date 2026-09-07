@@ -11,12 +11,17 @@ use App\Models\InventoryBalance;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\OrderAdjustment;
+use App\Models\PayableTransaction;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\ReceivableTransaction;
 use App\Models\RefundRequest;
 use App\Models\RefundTransaction;
 use App\Models\ReturnRequest;
 use App\Models\StockException;
+use App\Models\Supplier;
+use App\Models\SupplierBill;
+use App\Models\SupplierPayment;
 use App\Models\User;
 use App\Policies\CategoryPolicy;
 use App\Policies\CreditNotePolicy;
@@ -26,6 +31,7 @@ use App\Policies\InventoryBalancePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\OrderAdjustmentPolicy;
 use App\Policies\OrderPolicy;
+use App\Policies\PayableTransactionPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\ReceivableTransactionPolicy;
@@ -33,6 +39,9 @@ use App\Policies\RefundRequestPolicy;
 use App\Policies\RefundTransactionPolicy;
 use App\Policies\ReturnRequestPolicy;
 use App\Policies\StockExceptionPolicy;
+use App\Policies\SupplierBillPolicy;
+use App\Policies\SupplierPaymentPolicy;
+use App\Policies\SupplierPolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\PermissionService;
 use Illuminate\Support\Facades\Gate;
@@ -70,6 +79,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
+        Gate::policy(Supplier::class, SupplierPolicy::class);
+        Gate::policy(SupplierBill::class, SupplierBillPolicy::class);
+        Gate::policy(SupplierPayment::class, SupplierPaymentPolicy::class);
+        Gate::policy(PayableTransaction::class, PayableTransactionPolicy::class);
 
         // Register authoritative Gate::before resolver for canonical Permission enum values
         Gate::before(function (User $user, string $ability, array $arguments = []) {

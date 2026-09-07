@@ -17,7 +17,9 @@ import {
     Receipt,
     Shield,
     FileText,
-    RotateCcw
+    RotateCcw,
+    DollarSign,
+    CreditCard
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -44,6 +46,8 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasPaymentView = auth?.user?.permissions?.includes('payment.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasReturnReview = auth?.user?.permissions?.includes('return.review') || ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER', 'ACCOUNTANT'].includes(auth?.user?.role || '');
     const hasReturnRequest = auth?.user?.permissions?.includes('return.request') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
+    const hasReceivableView = auth?.user?.permissions?.includes('receivable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
+    const hasPayableView = auth?.user?.permissions?.includes('payable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -167,6 +171,33 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                                 <span>Draft Orders</span>
                                             </Link>
                                         </>
+                                    )}
+                                </nav>
+                            </>
+                        )}
+                        {(hasReceivableView || hasPayableView) && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    Financial & Ledgers
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    {hasReceivableView && (
+                                        <Link
+                                            href="/admin/receivables"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <DollarSign className="h-4 w-4 text-primary" />
+                                            <span>Accounts Receivable (AR)</span>
+                                        </Link>
+                                    )}
+                                    {hasPayableView && (
+                                        <Link
+                                            href="/admin/payables"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <CreditCard className="h-4 w-4 text-primary" />
+                                            <span>Accounts Payable (AP)</span>
+                                        </Link>
                                     )}
                                 </nav>
                             </>

@@ -193,7 +193,7 @@
 - [x] `FEAT-AR-001`: Customer Receivable Transaction Ledger (Append-only immutable AR ledger, PostgreSQL sequence AR-{YYYY}-{SEQ}, duplicate posting prevention, invoice charge, verified payment, payment reversal, and credit note integration, refund non-double-counting, 26 targeted automated tests)
 - [x] `FEAT-AR-002`: Accounts Receivable Aging Buckets (0-30, 31-60, 61-90, 90+ days past authoritative Invoice::due_date, fully/partially paid invoice accounting, customer credit balance separation)
 - [x] `FEAT-AR-003`: Chronological Customer Statement Generation (Statement date filtering, opening balance aggregation, deterministic transaction_date/id order, running balance reconciliation, available credit summary, print stylesheet)
-- [ ] `FEAT-AP-001`: Supplier Payables Foundation
+- [x] `FEAT-AP-001`: Supplier Payables Foundation (Immutable accounts payable ledger `payable_transactions`, PostgreSQL sequences `AP-{YYYY}-{SEQ}`, `SUP-{SEQ}`, `BILL-{YYYY}-{SEQ}`, `SP-{YYYY}-{SEQ}`, draft/posted supplier bills, partial payments, overpayment rejection, payment reversals with restored liabilities, DB immutability triggers, RBAC-003 scoping, Admin UI workspaces, 27 targeted automated tests)
 
 ### Accounting Foundations
 - [ ] `FEAT-ACC-001`: Standard Chart of Accounts Setup
