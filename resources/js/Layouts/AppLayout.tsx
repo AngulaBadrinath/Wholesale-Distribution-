@@ -90,6 +90,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
     const hasOrderView = auth?.user?.permissions?.includes('order.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasAdminOrderQueue = (hasOrderView && ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) || false;
     const hasAdjustReview = auth?.user?.permissions?.includes('order.adjust.review') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
+    const hasPaymentVerify = (auth?.user?.permissions?.includes('payment.verify') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) && auth?.user?.role !== 'SALESMAN';
+    const hasCreditView = (auth?.user?.permissions?.includes('credit.create') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '')) && !['SALESMAN', 'DELIVERY_PARTNER', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasPaymentView = auth?.user?.permissions?.includes('payment.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasReturnReview = auth?.user?.permissions?.includes('return.review') || ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER', 'ACCOUNTANT'].includes(auth?.user?.role || '');
     const hasReturnRequest = auth?.user?.permissions?.includes('return.request') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
@@ -246,8 +248,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                             </div>
                         )}
 
-                        {/* Payments & Receivables */}
-                        {(hasPaymentView || hasReceivableView || hasPayableView) && (
+                        {/* Payments & Subledgers */}
+                        {(hasPaymentVerify || hasCreditView || hasReceivableView || hasPayableView) && (
                             <div>
                                 {!sidebarCollapsed && (
                                     <div className="mb-1.5 px-3 text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/80 font-mono">
@@ -255,7 +257,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                     </div>
                                 )}
                                 <nav className="space-y-0.5">
-                                    {hasPaymentView && renderNavLink('/admin/payments', <CreditCard className="h-4 w-4" />, 'Payment Verification')}
+                                    {hasPaymentVerify && renderNavLink('/admin/payments', <CreditCard className="h-4 w-4" />, 'Payment Verification')}
+                                    {hasCreditView && renderNavLink('/admin/credits', <Receipt className="h-4 w-4" />, 'Credit Notes')}
                                     {hasReceivableView && renderNavLink('/admin/receivables', <TrendingUp className="h-4 w-4" />, 'Accounts Receivable')}
                                     {hasPayableView && renderNavLink('/admin/payables', <Scale className="h-4 w-4" />, 'Accounts Payable')}
                                 </nav>

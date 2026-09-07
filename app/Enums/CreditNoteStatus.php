@@ -57,4 +57,17 @@ enum CreditNoteStatus: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * Get all options formatted as value and label objects.
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $case) => ['value' => $case->value, 'label' => $case->label()],
+            self::cases()
+        );
+    }
 }
