@@ -83,7 +83,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
     };
 
     const formatCurrency = (val?: number | string | null) => {
-        if (val === null || val === undefined) return 'Not yet available';
+        if (val === null || val === undefined) return 'Unavailable';
         const num = typeof val === 'string' ? parseFloat(val) : val;
         try {
             return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(num);
@@ -416,11 +416,11 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                 {customer.financial_summary?.outstanding_balance !== null &&
                                 customer.financial_summary?.outstanding_balance !== undefined
                                     ? formatCurrency(customer.financial_summary.outstanding_balance)
-                                    : 'Not yet available'}
+                                    : 'Pending Ledger Calculation'}
                             </div>
-                            <span className="inline-flex items-center text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                            <span className="inline-flex items-center text-[11px] text-muted-foreground mt-0.5">
                                 <Info className="h-3 w-3 mr-1" />
-                                Deferred (Pending Live AR)
+                                Calculated from AR Subledger
                             </span>
                         </CardContent>
                     </Card>
@@ -438,7 +438,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                 {customer.financial_summary?.available_credit !== null &&
                                 customer.financial_summary?.available_credit !== undefined
                                     ? formatCurrency(customer.financial_summary.available_credit)
-                                    : 'Not yet available'}
+                                    : 'Pending Ledger Calculation'}
                             </div>
                             <span className="text-xs text-muted-foreground">
                                 Exposure calculated on ledger sync
@@ -741,7 +741,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                     Authoritative Financial Reconciliation Notice
                                 </span>
                                 {customer.financial_summary?.source_notice ||
-                                    'Financial balances and aging will be calculated from authoritative transaction data once Orders, Payments, and Receivables are implemented.'}
+                                    'Financial balances and aging are calculated from authoritative transaction data in the Accounts Receivable Subledger.'}
                             </div>
                         </div>
 
@@ -801,7 +801,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                             Current (0–30 Days)
                                         </span>
                                         <span className="text-xs font-semibold text-muted-foreground italic">
-                                            — Pending
+                                            Pending Ledger Calculation
                                         </span>
                                     </div>
                                     <div className="p-3 rounded-lg border border-border bg-muted/20">
@@ -809,7 +809,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                             31–60 Days Overdue
                                         </span>
                                         <span className="text-xs font-semibold text-muted-foreground italic">
-                                            — Pending
+                                            Pending Ledger Calculation
                                         </span>
                                     </div>
                                     <div className="p-3 rounded-lg border border-border bg-muted/20">
@@ -817,7 +817,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                             61–90 Days Overdue
                                         </span>
                                         <span className="text-xs font-semibold text-muted-foreground italic">
-                                            — Pending
+                                            Pending Ledger Calculation
                                         </span>
                                     </div>
                                     <div className="p-3 rounded-lg border border-border bg-muted/20">
@@ -825,7 +825,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                             90+ Days Overdue
                                         </span>
                                         <span className="text-xs font-semibold text-muted-foreground italic">
-                                            — Pending
+                                            Pending Ledger Calculation
                                         </span>
                                     </div>
                                     <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 col-span-2 sm:col-span-1">
@@ -833,7 +833,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                             Total Outstanding
                                         </span>
                                         <span className="text-xs font-semibold text-muted-foreground italic">
-                                            — Pending
+                                            Pending Ledger Calculation
                                         </span>
                                     </div>
                                 </div>

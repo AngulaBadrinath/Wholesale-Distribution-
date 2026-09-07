@@ -235,98 +235,165 @@ export default function ReceivablesIndex({ agingReport, filters }: Props) {
                             </p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs uppercase bg-muted/50 text-muted-foreground border-b font-medium">
-                                    <tr>
-                                        <th scope="col" className="px-4 py-3">Customer</th>
-                                        <th scope="col" className="px-4 py-3 text-right">Current</th>
-                                        <th scope="col" className="px-4 py-3 text-right">1–30 Days</th>
-                                        <th scope="col" className="px-4 py-3 text-right">31–60 Days</th>
-                                        <th scope="col" className="px-4 py-3 text-right">61–90 Days</th>
-                                        <th scope="col" className="px-4 py-3 text-right">91+ Days</th>
-                                        <th scope="col" className="px-4 py-3 text-right font-bold text-foreground">Total AR</th>
-                                        <th scope="col" className="px-4 py-3 text-right text-indigo-600 dark:text-indigo-400">Available Credit</th>
-                                        <th scope="col" className="px-4 py-3 text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {customers.map((row) => (
-                                        <tr key={row.customer_id} className="hover:bg-muted/40 transition-colors">
-                                            <td className="px-4 py-3 font-medium">
-                                                <div className="flex flex-col">
-                                                    <span className="text-foreground font-semibold">{row.customer_name}</span>
-                                                    <span className="text-xs text-muted-foreground font-mono">{row.customer_code}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                                                {parseFloat(row.current) > 0 ? (
-                                                    <span className="text-foreground">{formatCurrency(row.current)}</span>
-                                                ) : (
-                                                    '—'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                                                {parseFloat(row.days_1_30) > 0 ? (
-                                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">{formatCurrency(row.days_1_30)}</span>
-                                                ) : (
-                                                    '—'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                                                {parseFloat(row.days_31_60) > 0 ? (
-                                                    <span className="text-amber-600 dark:text-amber-400 font-semibold">{formatCurrency(row.days_31_60)}</span>
-                                                ) : (
-                                                    '—'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                                                {parseFloat(row.days_61_90) > 0 ? (
-                                                    <span className="text-orange-600 dark:text-orange-400 font-semibold">{formatCurrency(row.days_61_90)}</span>
-                                                ) : (
-                                                    '—'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">
-                                                {parseFloat(row.days_91_plus) > 0 ? (
-                                                    <span className="text-rose-600 dark:text-rose-400 font-bold">{formatCurrency(row.days_91_plus)}</span>
-                                                ) : (
-                                                    '—'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono font-bold text-foreground">
-                                                {formatCurrency(row.total_receivable)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono">
-                                                {parseFloat(row.available_credit) > 0 ? (
-                                                    <Badge variant="outline" className="text-indigo-600 border-indigo-300 dark:text-indigo-400 font-mono">
-                                                        {formatCurrency(row.available_credit)}
-                                                    </Badge>
-                                                ) : (
-                                                    <span className="text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Link href={`/admin/receivables/${row.customer_id}`}>
-                                                        <Button variant="outline" size="sm" className="h-8 px-2.5 gap-1.5 text-xs">
-                                                            <Eye className="h-3.5 w-3.5" />
-                                                            Ledger
-                                                        </Button>
-                                                    </Link>
-                                                    <Link href={`/admin/receivables/${row.customer_id}/statement`}>
-                                                        <Button variant="secondary" size="sm" className="h-8 px-2.5 gap-1.5 text-xs">
-                                                            <FileText className="h-3.5 w-3.5" />
-                                                            Statement
-                                                        </Button>
-                                                    </Link>
-                                                </div>
-                                            </td>
+                        <>
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs uppercase bg-muted/50 text-muted-foreground border-b font-medium">
+                                        <tr>
+                                            <th scope="col" className="px-4 py-3">Customer</th>
+                                            <th scope="col" className="px-4 py-3 text-right">Current</th>
+                                            <th scope="col" className="px-4 py-3 text-right">1–30 Days</th>
+                                            <th scope="col" className="px-4 py-3 text-right">31–60 Days</th>
+                                            <th scope="col" className="px-4 py-3 text-right">61–90 Days</th>
+                                            <th scope="col" className="px-4 py-3 text-right">91+ Days</th>
+                                            <th scope="col" className="px-4 py-3 text-right font-bold text-foreground">Total AR</th>
+                                            <th scope="col" className="px-4 py-3 text-right text-indigo-600 dark:text-indigo-400">Available Credit</th>
+                                            <th scope="col" className="px-4 py-3 text-center">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {customers.map((row) => (
+                                            <tr key={row.customer_id} className="hover:bg-muted/40 transition-colors">
+                                                <td className="px-4 py-3 font-medium">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-foreground font-semibold">{row.customer_name}</span>
+                                                        <span className="text-xs text-muted-foreground font-mono">{row.customer_code}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                                                    {parseFloat(row.current) > 0 ? (
+                                                        <span className="text-foreground">{formatCurrency(row.current)}</span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                                                    {parseFloat(row.days_1_30) > 0 ? (
+                                                        <span className="text-blue-600 dark:text-blue-400 font-semibold">{formatCurrency(row.days_1_30)}</span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                                                    {parseFloat(row.days_31_60) > 0 ? (
+                                                        <span className="text-amber-600 dark:text-amber-400 font-semibold">{formatCurrency(row.days_31_60)}</span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                                                    {parseFloat(row.days_61_90) > 0 ? (
+                                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">{formatCurrency(row.days_61_90)}</span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                                                    {parseFloat(row.days_91_plus) > 0 ? (
+                                                        <span className="text-rose-600 dark:text-rose-400 font-bold">{formatCurrency(row.days_91_plus)}</span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono font-bold text-foreground">
+                                                    {formatCurrency(row.total_receivable)}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono">
+                                                    {parseFloat(row.available_credit) > 0 ? (
+                                                        <Badge variant="outline" className="text-indigo-600 border-indigo-300 dark:text-indigo-400 font-mono">
+                                                            {formatCurrency(row.available_credit)}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Link href={`/admin/receivables/${row.customer_id}`}>
+                                                            <Button variant="outline" size="sm" className="h-8 px-2.5 gap-1.5 text-xs">
+                                                                <Eye className="h-3.5 w-3.5" />
+                                                                Ledger
+                                                            </Button>
+                                                        </Link>
+                                                        <Link href={`/admin/receivables/${row.customer_id}/statement`}>
+                                                            <Button variant="secondary" size="sm" className="h-8 px-2.5 gap-1.5 text-xs">
+                                                                <FileText className="h-3.5 w-3.5" />
+                                                                Statement
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Card List View */}
+                            <div className="md:hidden divide-y divide-border">
+                                {customers.map((row) => (
+                                    <div key={row.customer_id} className="p-4 space-y-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                                <div className="font-semibold text-foreground text-sm">{row.customer_name}</div>
+                                                <span className="text-xs text-muted-foreground font-mono">{row.customer_code}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-[10px] uppercase font-mono text-muted-foreground block">Total AR</span>
+                                                <span className="font-bold font-mono text-foreground text-base">
+                                                    {formatCurrency(row.total_receivable)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Aging Exposure Grid */}
+                                        <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                                            <div className="p-2 rounded bg-muted/40 border border-border">
+                                                <span className="text-[10px] text-muted-foreground block">Current</span>
+                                                <span className="font-mono font-medium">{formatCurrency(row.current)}</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-muted/40 border border-border">
+                                                <span className="text-[10px] text-blue-600 dark:text-blue-400 block">1–30d</span>
+                                                <span className="font-mono font-medium">{formatCurrency(row.days_1_30)}</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-muted/40 border border-border">
+                                                <span className="text-[10px] text-amber-600 dark:text-amber-400 block">31–60d</span>
+                                                <span className="font-mono font-medium">{formatCurrency(row.days_31_60)}</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-muted/40 border border-border">
+                                                <span className="text-[10px] text-orange-600 dark:text-orange-400 block">61–90d</span>
+                                                <span className="font-mono font-medium">{formatCurrency(row.days_61_90)}</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-muted/40 border border-border">
+                                                <span className="text-[10px] text-rose-600 dark:text-rose-400 block">91+d</span>
+                                                <span className="font-mono font-semibold text-rose-600 dark:text-rose-400">{formatCurrency(row.days_91_plus)}</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-indigo-500/10 border border-indigo-500/20">
+                                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block">Credit</span>
+                                                <span className="font-mono font-medium text-indigo-600 dark:text-indigo-400">{formatCurrency(row.available_credit)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                            <Link href={`/admin/receivables/${row.customer_id}`} className="flex-1">
+                                                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5">
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    Ledger
+                                                </Button>
+                                            </Link>
+                                            <Link href={`/admin/receivables/${row.customer_id}/statement`} className="flex-1">
+                                                <Button variant="secondary" size="sm" className="w-full h-8 text-xs gap-1.5">
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    Statement
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
