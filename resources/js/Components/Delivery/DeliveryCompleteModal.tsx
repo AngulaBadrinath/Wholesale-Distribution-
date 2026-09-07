@@ -9,6 +9,7 @@ import {
     FileText,
     AlertCircle
 } from 'lucide-react';
+import { SignaturePad } from '@/Components/Delivery/SignaturePad';
 
 interface DeliveryCompleteModalProps {
     isOpen: boolean;
@@ -124,6 +125,12 @@ export default function DeliveryCompleteModal({
                             />
                         </div>
                     </div>
+
+                    {/* Recipient Signature Pad */}
+                    <SignaturePad
+                        onSignatureChange={(file) => setRecipientSignature(file)}
+                        height={130}
+                    />
 
                     {/* POD Photo Upload */}
                     <div>
