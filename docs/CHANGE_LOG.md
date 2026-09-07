@@ -805,9 +805,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Data Migration Impact:** Migration `2026_09_10_000001_create_suppliers_and_payables_tables.php` creating `suppliers`, `supplier_bills`, `supplier_payments`, `payable_transactions`, sequences `supplier_code_seq`, `supplier_bill_number_seq`, `supplier_payment_number_seq`, `payable_transaction_number_seq`, and PostgreSQL immutability trigger `trg_protect_payable_transactions`.
 - **Testing Impact:** Added 27 targeted automated feature, integration, concurrency, security, and PostgreSQL constraint tests across `tests/Feature/Payable/*`. Total repository test suite: 1,332 tests (1,320 passed, 7,921 assertions, 12 skipped).
 - **Deployment Impact:** None.
+### CHANGE-015: Phase 14 Reporting & Analytics Implementation (FEAT-REP-001 through FEAT-REP-006)
+- **Change ID:** `CHANGE-015`
+- **Date:** September 7, 2026
+- **Requested By:** Lead Software Architect & Solo Developer
+- **Request:** Implement Phase 14 Operational Reporting and Financial Analytics covering Sales Reports (`FEAT-REP-001`), Customer Reports (`FEAT-REP-002`), Salesman Performance & Commission Reports (`FEAT-REP-003`), Inventory Reports (`FEAT-REP-004`), Delivery Performance & Turnaround Reports (`FEAT-REP-005`), and Financial Accounting Reports (`FEAT-REP-006`).
+- **Reason:** Provide comprehensive, server-authoritative, read-only derived reporting workspaces across sales, customer balances/aging, salesman performance, inventory valuation/movement, delivery turnaround, and executive financial summaries with 100% mathematical reconciliation with Phase 13 General Ledger accounting services.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD Section 11 (Reporting & Analytics).
+- **Affected Architecture:** Technical Architecture Section 11 (Reporting & Analytics).
+- **Affected Security:** Security & Access Section 11 (Role-scoped access, ResourceScopeService enforcement, cost price masking for unauthorized roles, default-deny RBAC).
+- **Affected Frontend:** Frontend Spec Section 11 (Unified Reporting Workspace in Inertia React with shadcn/ui).
+- **Affected Tickets:** `FEAT-REP-001`, `FEAT-REP-002`, `FEAT-REP-003`, `FEAT-REP-004`, `FEAT-REP-005`, `FEAT-REP-006`.
+- **Inventory Impact:** None (Read-only queries; strictly preserves immutable movement ledger and cost valuation).
+- **Order Impact:** None (Read-only operational sales aggregations with status filters and drill-downs).
+- **Payment Impact:** None (Consumes existing authoritative AR sub-ledger and payment tables).
+- **Tax Impact:** None (Consumes transaction-time snapshotted tax totals).
+- **Accounting Impact:** None (100% direct consumption of Phase 13 ACC services: `TrialBalanceService`, `ProfitAndLossService`, `BalanceSheetService`, `GeneralLedgerService`, `CashReconciliationService`).
+- **Data Migration Impact:** Zero migrations required (pure read-only query engine).
+- **Testing Impact:** Added 32 targeted automated tests across `tests/Feature/Reporting/*`. Total repository test suite: 1,403 tests (1,391 passed, 8,220 assertions, 12 skipped, 0 failures).
+- **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** Commits on branch `feature/FEAT-AP-001-supplier-payables`.
+- **Release/Commit Reference:** Commits on branch `feature/FEAT-REP-001-006-reporting`.
 
 ---
 

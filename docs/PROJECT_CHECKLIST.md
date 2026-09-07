@@ -211,12 +211,12 @@
 ## 11. REPORTING, NOTIFICATIONS & AUDITING
 
 ### Reporting & Analytics
-- [ ] `FEAT-REP-001`: Sales Reports (Daily, periodic, by customer, by product)
-- [ ] `FEAT-REP-002`: Customer Reports (Balances, purchase frequency, aging)
-- [ ] `FEAT-REP-003`: Salesman Performance & Commission Reports
-- [ ] `FEAT-REP-004`: Inventory Reports (Valuation, movement, low stock alerts)
-- [ ] `FEAT-REP-005`: Delivery Performance & Turnaround Reports
-- [ ] `FEAT-REP-006`: Financial Accounting Reports
+- [x] `FEAT-REP-001`: Sales Reports (Daily, periodic, by customer, by product)
+- [x] `FEAT-REP-002`: Customer Reports (Balances, purchase frequency, aging)
+- [x] `FEAT-REP-003`: Salesman Performance & Commission Reports
+- [x] `FEAT-REP-004`: Inventory Reports (Valuation, movement, low stock alerts)
+- [x] `FEAT-REP-005`: Delivery Performance & Turnaround Reports
+- [x] `FEAT-REP-006`: Financial Accounting Reports
 
 ### Notifications & Auditing
 - [ ] `FEAT-NOTIF-001`: In-App Operational Action Notifications

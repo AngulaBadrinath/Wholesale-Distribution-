@@ -24,7 +24,10 @@ import {
     Scale,
     TrendingUp,
     Landmark,
-    FileSpreadsheet
+    FileSpreadsheet,
+    BarChart3,
+    Truck,
+    Boxes
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -54,6 +57,9 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasReceivableView = auth?.user?.permissions?.includes('receivable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasPayableView = auth?.user?.permissions?.includes('payable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
     const hasAccountingView = auth?.user?.permissions?.includes('accounting.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
+    const hasInventoryView = auth?.user?.permissions?.includes('inventory.view') || ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
+    const hasDeliveryView = auth?.user?.permissions?.includes('delivery.view') || ['SUPER_ADMIN', 'ADMIN', 'DELIVERY_PARTNER', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
+    const hasReportingAccess = hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView;
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -263,6 +269,76 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                         >
                                             <CreditCard className="h-4 w-4 text-primary" />
                                             <span>Accounts Payable (AP)</span>
+                                        </Link>
+                                    )}
+                                </nav>
+                            </>
+                        )}
+                        {hasReportingAccess && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    Reports & Analytics
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    <Link
+                                        href="/admin/reports"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <BarChart3 className="h-4 w-4 text-primary" />
+                                        <span>Reports Hub</span>
+                                    </Link>
+                                    {hasOrderView && (
+                                        <Link
+                                            href="/admin/reports/sales"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <TrendingUp className="h-4 w-4 text-primary" />
+                                            <span>Sales Reports</span>
+                                        </Link>
+                                    )}
+                                    {hasCustomerView && (
+                                        <Link
+                                            href="/admin/reports/customers"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Building2 className="h-4 w-4 text-primary" />
+                                            <span>Customer Reports</span>
+                                        </Link>
+                                    )}
+                                    {(hasUserView || hasOrderView) && (
+                                        <Link
+                                            href="/admin/reports/salesmen"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Users className="h-4 w-4 text-primary" />
+                                            <span>Salesman Performance</span>
+                                        </Link>
+                                    )}
+                                    {hasInventoryView && (
+                                        <Link
+                                            href="/admin/reports/inventory"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Boxes className="h-4 w-4 text-primary" />
+                                            <span>Inventory Reports</span>
+                                        </Link>
+                                    )}
+                                    {hasDeliveryView && (
+                                        <Link
+                                            href="/admin/reports/delivery"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <Truck className="h-4 w-4 text-primary" />
+                                            <span>Delivery Reports</span>
+                                        </Link>
+                                    )}
+                                    {hasAccountingView && (
+                                        <Link
+                                            href="/admin/reports/financial"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 text-primary" />
+                                            <span>Financial Reports</span>
                                         </Link>
                                     )}
                                 </nav>

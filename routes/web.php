@@ -586,6 +586,38 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('journal')
             ->name('admin.accounting.journals.reverse');
     });
+
+    // Reporting & Analytics (FEAT-REP-001 through FEAT-REP-006)
+    Route::get('/admin/reports', [\App\Http\Controllers\Admin\AdminReportingController::class, 'index'])
+        ->name('admin.reports.index');
+
+    Route::middleware('permission:order.view')->group(function () {
+        Route::get('/admin/reports/sales', [\App\Http\Controllers\Admin\AdminReportingController::class, 'sales'])
+            ->name('admin.reports.sales');
+    });
+
+    Route::middleware('permission:customer.view')->group(function () {
+        Route::get('/admin/reports/customers', [\App\Http\Controllers\Admin\AdminReportingController::class, 'customers'])
+            ->name('admin.reports.customers');
+    });
+
+    Route::get('/admin/reports/salesmen', [\App\Http\Controllers\Admin\AdminReportingController::class, 'salesmen'])
+        ->name('admin.reports.salesmen');
+
+    Route::middleware('permission:inventory.view')->group(function () {
+        Route::get('/admin/reports/inventory', [\App\Http\Controllers\Admin\AdminReportingController::class, 'inventory'])
+            ->name('admin.reports.inventory');
+    });
+
+    Route::middleware('permission:delivery.view')->group(function () {
+        Route::get('/admin/reports/delivery', [\App\Http\Controllers\Admin\AdminReportingController::class, 'delivery'])
+            ->name('admin.reports.delivery');
+    });
+
+    Route::middleware('permission:accounting.view')->group(function () {
+        Route::get('/admin/reports/financial', [\App\Http\Controllers\Admin\AdminReportingController::class, 'financial'])
+            ->name('admin.reports.financial');
+    });
 });
 
 
