@@ -89,10 +89,16 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
     const isInCart = !!cartItem;
 
     return (
-        <Card className={`overflow-hidden transition-all duration-200 ${isInCart ? 'border-primary/80 ring-1 ring-primary/20 bg-primary/[0.02]' : 'hover:border-muted-foreground/30'}`}>
+        <Card
+            className={`overflow-hidden transition-all duration-200 rounded-xl border ${
+                isInCart
+                    ? 'border-primary/80 ring-1 ring-primary/20 bg-primary/[0.02]'
+                    : 'border-border/80 hover:border-border hover:shadow-xs'
+            }`}
+        >
             <div className="flex flex-col h-full">
                 {/* Product Image & Badges */}
-                <div className="relative aspect-[4/3] bg-muted/40 flex items-center justify-center overflow-hidden border-b">
+                <div className="relative aspect-[16/10] bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border/70">
                     {product.primary_image_url ? (
                         <img
                             src={product.primary_image_url}
@@ -102,23 +108,23 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center text-muted-foreground/50">
-                            <Package className="h-10 w-10 stroke-[1.5]" />
+                            <Package className="h-8 w-8 stroke-[1.5]" />
                             <span className="text-[10px] mt-1 font-mono uppercase tracking-wider">No Image</span>
                         </div>
                     )}
                     <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                        <Badge variant="secondary" className="font-mono text-[10px] bg-background/90 backdrop-blur-sm shadow-sm">
+                        <Badge variant="secondary" className="font-mono text-[10px] bg-background/90 backdrop-blur-xs shadow-2xs">
                             {product.sku}
                         </Badge>
                         {product.category && (
-                            <Badge variant="outline" className="text-[10px] bg-background/80 backdrop-blur-sm shadow-sm">
+                            <Badge variant="outline" className="text-[10px] bg-background/80 backdrop-blur-xs shadow-2xs">
                                 {product.category.name}
                             </Badge>
                         )}
                     </div>
                     {isInCart && (
                         <div className="absolute top-2 right-2">
-                            <Badge className="bg-primary text-primary-foreground text-[10px] gap-1 shadow-sm">
+                            <Badge className="bg-primary text-primary-foreground text-[10px] gap-1 shadow-2xs">
                                 <Check className="h-3 w-3" /> In Cart ({cartItem.quantity})
                             </Badge>
                         </div>
@@ -126,28 +132,26 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                 </div>
 
                 {/* Product Details */}
-                <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <CardContent className="p-3.5 flex-1 flex flex-col justify-between space-y-3">
                     <div>
-                        <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-sm line-clamp-2 text-foreground" title={product.name}>
-                                {product.name}
-                            </h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                        <h3 className="font-semibold text-xs line-clamp-2 text-foreground tracking-tight" title={product.name}>
+                            {product.name}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">
                             Unit: <span className="font-sans font-medium text-foreground">{product.unit}</span>
                         </p>
                     </div>
 
                     {/* Pricing Display & Boundary Indicator */}
-                    <div className="space-y-1.5 pt-2 border-t">
+                    <div className="space-y-1.5 pt-2 border-t border-border/60">
                         <div className="flex items-baseline justify-between">
-                            <span className="text-xs text-muted-foreground">Price / {product.unit}:</span>
-                            <div className="text-right">
-                                <span className="text-base font-bold text-foreground font-mono">
+                            <span className="text-xs text-muted-foreground">Price:</span>
+                            <div className="text-right font-mono">
+                                <span className="text-sm font-bold text-foreground">
                                     ${parseFloat(unitPrice || '0').toFixed(2)}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground ml-1 line-through font-mono">
-                                    MRP ${product.mrp.toFixed(2)}
+                                <span className="text-[10px] text-muted-foreground ml-1.5 line-through">
+                                    ${product.mrp.toFixed(2)}
                                 </span>
                             </div>
                         </div>
@@ -157,7 +161,7 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                             <span>Min: ${product.minimum_allowed_price.toFixed(2)}</span>
                             <span>List: ${product.mrp.toFixed(2)}</span>
                             {product.tax_profile && (
-                                <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                                     Tax: {product.tax_profile.formatted_rate}
                                 </span>
                             )}
@@ -185,7 +189,7 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                                     max={999999}
                                     onChange={handleQuantityChange}
                                     ariaLabel={`quantity for ${product.name}`}
-                                    className="w-full justify-between"
+                                    className="w-full justify-between h-8"
                                 />
                             </div>
 
@@ -221,8 +225,9 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="text-xs h-8 text-destructive hover:bg-destructive/10"
+                                    className="text-xs h-8 text-destructive hover:bg-destructive/10 shrink-0 px-2"
                                     onClick={() => onRemoveFromCart(product.id)}
+                                    aria-label={`Remove ${product.name} from cart`}
                                 >
                                     Remove
                                 </Button>
@@ -231,7 +236,7 @@ export const ProductOrderCard: React.FC<ProductOrderCardProps> = ({
                             <Button
                                 type="button"
                                 size="sm"
-                                className="w-full text-xs h-8 gap-1.5"
+                                className="w-full text-xs h-8 gap-1.5 cursor-pointer"
                                 onClick={handleAddToCart}
                             >
                                 <Plus className="h-3.5 w-3.5" />

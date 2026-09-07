@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import AppLayout from '@/Layouts/AppLayout';
+import SalesmanLayout from '@/Layouts/SalesmanLayout';
 import { CustomerSummary, CatalogProduct, CartLineItem, InitialDraftData } from '@/types/order';
 import { CustomerSelectStep } from '@/Components/Salesman/CustomerSelectStep';
 import { ProductCatalogStep } from '@/Components/Salesman/ProductCatalogStep';
@@ -20,6 +22,7 @@ import {
     Loader2,
     RefreshCw,
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/financial';
 
 interface CreateOrderPageProps {
     customers: CustomerSummary[];
@@ -49,6 +52,9 @@ export default function CreateOrder({
     products,
     filters,
 }: CreateOrderPageProps) {
+    const { auth } = usePage<PageProps>().props;
+    const isSalesmanRole = auth?.user?.role === 'SALESMAN';
+
     const [step, setStep] = useState<'customer' | 'catalog' | 'review'>('customer');
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
     const [cart, setCart] = useState<CartLineItem[]>([]);
@@ -223,7 +229,7 @@ export default function CreateOrder({
         setHasUnsavedChanges(true);
     };
 
-    // Save Draft to Server (Manual or Debounced)
+    // Save Draft to Server
     const handleSaveDraft = async () => {
         if (!selectedCustomer) {
             setErrorMessage('Please select a customer before saving a draft.');
@@ -312,7 +318,6 @@ export default function CreateOrder({
 
         // If draft exists, submit draft; otherwise direct order submission
         if (activeDraftId) {
-            // Synchronize and submit draft
             router.post(
                 `/salesman/orders/drafts/${activeDraftId}/submit`,
                 { idempotency_key: idempotencyKey },
@@ -378,13 +383,15 @@ export default function CreateOrder({
     // Inactive product in cart warnings
     const inactiveProductsInCart = cart.filter((item) => item.product && item.product.status === 'INACTIVE');
 
+    const LayoutComponent = isSalesmanRole ? SalesmanLayout : AppLayout;
+
     return (
-        <AppLayout title={activeDraftId ? 'Edit Draft Order' : 'New Sales Order'}>
+        <LayoutComponent title={activeDraftId ? 'Edit Draft Order' : 'New Sales Order'}>
             <Head title={`${activeDraftId ? 'Edit Draft' : 'New Sales Order'} — Wholesale Distribution`} />
 
-            <div className="max-w-7xl mx-auto space-y-6 pb-24">
+            <div className="max-w-7xl mx-auto space-y-6 pb-28 sm:pb-24">
                 {/* Top Action Bar & Status */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border rounded-lg p-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border border-border/80 rounded-xl p-4 shadow-xs">
                     <div className="flex items-center gap-3">
                         <div>
                             <div className="flex items-center gap-2">
@@ -418,7 +425,7 @@ export default function CreateOrder({
 
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                         <Link href="/salesman/orders/drafts">
-                            <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
+                            <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-9">
                                 <FileText className="h-4 w-4" />
                                 <span>My Drafts</span>
                             </Button>
@@ -431,7 +438,7 @@ export default function CreateOrder({
                                 size="sm"
                                 onClick={handleSaveDraft}
                                 disabled={isSavingDraft || isSubmitting}
-                                className="gap-1.5 text-xs"
+                                className="gap-1.5 text-xs h-9 font-medium"
                             >
                                 {isSavingDraft ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -448,7 +455,7 @@ export default function CreateOrder({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsDiscardModalOpen(true)}
-                                className="text-destructive hover:bg-destructive/10 text-xs px-2.5"
+                                className="text-destructive hover:bg-destructive/10 text-xs px-2.5 h-9"
                             >
                                 <Trash2 className="h-4 w-4" />
                                 <span className="hidden sm:inline ml-1">Discard</span>
@@ -459,8 +466,8 @@ export default function CreateOrder({
 
                 {/* Conflict Alert (409) */}
                 {conflictError && (
-                    <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm">
+                    <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl flex items-center justify-between gap-4 shadow-2xs">
+                        <div className="flex items-center gap-2 text-xs font-medium">
                             <AlertTriangle className="h-5 w-5 shrink-0" />
                             <span>{conflictError}</span>
                         </div>
@@ -468,7 +475,7 @@ export default function CreateOrder({
                             variant="destructive"
                             size="sm"
                             onClick={() => window.location.reload()}
-                            className="shrink-0 gap-1"
+                            className="shrink-0 gap-1 text-xs"
                         >
                             <RefreshCw className="h-3.5 w-3.5 mr-1" />
                             Reload Latest
@@ -478,7 +485,7 @@ export default function CreateOrder({
 
                 {/* Stale Customer Warning Banner */}
                 {isCustomerStale && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 p-4 rounded-lg flex items-center gap-3 text-sm">
+                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 p-4 rounded-xl flex items-center gap-3 text-xs">
                         <AlertTriangle className="h-5 w-5 shrink-0" />
                         <div>
                             <span className="font-semibold">Customer Status Warning: </span>
@@ -489,7 +496,7 @@ export default function CreateOrder({
 
                 {/* Stale Inactive Product Warning Banner */}
                 {inactiveProductsInCart.length > 0 && (
-                    <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg flex items-center gap-3 text-sm">
+                    <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl flex items-center gap-3 text-xs">
                         <AlertTriangle className="h-5 w-5 shrink-0" />
                         <div>
                             <span className="font-semibold">Inactive Products in Cart: </span>
@@ -498,16 +505,16 @@ export default function CreateOrder({
                     </div>
                 )}
 
-                {/* Stepper Navigation Bar */}
-                <div className="bg-card border rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center justify-between gap-2 overflow-x-auto">
+                {/* Responsive Stepper Navigation Bar */}
+                <div className="bg-card border border-border/80 rounded-xl p-3 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
                         {/* Step 1 */}
                         <button
                             type="button"
                             onClick={() => setStep('customer')}
-                            className={`flex items-center gap-2.5 text-xs font-semibold px-3 py-2 rounded-md transition-colors ${
+                            className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg transition-colors shrink-0 cursor-pointer ${
                                 step === 'customer'
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    ? 'bg-primary text-primary-foreground shadow-2xs'
                                     : selectedCustomer
                                     ? 'text-foreground hover:bg-muted'
                                     : 'text-muted-foreground'
@@ -518,25 +525,25 @@ export default function CreateOrder({
                             </span>
                             <span>Customer</span>
                             {selectedCustomer && (
-                                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] py-0">
+                                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] py-0 font-mono">
                                     {selectedCustomer.code}
                                 </Badge>
                             )}
                         </button>
 
-                        <div className="h-px w-6 bg-border" />
+                        <div className="h-px w-6 bg-border/80 shrink-0" />
 
                         {/* Step 2 */}
                         <button
                             type="button"
                             onClick={() => selectedCustomer && setStep('catalog')}
                             disabled={!selectedCustomer}
-                            className={`flex items-center gap-2.5 text-xs font-semibold px-3 py-2 rounded-md transition-colors ${
+                            className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg transition-colors shrink-0 ${
                                 step === 'catalog'
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    ? 'bg-primary text-primary-foreground shadow-2xs'
                                     : cart.length > 0
-                                    ? 'text-foreground hover:bg-muted'
-                                    : 'text-muted-foreground opacity-60'
+                                    ? 'text-foreground hover:bg-muted cursor-pointer'
+                                    : 'text-muted-foreground opacity-60 cursor-not-allowed'
                             }`}
                         >
                             <span className="h-5 w-5 rounded-full border border-current flex items-center justify-center text-[10px]">
@@ -550,17 +557,17 @@ export default function CreateOrder({
                             )}
                         </button>
 
-                        <div className="h-px w-6 bg-border" />
+                        <div className="h-px w-6 bg-border/80 shrink-0" />
 
                         {/* Step 3 */}
                         <button
                             type="button"
                             onClick={() => selectedCustomer && cart.length > 0 && setStep('review')}
                             disabled={!selectedCustomer || cart.length === 0}
-                            className={`flex items-center gap-2.5 text-xs font-semibold px-3 py-2 rounded-md transition-colors ${
+                            className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg transition-colors shrink-0 ${
                                 step === 'review'
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground opacity-60'
+                                    ? 'bg-primary text-primary-foreground shadow-2xs'
+                                    : 'text-muted-foreground opacity-60 cursor-not-allowed'
                             }`}
                         >
                             <span className="h-5 w-5 rounded-full border border-current flex items-center justify-center text-[10px]">
@@ -583,6 +590,7 @@ export default function CreateOrder({
 
                 {step === 'catalog' && selectedCustomer && (
                     <ProductCatalogStep
+                        customer={selectedCustomer}
                         categories={categories}
                         products={products}
                         filters={filters}
@@ -613,34 +621,42 @@ export default function CreateOrder({
                 )}
             </div>
 
-            {/* Persistent Mobile Bottom Bar */}
+            {/* Persistent Mobile Bottom Action Bar (<1024px) during Catalog Step */}
             {step === 'catalog' && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur border-t p-3 lg:hidden flex items-center justify-between shadow-lg">
-                    <div>
-                        <div className="text-xs text-muted-foreground">
-                            {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'}
+                <div className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 px-4 py-3 lg:hidden flex items-center justify-between shadow-xl">
+                    <div className="min-w-0 pr-2">
+                        <div className="text-[11px] text-muted-foreground truncate">
+                            {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'} in cart
                         </div>
-                        <div className="text-sm font-bold font-mono text-foreground">
+                        <div className="text-sm font-bold font-mono text-primary truncate">
                             ${estimatedSubtotal.toFixed(2)}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <Button
+                            type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => setIsCartDrawerOpen(true)}
-                            className="gap-1.5"
+                            className="h-10 gap-1.5 px-3 text-xs cursor-pointer"
+                            aria-label={`View Cart (${totalCartItems} items)`}
                         >
                             <ShoppingBag className="h-4 w-4" />
                             <span>Cart</span>
+                            {totalCartItems > 0 && (
+                                <span className="px-1.5 py-0.2 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
+                                    {totalCartItems}
+                                </span>
+                            )}
                         </Button>
 
                         <Button
+                            type="button"
                             size="sm"
                             disabled={cart.length === 0}
                             onClick={() => setStep('review')}
-                            className="gap-1.5"
+                            className="h-10 gap-1.5 px-3.5 text-xs font-semibold cursor-pointer"
                         >
                             <span>Review</span>
                             <ArrowRight className="h-4 w-4" />
@@ -649,7 +665,7 @@ export default function CreateOrder({
                 </div>
             )}
 
-            {/* Cart Drawer for Mobile/Tablet */}
+            {/* Cart Drawer for Mobile / Tablet */}
             <CartDrawer
                 open={isCartDrawerOpen}
                 cart={cart}
@@ -669,6 +685,6 @@ export default function CreateOrder({
                 customerName={selectedCustomer?.name}
                 onClose={() => setIsDiscardModalOpen(false)}
             />
-        </AppLayout>
+        </LayoutComponent>
     );
 }
