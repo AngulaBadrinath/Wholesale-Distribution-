@@ -25,16 +25,16 @@ class SalesmanPerformanceReportService
      */
     public function getSalesmanPerformanceReport(array $filters = [], ?User $user = null): array
     {
-        $salesmenQuery = User::query()->where('role', UserRole::SALESMAN);
+        $salesmenQuery = User::query()->where('users.role', UserRole::SALESMAN);
 
         // Scoping: If user is a salesman, restrict exclusively to self
         if ($user && $user->role === UserRole::SALESMAN) {
-            $salesmenQuery->where('id', $user->id);
+            $salesmenQuery->where('users.id', $user->id);
         } elseif (! empty($filters['salesman_id'])) {
-            $salesmenQuery->where('id', (int) $filters['salesman_id']);
+            $salesmenQuery->where('users.id', (int) $filters['salesman_id']);
         }
 
-        $salesmen = $salesmenQuery->orderBy('name', 'asc')->get();
+        $salesmen = $salesmenQuery->orderBy('users.name', 'asc')->get();
 
         $dateFrom = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
         $dateTo = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
@@ -46,35 +46,35 @@ class SalesmanPerformanceReportService
 
         foreach ($salesmen as $salesman) {
             /** @var User $salesman */
-            $orderBaseQuery = Order::query()->where('salesman_id', $salesman->id);
+            $orderBaseQuery = Order::query()->where('orders.salesman_id', $salesman->id);
 
             if ($dateFrom) {
-                $orderBaseQuery->where('created_at', '>=', $dateFrom);
+                $orderBaseQuery->where('orders.created_at', '>=', $dateFrom);
             }
             if ($dateTo) {
-                $orderBaseQuery->where('created_at', '<=', $dateTo);
+                $orderBaseQuery->where('orders.created_at', '<=', $dateTo);
             }
 
             // 1. Order counts across statuses
-            $submittedCount = (clone $orderBaseQuery)->where('status', '!=', OrderStatus::DRAFT->value)->count();
-            $approvedCompletedCount = (clone $orderBaseQuery)->whereIn('status', [
+            $submittedCount = (clone $orderBaseQuery)->where('orders.status', '!=', OrderStatus::DRAFT->value)->count();
+            $approvedCompletedCount = (clone $orderBaseQuery)->whereIn('orders.status', [
                 OrderStatus::APPROVED->value,
                 OrderStatus::COMPLETED->value,
             ])->count();
-            $cancelledCount = (clone $orderBaseQuery)->where('status', OrderStatus::CANCELLED->value)->count();
+            $cancelledCount = (clone $orderBaseQuery)->where('orders.status', OrderStatus::CANCELLED->value)->count();
 
             // 2. Fulfillment breakdowns
-            $fulfilledCount = (clone $orderBaseQuery)->where('fulfillment_status', FulfillmentStatus::DELIVERED->value)->count();
-            $partiallyFulfilledCount = (clone $orderBaseQuery)->where('fulfillment_status', FulfillmentStatus::PARTIALLY_DELIVERED->value)->count();
+            $fulfilledCount = (clone $orderBaseQuery)->where('orders.fulfillment_status', FulfillmentStatus::DELIVERED->value)->count();
+            $partiallyFulfilledCount = (clone $orderBaseQuery)->where('orders.fulfillment_status', FulfillmentStatus::PARTIALLY_DELIVERED->value)->count();
 
             // 3. Financial volume (approved/completed orders)
             $financials = (clone $orderBaseQuery)
-                ->whereIn('status', [OrderStatus::APPROVED->value, OrderStatus::COMPLETED->value])
+                ->whereIn('orders.status', [OrderStatus::APPROVED->value, OrderStatus::COMPLETED->value])
                 ->selectRaw('
-                    COALESCE(SUM(subtotal), 0) as gross_sales,
-                    COALESCE(SUM(tax_total), 0) as tax_total,
-                    COALESCE(SUM(adjustment_total), 0) as discount_total,
-                    COALESCE(SUM(grand_total), 0) as net_sales
+                    COALESCE(SUM(orders.subtotal), 0) as gross_sales,
+                    COALESCE(SUM(orders.tax_total), 0) as tax_total,
+                    COALESCE(SUM(orders.adjustment_total), 0) as discount_total,
+                    COALESCE(SUM(orders.grand_total), 0) as net_sales
                 ')->first();
 
             $grossSales = number_format((float) ($financials?->gross_sales ?? 0), 2, '.', '');
@@ -87,16 +87,16 @@ class SalesmanPerformanceReportService
                 : '0.00';
 
             // 4. Customer Activity
-            $assignedCustomersCount = Customer::where('salesman_id', $salesman->id)->count();
+            $assignedCustomersCount = Customer::where('customers.salesman_id', $salesman->id)->count();
             $activeOrderingCustomersCount = (clone $orderBaseQuery)
-                ->whereIn('status', [OrderStatus::APPROVED->value, OrderStatus::COMPLETED->value])
-                ->distinct('customer_id')
-                ->count('customer_id');
+                ->whereIn('orders.status', [OrderStatus::APPROVED->value, OrderStatus::COMPLETED->value])
+                ->distinct('orders.customer_id')
+                ->count('orders.customer_id');
 
             // 5. Price overrides on salesman's orders
-            $orderIds = (clone $orderBaseQuery)->pluck('id');
-            $priceOverrideCount = OrderItem::whereIn('order_id', $orderIds)
-                ->where('is_price_overridden', true)
+            $orderIds = (clone $orderBaseQuery)->pluck('orders.id');
+            $priceOverrideCount = OrderItem::whereIn('order_items.order_id', $orderIds)
+                ->where('order_items.is_price_overridden', true)
                 ->count();
 
             $totalGrossSum = bcadd($totalGrossSum, $grossSales, 2);

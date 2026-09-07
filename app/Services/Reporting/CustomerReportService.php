@@ -43,26 +43,26 @@ class CustomerReportService
         // 2. Salesman filter (admin only)
         if (! empty($filters['salesman_id'])) {
             if (! $user || $user->role !== UserRole::SALESMAN) {
-                $query->where('salesman_id', (int) $filters['salesman_id']);
+                $query->where('customers.salesman_id', (int) $filters['salesman_id']);
             }
         }
 
         // 3. Customer status filter
         if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->where('customers.status', $filters['status']);
         }
 
         // 4. Search term
         if (! empty($filters['search'])) {
             $search = (string) $filters['search'];
             $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->where('customers.name', 'like', "%{$search}%")
+                    ->orWhere('customers.code', 'like', "%{$search}%")
+                    ->orWhere('customers.email', 'like', "%{$search}%");
             });
         }
 
-        $query->orderBy('name', 'asc');
+        $query->orderBy('customers.name', 'asc');
         $paginator = $query->paginate($perPage);
 
         $refDate = ! empty($filters['as_of_date'])
@@ -159,24 +159,24 @@ class CustomerReportService
     public function getCustomerPurchaseStats(int $customerId, array $filters = []): array
     {
         $orderQuery = Order::query()
-            ->where('customer_id', $customerId)
-            ->whereIn('status', [
+            ->where('orders.customer_id', $customerId)
+            ->whereIn('orders.status', [
                 OrderStatus::APPROVED->value,
                 OrderStatus::COMPLETED->value,
             ]);
 
         if (! empty($filters['date_from'])) {
-            $orderQuery->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
+            $orderQuery->where('orders.created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
         }
         if (! empty($filters['date_to'])) {
-            $orderQuery->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
+            $orderQuery->where('orders.created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
         }
 
         $result = $orderQuery->selectRaw('
-            COUNT(id) as order_count,
-            MIN(created_at) as first_order_date,
-            MAX(created_at) as last_order_date,
-            COALESCE(SUM(grand_total), 0) as total_spend
+            COUNT(orders.id) as order_count,
+            MIN(orders.created_at) as first_order_date,
+            MAX(orders.created_at) as last_order_date,
+            COALESCE(SUM(orders.grand_total), 0) as total_spend
         ')->first();
 
         $count = (int) ($result?->order_count ?? 0);

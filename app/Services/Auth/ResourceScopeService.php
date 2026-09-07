@@ -332,7 +332,7 @@ class ResourceScopeService
     public function scopeCustomers(Builder $query, User $user): Builder
     {
         if ($user->role === UserRole::SALESMAN) {
-            return $query->where('salesman_id', $user->id);
+            return $query->where('customers.salesman_id', $user->id);
         }
 
         return $query;
@@ -344,7 +344,7 @@ class ResourceScopeService
     public function scopeOrders(Builder $query, User $user): Builder
     {
         if ($user->role === UserRole::SALESMAN) {
-            return $query->where('salesman_id', $user->id);
+            return $query->where('orders.salesman_id', $user->id);
         }
 
         return $query;
@@ -356,7 +356,7 @@ class ResourceScopeService
     public function scopeDeliveries(Builder $query, User $user): Builder
     {
         if ($user->role === UserRole::DELIVERY_PARTNER) {
-            return $query->where('driver_id', $user->id);
+            return $query->where('deliveries.driver_id', $user->id);
         }
 
         return $query;
@@ -369,9 +369,9 @@ class ResourceScopeService
     {
         if ($user->role === UserRole::SALESMAN) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->where('created_by', $user->id)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id))
-                    ->orWhereHas('order', fn ($oq) => $oq->where('salesman_id', $user->id));
+                $q->where('return_requests.created_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id))
+                    ->orWhereHas('order', fn ($oq) => $oq->where('orders.salesman_id', $user->id));
             });
         }
 
@@ -385,9 +385,9 @@ class ResourceScopeService
     {
         if ($user->role === UserRole::SALESMAN) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->where('recorded_by', $user->id)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id))
-                    ->orWhereHas('order', fn ($oq) => $oq->where('salesman_id', $user->id));
+                $q->where('payments.recorded_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id))
+                    ->orWhereHas('order', fn ($oq) => $oq->where('orders.salesman_id', $user->id));
             });
         }
 
@@ -400,7 +400,7 @@ class ResourceScopeService
     public function scopeInvoices(Builder $query, User $user): Builder
     {
         if ($user->role === UserRole::SALESMAN) {
-            return $query->whereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+            return $query->whereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id));
         }
 
         return $query;
@@ -413,9 +413,9 @@ class ResourceScopeService
     {
         if ($user->role === UserRole::SALESMAN) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->where('issued_by', $user->id)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id))
-                    ->orWhereHas('order', fn ($oq) => $oq->where('salesman_id', $user->id));
+                $q->where('credit_notes.issued_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id))
+                    ->orWhereHas('order', fn ($oq) => $oq->where('orders.salesman_id', $user->id));
             });
         }
 
@@ -429,8 +429,8 @@ class ResourceScopeService
     {
         if ($user->role === UserRole::SALESMAN) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->where('requested_by', $user->id)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+                $q->where('refund_requests.requested_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id));
             });
         }
 
@@ -444,8 +444,8 @@ class ResourceScopeService
     {
         if ($user->role === UserRole::SALESMAN) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->where('processed_by', $user->id)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('salesman_id', $user->id));
+                $q->where('refund_transactions.processed_by', $user->id)
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customers.salesman_id', $user->id));
             });
         }
 

@@ -35,24 +35,24 @@ class DeliveryPerformanceReportService
 
         if (! empty($filters['driver_id'])) {
             if (! $user || $user->role !== UserRole::DELIVERY_PARTNER) {
-                $query->where('driver_id', (int) $filters['driver_id']);
+                $query->where('deliveries.driver_id', (int) $filters['driver_id']);
             }
         }
 
         if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->where('deliveries.status', $filters['status']);
         }
 
         if (! empty($filters['customer_id'])) {
-            $query->where('customer_id', (int) $filters['customer_id']);
+            $query->where('deliveries.customer_id', (int) $filters['customer_id']);
         }
 
         if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
+            $query->where('deliveries.created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
+            $query->where('deliveries.created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
         }
 
         return $query;

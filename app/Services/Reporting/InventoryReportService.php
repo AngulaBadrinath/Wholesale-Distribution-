@@ -252,11 +252,11 @@ class InventoryReportService
 
         $query = InventoryBalance::query()
             ->with(['product.category', 'warehouse'])
-            ->where('available_quantity', '<=', 10)
-            ->orderBy('available_quantity', 'asc');
+            ->where('inventory_balances.available_quantity', '<=', 10)
+            ->orderBy('inventory_balances.available_quantity', 'asc');
 
         if (! empty($filters['warehouse_id'])) {
-            $query->where('warehouse_id', (int) $filters['warehouse_id']);
+            $query->where('inventory_balances.warehouse_id', (int) $filters['warehouse_id']);
         }
 
         $records = $query->limit(100)->get();

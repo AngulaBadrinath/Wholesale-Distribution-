@@ -114,7 +114,7 @@ class SalesReportService
 
         // Total units sold across filtered orders
         $orderIdsQuery = (clone $query)->select('orders.id');
-        $totalUnits = (int) OrderItem::whereIn('order_id', $orderIdsQuery)->sum('ordered_quantity');
+        $totalUnits = (int) OrderItem::whereIn('order_items.order_id', $orderIdsQuery)->sum('order_items.ordered_quantity');
 
         return [
             'total_orders' => $totalOrders,
@@ -240,7 +240,7 @@ class SalesReportService
         }
 
         $records = OrderItem::query()
-            ->whereIn('order_id', $orderIds)
+            ->whereIn('order_items.order_id', $orderIds)
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->selectRaw('
                 products.id as product_id,
@@ -288,7 +288,7 @@ class SalesReportService
     {
         $query = $this->getBaseSalesQuery($filters, $user)
             ->with(['customer:id,name,code', 'salesman:id,name,email'])
-            ->orderBy('created_at', 'desc');
+            ->orderBy('orders.created_at', 'desc');
 
         $paginator = $query->paginate($perPage);
 
