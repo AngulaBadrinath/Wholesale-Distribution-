@@ -134,7 +134,8 @@ export default function TrialBalancePage({ report, filters }: Props) {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* Desktop / Tablet Table View (>=768px) */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-xs text-left">
                             <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                                 <tr>
@@ -210,6 +211,101 @@ export default function TrialBalancePage({ report, filters }: Props) {
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+
+                    {/* Mobile Card Stack View (<768px) */}
+                    <div className="md:hidden divide-y divide-border">
+                        {report.accounts.length === 0 ? (
+                            <div className="py-8 px-4 text-center text-xs text-muted-foreground">
+                                No account balances found.
+                            </div>
+                        ) : (
+                            report.accounts.map((acc) => (
+                                <div key={acc.account_id} className="p-3.5 space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="font-mono font-bold text-xs text-foreground shrink-0">
+                                                {acc.account_code}
+                                            </span>
+                                            <Badge variant="outline" className="text-[10px] shrink-0">
+                                                {acc.type}
+                                            </Badge>
+                                        </div>
+                                        <Link href={`/admin/accounting/general-ledger?account_id=${acc.account_id}`}>
+                                            <Button variant="outline" size="sm" className="h-6 text-[11px] px-2 gap-1">
+                                                <Eye className="w-3 h-3" />
+                                                <span>Ledger</span>
+                                            </Button>
+                                        </Link>
+                                    </div>
+
+                                    <div>
+                                        <Link
+                                            href={`/admin/accounting/general-ledger?account_id=${acc.account_id}`}
+                                            className="text-xs font-semibold text-primary hover:underline"
+                                        >
+                                            {acc.name}
+                                        </Link>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
+                                        <div className="rounded-lg bg-muted/30 p-2">
+                                            <span className="text-[10px] text-muted-foreground block uppercase font-medium">Activity</span>
+                                            <div className="font-mono text-[11px] mt-0.5 space-y-0.5">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Dr:</span>
+                                                    <span className="text-foreground">${acc.debit}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Cr:</span>
+                                                    <span className="text-foreground">${acc.credit}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-lg bg-primary/5 border border-primary/15 p-2">
+                                            <span className="text-[10px] text-primary/80 block uppercase font-medium">Net Position</span>
+                                            <div className="font-mono text-[11px] mt-0.5 space-y-0.5">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Net Dr:</span>
+                                                    <span className="font-bold text-emerald-600">
+                                                        {parseFloat(acc.net_debit) > 0 ? `$${acc.net_debit}` : '—'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Net Cr:</span>
+                                                    <span className="font-bold text-blue-600">
+                                                        {parseFloat(acc.net_credit) > 0 ? `$${acc.net_credit}` : '—'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+
+                        {/* Mobile Total Balance Card */}
+                        <div className="p-3.5 bg-muted/30 border-t space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Total Debits:</span>
+                                <span className="font-mono font-semibold text-foreground">${report.total_debits}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Total Credits:</span>
+                                <span className="font-mono font-semibold text-foreground">${report.total_credits}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-border/80 text-xs">
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground block uppercase font-bold">Total Net Debits</span>
+                                    <span className="font-mono font-bold text-sm text-emerald-600">${report.total_net_debits}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[10px] text-muted-foreground block uppercase font-bold">Total Net Credits</span>
+                                    <span className="font-mono font-bold text-sm text-blue-600">${report.total_net_credits}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

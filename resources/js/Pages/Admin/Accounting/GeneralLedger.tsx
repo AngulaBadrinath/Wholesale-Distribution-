@@ -201,7 +201,8 @@ export default function GeneralLedgerPage({
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            {/* Desktop / Tablet Table View (>=768px) */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-xs text-left">
                                     <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                                         <tr>
@@ -302,6 +303,103 @@ export default function GeneralLedgerPage({
                                         </tr>
                                     </tfoot>
                                 </table>
+                            </div>
+
+                            {/* Mobile Card Stack View (<768px) */}
+                            <div className="md:hidden divide-y divide-border">
+                                {/* Opening Balance Card */}
+                                <div className="p-3.5 bg-muted/20 flex items-center justify-between text-xs">
+                                    <div>
+                                        <span className="font-semibold text-foreground block">Opening Balance</span>
+                                        <span className="text-[11px] text-muted-foreground">{ledger.start_date || 'Period Start'}</span>
+                                    </div>
+                                    <span className="font-mono font-bold text-sm text-foreground">
+                                        ${ledger.opening_balance}
+                                    </span>
+                                </div>
+
+                                {ledger.transactions.length === 0 ? (
+                                    <div className="py-8 px-4 text-center text-xs text-muted-foreground">
+                                        No journal activity for this account within the selected period.
+                                    </div>
+                                ) : (
+                                    ledger.transactions.map((tx) => (
+                                        <div key={tx.id} className="p-3.5 space-y-2.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <Link
+                                                        href={`/admin/accounting/journals/${tx.journal_entry_id}`}
+                                                        className="font-mono font-bold text-xs text-primary hover:underline truncate"
+                                                    >
+                                                        {tx.journal_number}
+                                                    </Link>
+                                                    <Badge variant="outline" className="text-[10px] shrink-0">
+                                                        {tx.entry_type}
+                                                    </Badge>
+                                                </div>
+                                                <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                                    {tx.accounting_date}
+                                                </span>
+                                            </div>
+
+                                            <div className="text-xs text-foreground leading-relaxed">
+                                                {tx.description}
+                                            </div>
+
+                                            {tx.source_number && (
+                                                <div className="text-[11px] font-mono text-muted-foreground">
+                                                    Ref: {tx.source_number}
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/60 text-center">
+                                                <div className="rounded-lg bg-muted/30 p-2">
+                                                    <span className="text-[10px] text-muted-foreground block uppercase font-medium">Debit</span>
+                                                    <span className="font-mono font-semibold text-xs text-emerald-600 block mt-0.5">
+                                                        {parseFloat(tx.debit) > 0 ? `$${tx.debit}` : '—'}
+                                                    </span>
+                                                </div>
+                                                <div className="rounded-lg bg-muted/30 p-2">
+                                                    <span className="text-[10px] text-muted-foreground block uppercase font-medium">Credit</span>
+                                                    <span className="font-mono font-semibold text-xs text-blue-600 block mt-0.5">
+                                                        {parseFloat(tx.credit) > 0 ? `$${tx.credit}` : '—'}
+                                                    </span>
+                                                </div>
+                                                <div className="rounded-lg bg-primary/5 border border-primary/15 p-2">
+                                                    <span className="text-[10px] text-primary/80 block uppercase font-medium">Balance</span>
+                                                    <span className="font-mono font-bold text-xs text-primary block mt-0.5">
+                                                        ${tx.running_balance}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-1 flex justify-end">
+                                                <Link href={`/admin/accounting/journals/${tx.journal_entry_id}`} className="w-full sm:w-auto">
+                                                    <Button variant="outline" size="sm" className="w-full text-xs h-7 gap-1">
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        <span>View Journal</span>
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+
+                                {/* Closing Balance Mobile Card */}
+                                <div className="p-3.5 bg-muted/30 border-t space-y-2">
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">Total Period Debits:</span>
+                                        <span className="font-mono font-semibold text-emerald-600">${ledger.period_debits}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">Total Period Credits:</span>
+                                        <span className="font-mono font-semibold text-blue-600">${ledger.period_credits}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-border/80">
+                                        <span className="text-foreground uppercase tracking-wider">Closing Balance:</span>
+                                        <span className="font-mono text-sm text-primary">${ledger.closing_balance}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
