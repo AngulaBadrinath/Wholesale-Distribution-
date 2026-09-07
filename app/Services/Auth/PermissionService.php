@@ -249,6 +249,10 @@ class PermissionService
                 Permission::USER_UPDATE,
                 Permission::USER_SUSPEND,
 
+                // Audit & Security
+                Permission::AUDIT_VIEW,
+                Permission::AUDIT_SECURITY_VIEW,
+
                 // Role Management
                 Permission::ROLE_MANAGE,
             ],

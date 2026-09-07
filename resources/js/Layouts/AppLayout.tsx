@@ -27,8 +27,12 @@ import {
     FileSpreadsheet,
     BarChart3,
     Truck,
-    Boxes
+    Boxes,
+    History,
+    ShieldAlert,
+    Bell
 } from 'lucide-react';
+import NotificationBell from '@/Components/Notifications/NotificationBell';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -60,6 +64,8 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasInventoryView = auth?.user?.permissions?.includes('inventory.view') || ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasDeliveryView = auth?.user?.permissions?.includes('delivery.view') || ['SUPER_ADMIN', 'ADMIN', 'DELIVERY_PARTNER', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasReportingAccess = hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView;
+    const hasAuditView = auth?.user?.permissions?.includes('audit.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
+    const hasSecurityView = auth?.user?.permissions?.includes('audit.security.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -422,12 +428,54 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                             </>
                         )}
 
+                        {(hasAuditView || hasSecurityView) && (
+                            <>
+                                <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
+                                    Audit & Governance
+                                </div>
+                                <nav className="space-y-1 mb-6">
+                                    {hasAuditView && (
+                                        <Link
+                                            href="/admin/audit/timeline"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <History className="h-4 w-4 text-primary" />
+                                            <span>Activity Timeline</span>
+                                        </Link>
+                                    )}
+                                    {hasSecurityView && (
+                                        <Link
+                                            href="/admin/audit/security"
+                                            className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        >
+                                            <ShieldAlert className="h-4 w-4 text-rose-500" />
+                                            <span>Security Logs</span>
+                                        </Link>
+                                    )}
+                                </nav>
+                            </>
+                        )}
+
                         {auth?.user && (
                             <>
                                 <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
-                                    User Security
+                                    Notifications & Security
                                 </div>
                                 <nav className="space-y-1 mb-6">
+                                    <Link
+                                        href="/notifications"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Bell className="h-4 w-4" />
+                                        <span>Notifications</span>
+                                    </Link>
+                                    <Link
+                                        href="/notifications/preferences"
+                                        className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                    >
+                                        <Settings className="h-4 w-4" />
+                                        <span>Preferences</span>
+                                    </Link>
                                     <Link
                                         href="/security/mfa"
                                         className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -518,6 +566,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                         </div>
 
                         <div className="flex items-center gap-3 text-xs">
+                            {auth?.user && <NotificationBell />}
                             <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-border bg-secondary/50 font-mono text-[11px] text-muted-foreground">
                                 <span>ENV:</span>
                                 <span className="font-semibold text-foreground">local</span>

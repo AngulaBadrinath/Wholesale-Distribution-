@@ -85,6 +85,10 @@ enum Permission: string
     case USER_UPDATE = 'user.update';
     case USER_SUSPEND = 'user.suspend';
 
+    // Audit & Security Logging
+    case AUDIT_VIEW = 'audit.view';
+    case AUDIT_SECURITY_VIEW = 'audit.security.view';
+
     // Role Management
     case ROLE_MANAGE = 'role.manage';
 
@@ -162,6 +166,9 @@ enum Permission: string
             self::USER_UPDATE => 'Update System Users',
             self::USER_SUSPEND => 'Suspend System Users',
 
+            self::AUDIT_VIEW => 'View Business Audit Logs',
+            self::AUDIT_SECURITY_VIEW => 'View Security Event Logs',
+
             self::ROLE_MANAGE => 'Manage User Roles',
             self::PERMISSION_MANAGE => 'Manage Permission Registry',
         };
@@ -237,6 +244,9 @@ enum Permission: string
             self::USER_CREATE => 'Create staff user identities and trigger activation invitations.',
             self::USER_UPDATE => 'Modify staff user profiles, contact information, and account settings.',
             self::USER_SUSPEND => 'Suspend or disable system user accounts to revoke platform access.',
+
+            self::AUDIT_VIEW => 'Inspect business audit trail events, timeline, and entity change history.',
+            self::AUDIT_SECURITY_VIEW => 'Inspect sensitive security events, authentication logs, and access failures.',
 
             self::ROLE_MANAGE => 'Assign, change, and review primary user roles across the organization.',
             self::PERMISSION_MANAGE => 'Govern system-wide permission registries and security policy definitions.',

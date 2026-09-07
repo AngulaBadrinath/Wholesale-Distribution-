@@ -30,13 +30,13 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-001: Exactly 51 canonical permission codes exist.
+     * RBAC-PERM-001: Exactly 53 canonical permission codes exist.
      */
     public function test_exactly_48_canonical_permission_codes_exist(): void
     {
         $cases = Permission::cases();
-        $this->assertCount(51, $cases);
-        $this->assertCount(51, Permission::values());
+        $this->assertCount(53, $cases);
+        $this->assertCount(53, Permission::values());
     }
 
     /**
@@ -106,12 +106,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-006: SUPER_ADMIN has exactly all 51 permissions.
+     * RBAC-PERM-006: SUPER_ADMIN has exactly all 53 permissions.
      */
     public function test_super_admin_has_all_48_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::SUPER_ADMIN);
-        $this->assertCount(51, $permissions);
+        $this->assertCount(53, $permissions);
         $this->assertSame(Permission::cases(), $permissions);
 
         $superAdmin = User::factory()->superAdmin()->create();
@@ -124,12 +124,12 @@ class PermissionRegistryTest extends TestCase
     }
 
     /**
-     * RBAC-PERM-007: ADMIN has exactly the intended 46 permissions.
+     * RBAC-PERM-007: ADMIN has exactly the intended 48 permissions.
      */
     public function test_admin_has_exactly_the_intended_42_permissions(): void
     {
         $permissions = $this->permissionService->getPermissionsForRole(UserRole::ADMIN);
-        $this->assertCount(46, $permissions);
+        $this->assertCount(48, $permissions);
 
         $permissionValues = array_map(fn (Permission $p) => $p->value, $permissions);
 

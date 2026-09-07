@@ -618,7 +618,42 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/admin/reports/financial', [\App\Http\Controllers\Admin\AdminReportingController::class, 'financial'])
             ->name('admin.reports.financial');
     });
+
+    // In-App Operational Notifications (User-scoped)
+    Route::get('/notifications', [\App\Http\Controllers\Notification\NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::get('/notifications/feed', [\App\Http\Controllers\Notification\NotificationController::class, 'feed'])
+        ->name('notifications.feed');
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\Notification\NotificationController::class, 'unreadCount'])
+        ->name('notifications.unread-count');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Notification\NotificationController::class, 'markAsRead'])
+        ->whereNumber('id')
+        ->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Notification\NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Notification\NotificationController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('notifications.destroy');
+    Route::get('/notifications/preferences', [\App\Http\Controllers\Notification\NotificationController::class, 'preferences'])
+        ->name('notifications.preferences');
+    Route::put('/notifications/preferences', [\App\Http\Controllers\Notification\NotificationController::class, 'updatePreferences'])
+        ->name('notifications.preferences.update');
+
+    // Business Audit Logs & User Activity Timeline
+    Route::middleware('permission:audit.view')->group(function () {
+        Route::get('/admin/audit/timeline', [\App\Http\Controllers\Admin\AdminAuditController::class, 'timeline'])
+            ->name('admin.audit.timeline');
+        Route::get('/admin/audit/entities/{entityType}/{entityId}', [\App\Http\Controllers\Admin\AdminAuditController::class, 'entityHistory'])
+            ->name('admin.audit.entity-history');
+    });
+
+    // Security Logs
+    Route::middleware('permission:audit.security.view')->group(function () {
+        Route::get('/admin/audit/security', [\App\Http\Controllers\Admin\AdminAuditController::class, 'security'])
+            ->name('admin.audit.security');
+    });
 });
+
 
 
 
