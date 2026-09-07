@@ -83,10 +83,12 @@ export default function ProductEdit({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSettingPrimary, setIsSettingPrimary] = useState<number | null>(null);
 
+    const [isDragging, setIsDragging] = useState(false);
+    const dragCounter = useRef(0);
+
     const images: ProductImage[] = product.images || [];
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const processFile = (file: File | null) => {
         setUploadErrorMessage(null);
 
         if (!file) {
@@ -117,6 +119,50 @@ export default function ProductEdit({
             setFilePreview(reader.result as string);
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        processFile(file);
+    };
+
+    const handleDragEnter = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current += 1;
+        if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isDragging) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+            dragCounter.current = 0;
+            setIsDragging(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsDragging(false);
+
+        const file = e.dataTransfer.files?.[0] || null;
+        if (file) {
+            processFile(file);
+        }
     };
 
     const handleUploadSubmit = (e: React.FormEvent) => {
@@ -585,11 +631,28 @@ export default function ProductEdit({
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Upload Section */}
-                            <div className="p-4 rounded-lg border border-dashed border-border/80 bg-muted/20 space-y-4">
-                                <div className="text-xs font-semibold text-foreground flex items-center gap-2">
-                                    <Upload className="h-4 w-4 text-primary" />
-                                    Upload New Product Image
+                            {/* Upload Section / Dropzone */}
+                            <div
+                                onDragEnter={handleDragEnter}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={`p-4 rounded-lg border border-dashed transition-all duration-200 space-y-4 ${
+                                    isDragging
+                                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs'
+                                        : 'border-border/80 bg-muted/20 hover:border-border'
+                                }`}
+                            >
+                                <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Upload className={`h-4 w-4 transition-colors ${isDragging ? 'text-primary scale-110' : 'text-primary'}`} />
+                                        <span>Upload New Product Image</span>
+                                    </div>
+                                    {isDragging && (
+                                        <span className="text-[11px] font-medium text-primary animate-pulse">
+                                            Drop image file to select
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
@@ -604,7 +667,7 @@ export default function ProductEdit({
                                             className="block w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
                                         />
                                         <p className="text-[11px] text-muted-foreground">
-                                            Supported: JPEG, PNG, WebP · Max File Size: 5MB. Magic bytes verified server-side.
+                                            Supported: JPEG, PNG, WebP · Max File Size: 5MB. Drag and drop file or browse. Magic bytes verified server-side.
                                         </p>
 
                                         {uploadErrorMessage && (
