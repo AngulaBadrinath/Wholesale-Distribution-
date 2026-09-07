@@ -14,14 +14,14 @@
 | Metric | Current Value | Notes |
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **90.6%** (116 / 128 tickets) | Wave 1 Operational, Role, Responsive & A11y Hardening complete; 1,472 automated tests (1,460 passed, 8,559 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
+| **Overall Code Completion** | **90.6%** (116 / 128 tickets) | Wave 2 UX Polish & Consistency Hardening complete; 1,475 automated tests (1,463 passed, 8,637 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Hardening Wave 1 — Operational & Responsive** | Status: `COMPLETED` (BUG-001 Salesman payment scope, BUG-002 Credit notes nav, BUG-004 GL/TB mobile cards, BUG-005 Price override a11y, BUG-008 POD signature smoothing) |
-| **Current Milestone Gate** | **Wave 1 Gate — Hardening Complete** | Status: `COMPLETED` (Automated regression suite passing, responsive viewports validated, zero business logic mutations) |
-| **Current Active Ticket** | **WAVE-1** (Complete) | Ready for Wave 2 authorization |
-| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/WAVE-1-operational-hardening-20260908` |
-| **Active Blockers** | **0** | Full test suite passed (1,460 passing), TypeScript verified, Vite build clean |
+| **Current Phase** | **Hardening Wave 2 — UX, Polish & Consistency** | Status: `COMPLETED` (BUG-003 React dev doc, BUG-006 AR statement presets, BUG-007 Image dragover, BUG-009 Select tokens, BUG-010 Tax formatting) |
+| **Current Milestone Gate** | **Wave 2 Gate — Hardening Complete** | Status: `COMPLETED` (All audit defects resolved, zero invariant regressions, 1,463 tests passing) |
+| **Current Active Ticket** | **WAVE-2** (Complete) | Ready for Wave 3 review / roadmap progression |
+| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/WAVE-2-ux-polish-20260908` |
+| **Active Blockers** | **0** | Full test suite passed (1,463 passing), TypeScript verified, Vite build clean |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$

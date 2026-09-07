@@ -923,11 +923,32 @@ When a new business requirement, client change request, or technical modificatio
 - **Tax Impact:** None.
 - **Accounting Impact:** Added responsive mobile breakdown for GL and Trial Balance; exposed Credit Notes in sidebar for Admin/Super Admin/Accountant.
 - **Data Migration Impact:** None.
-- **Testing Impact:** `Wave1OperationalHardeningTest.php` created (3 tests, 12 assertions); full test suite passing (1,472 tests, 1,460 passed, 12 skipped, 8,559 assertions, 0 failures); `npm run type-check` (0 errors); `npm run build` (clean bundle in 2.51s).
+- **Release/Commit Reference:** Feature branch `feature/WAVE-1-operational-hardening-20260908`.
+
+### CHANGE-021: Wave 2 UX, Polish & Consistency Hardening
+- **Change ID:** `CHANGE-021`
+- **Date:** September 8, 2026
+- **Requested By:** Principal Product Architect & QA Lead
+- **Request:** Implement Wave 2 UX polish, visual feedback, and consistency hardening resolving `BUG-003` (React 19 dev-mode timing warning documentation), `BUG-006` (Customer Statement quick date-range presets), `BUG-007` (Product Image uploader drag-over visual feedback), `BUG-009` (Inventory Exception and adjustment select token normalization), and `BUG-010` (Tax Profile percentage formatting consistency).
+- **Reason:** Provide one-click accounting period selection for AR customer statements, eliminate dragzone highlight ambiguity during product catalog uploads, normalize select dropdown height/padding tokens across warehouse workspaces, ensure consistent tax percentage display without destroying backend precision, and document React 19 dev timing behavior.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Wave 2 Master Roadmap)
+- **Affected PRD Requirements:** Document 01 Section 7 (Accounts Receivable), Section 10 (Inventory & Warehouse Management), Section 11 (General Ledger & Accounting), Section 12 (Frontend & UX).
+- **Affected Architecture:** Document 02 Section 11 (Accounting Subsystem), Section 12 (Frontend Architecture).
+- **Affected Security:** Document 03 Section 2 (Zero Client Trust), Section 3 (RBAC & Permissions).
+- **Affected Frontend:** Document 04 Section 3 (Design Tokens & Responsive Breakpoints), Section 4 (Component Standards), Section 5 (Admin Portal Layout), Section 7 (Product Management).
+- **Affected Tickets:** `BUG-003`, `BUG-006`, `BUG-007`, `BUG-009`, `BUG-010`.
+- **Inventory Impact:** None.
+- **Order Impact:** None.
+- **Payment Impact:** None.
+- **Tax Impact:** Standardized percentage display formatting (`formatTaxPercentage`) without mutating stored `DECIMAL(7,4)` rates.
+- **Accounting Impact:** Added quick preset date filters ("This Month", "Last 30 Days", "Year to Date", "All Time") to Customer Statement view.
+- **Data Migration Impact:** None.
+- **Testing Impact:** `Wave2UXPolishTest.php` created (3 tests, 78 assertions); full test suite passing (1,475 tests, 1,463 passed, 12 skipped, 8,637 assertions, 0 failures); `npm run type-check` (0 errors); `npm run build` (clean bundle in 2.86s).
 - **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** Feature branch `feature/WAVE-1-operational-hardening-20260908`.
+- **Release/Commit Reference:** Feature branch `feature/WAVE-2-ux-polish-20260908`.
 
 ---
 

@@ -1079,3 +1079,25 @@
 - [x] **Quadratic Bezier Interpolation:** Midpoint curve calculation eliminates jagged lines during fast touch gestures.
 - [x] **High-DPI Canvas:** Canvas scales dynamically with `window.devicePixelRatio` for sharp rendering on Retina/OLED screens.
 
+---
+
+## 5. Wave 2 UX, Polish & Consistency Coverage Matrix (`WAVE-2`)
+
+### 5.1 React 19 Dev Timing Warning Guidance (`BUG-003`)
+- [x] **Developer Documentation:** Documented symptom, origin in `react-dom-client.development.js`, production bundle verification, and triage guidelines in `docs/AI_CONTEXT.md`.
+
+### 5.2 Customer Statement Quick Date Presets (`BUG-006`)
+- [x] **Preset Calculation & Filtering:** Verified "This Month", "Last 30 Days", "Year to Date", and "All Time" preset ranges and query handling (`Wave2UXPolishTest::test_customer_statement_date_filtering_presets`).
+- [x] **Interactive UI Controls:** Added responsive preset pill buttons with active selection highlighting and keyboard accessibility.
+
+### 5.3 Product Image Drag-Over Visual Feedback (`BUG-007`)
+- [x] **Drag-and-Drop Interaction:** Implemented `isDragging` dropzone highlight (`border-primary bg-primary/5 ring-2 ring-primary/20`) with flicker-free `dragCounter` in `Product/Edit.tsx`.
+- [x] **Endpoint Operationality:** Verified product edit view and image upload pipeline remain fully operational (`Wave2UXPolishTest::test_product_edit_and_inventory_exceptions_views_operational`).
+
+### 5.4 Inventory Exception Select Token Normalization (`BUG-009`)
+- [x] **Design System Token Standard:** Standardized dropdown selects in `Exceptions.tsx` and `Show.tsx` to `h-9 text-xs px-3 py-1` matching Admin design tokens.
+
+### 5.5 Tax Profile Percentage Display Formatting (`BUG-010`)
+- [x] **Decimal Formatting Helper:** Standardized tax rate formatting via `formatTaxPercentage()` (e.g., `8.25%`, `8%`, `0%`) while preserving backend `DECIMAL(7,4)` database precision (`Wave2UXPolishTest::test_tax_profile_rate_precision_and_retrieval`).
+
+

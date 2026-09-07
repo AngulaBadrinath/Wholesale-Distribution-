@@ -278,3 +278,11 @@
 - [x] `BUG-005`: Price Override Modal Accessibility (WCAG 2.1 AA focus trap, autoFocus, Tab cycle, Escape dismiss, focus return)
 - [x] `BUG-008`: Delivery Signature Canvas Smoothness (Quadratic bezier curve midpoint interpolation, high-DPI scaling)
 
+### Wave 2: UX, Polish & Consistency Hardening
+- [x] `BUG-003`: React 19 Dev Timing Warning Guidance (Documented dev-mode performance timing in AI_CONTEXT.md)
+- [x] `BUG-006`: Customer Statement Quick Date Range Presets (One-click presets helper and responsive pill filters)
+- [x] `BUG-007`: Product Image Uploader Drag-Over Feedback (Dynamic border-primary/bg-primary/5 visual state)
+- [x] `BUG-009`: Inventory Exception & Adjustment Select Normalization (Normalized h-9/px-3/py-1 select tokens)
+- [x] `BUG-010`: Tax Profile Percentage Display Formatting (formatTaxPercentage helper preserving DECIMAL(7,4) precision)
+
+
