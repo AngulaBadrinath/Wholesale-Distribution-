@@ -22,6 +22,8 @@ import {
     AlertCircle,
 } from 'lucide-react';
 
+import { formatTaxPercentage } from '@/lib/financial';
+
 interface TaxProfileIndexProps {
     taxProfiles: PaginatedResponse<TaxProfile>;
     filters: {
@@ -333,7 +335,7 @@ export default function TaxProfileIndex({
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-right font-mono font-semibold text-foreground">
-                                                {parseFloat(profile.rate).toFixed(4)}%
+                                                {formatTaxPercentage(profile.rate)}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className="inline-flex items-center gap-1 font-mono text-xs bg-muted/50 px-2 py-0.5 rounded-full border border-border/60">

@@ -57,6 +57,31 @@ export function formatDecimal(value: number | string, decimals: number = 2): str
 }
 
 /**
+ * Format a tax rate percentage cleanly and consistently.
+ * Preserves meaningful decimal precision (e.g. 8.25%, 8.2%, 8.125%, 8%) without unnecessary trailing zeros.
+ *
+ * Examples:
+ * - "8.2500" -> "8.25%"
+ * - "8.2000" -> "8.2%"
+ * - "8.0000" -> "8%"
+ * - "0.0000" -> "0%"
+ * - "8.1250" -> "8.125%"
+ * - "100.0000" -> "100%"
+ */
+export function formatTaxPercentage(value: number | string | null | undefined, includePercent: boolean = true): string {
+    if (value === null || value === undefined || value === '') {
+        return includePercent ? '0%' : '0';
+    }
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) {
+        return includePercent ? '0%' : '0';
+    }
+
+    const formatted = parseFloat(num.toFixed(4)).toString();
+    return includePercent ? `${formatted}%` : formatted;
+}
+
+/**
  * Client-side ROUND_HALF_UP rounding for monetary preview calculations.
  * Uses integer cent conversion with epsilon correction to prevent IEEE-754 floating-point inaccuracies.
  */

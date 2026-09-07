@@ -17,6 +17,7 @@ import {
     Package,
     ShieldAlert,
 } from 'lucide-react';
+import { formatTaxPercentage } from '@/lib/financial';
 
 interface TaxProfileEditProps {
     taxProfile: TaxProfile;
@@ -30,7 +31,7 @@ export default function TaxProfileEdit({
     const { data, setData, put, processing, errors } = useForm({
         name: taxProfile.name || '',
         code: taxProfile.code || '',
-        rate: taxProfile.rate ? parseFloat(taxProfile.rate).toString() : '',
+        rate: taxProfile.rate ? formatTaxPercentage(taxProfile.rate, false) : '',
         description: taxProfile.description || '',
         status: taxProfile.status || 'ACTIVE',
     });
