@@ -25,4 +25,30 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
+            $status = $response->getStatusCode();
+
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                if (in_array($status, [403, 404, 503], true) || ($status === 500 && ! app()->hasDebugModeEnabled())) {
+                    return \Inertia\Inertia::render('Error', [
+                        'status' => $status,
+                        'message' => match ($status) {
+                            403 => 'You do not have permission to access this administrative resource.',
+                            404 => 'The page or operational resource you requested could not be found.',
+                            503 => 'The service is temporarily unavailable for maintenance. Please try again shortly.',
+                            default => 'An unexpected server error occurred. Please try again or contact support.',
+                        },
+                    ])->toResponse($request)->setStatusCode($status);
+                }
+
+                if ($status === 419) {
+                    return back()->with([
+                        'message' => 'The page expired, please try again.',
+                    ]);
+                }
+            }
+
+            return $response;
+        });
     })->create();
