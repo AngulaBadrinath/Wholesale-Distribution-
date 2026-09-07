@@ -219,12 +219,12 @@
 - [x] `FEAT-REP-006`: Financial Accounting Reports
 
 ### Notifications & Auditing
-- [ ] `FEAT-NOTIF-001`: In-App Operational Action Notifications
-- [ ] `FEAT-NOTIF-002`: Notification Preferences Architecture
-- [ ] `FEAT-AUD-001`: Business Audit Event Logger
-- [ ] `FEAT-AUD-002`: Security Event Logging Channel
-- [ ] `FEAT-AUD-003`: Audit Table Immutability Enforcement
-- [ ] `FEAT-AUD-004`: User Activity Timeline UI
+- [x] `FEAT-NOTIF-001`: In-App Operational Action Notifications (User-scoped action alerts, deterministic deduplication, read state, role broadcasts, popover feed, deep-link actions, 6 targeted tests)
+- [x] `FEAT-NOTIF-002`: Notification Preferences Architecture (User-configurable categories: ORDERS, PAYMENTS, INVENTORY, DELIVERY, RETURNS; mandatory non-disableable categories: SECURITY, SYSTEM; preference query & updates, 6 targeted tests)
+- [x] `FEAT-AUD-001`: Business Audit Event Logger (Append-only `audit_logs` table, AuditLogService, recursive sensitive metadata scrubbing, entity audit history, 3 targeted tests)
+- [x] `FEAT-AUD-002`: Security Event Logging Channel (Dedicated `security_logs` table, SecurityLogService, severity classification, context secret redaction, external log integration, 3 targeted tests)
+- [x] `FEAT-AUD-003`: Audit Table Immutability Enforcement (Eloquent updating/deleting DomainException guards, PostgreSQL triggers `trg_protect_audit_logs` & `trg_protect_security_logs`, SQLite compatibility triggers, 8 targeted tests)
+- [x] `FEAT-AUD-004`: User Activity Timeline UI (Responsive Activity Timeline, hybrid dense table & mobile vertical timeline, module color badges, date/search/actor filters, sanitized JSON context modal, security logs dashboard, 4 targeted tests)
 
 ---
 

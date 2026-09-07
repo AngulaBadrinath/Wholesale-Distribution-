@@ -827,8 +827,32 @@ When a new business requirement, client change request, or technical modificatio
 - **Testing Impact:** Added 32 targeted automated tests across `tests/Feature/Reporting/*`. Total repository test suite: 1,403 tests (1,391 passed, 8,220 assertions, 12 skipped, 0 failures).
 - **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
-- **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** Commits on branch `feature/FEAT-REP-001-006-reporting`.
+
+### CHANGE-016: Phase 15 Notifications & Auditing Implementation
+- **Change ID:** `CHANGE-016`
+- **Date:** September 7, 2026
+- **Requested By:** Lead Software Architect & Solo Developer
+- **Request:** Implement Phase 15 Notifications & Auditing (`FEAT-NOTIF-001` through `FEAT-AUD-004`), providing in-app operational action notifications, user-scoped notification preferences, structured business audit event logging, dedicated security logging, PostgreSQL/Eloquent audit immutability triggers, and a responsive user activity timeline UI.
+- **Reason:** Guarantee immutable audit compliance for all commercial and security transactions, and provide a real-time operational alert mechanism for workflows and approvals.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0`
+- **Affected PRD Requirements:** PRD Section 11 (Notifications & Auditing).
+- **Affected Architecture:** Technical Architecture Section 11 (Audit Trail & Notification Subsystems).
+- **Affected Security:** Security Document Section 8 (Audit Logging & Immutability).
+- **Affected Frontend:** Frontend Specification Document 04 (Shared Header Notification Bell, Notification Center, Notification Preferences, Activity Timeline, Security Logs).
+- **Affected Tickets:** `FEAT-NOTIF-001`, `FEAT-NOTIF-002`, `FEAT-AUD-001`, `FEAT-AUD-002`, `FEAT-AUD-003`, `FEAT-AUD-004`.
+- **Inventory Impact:** None (Audit events logged alongside movements).
+- **Order Impact:** None (Order mutations emit audit events and in-app action notifications).
+- **Payment Impact:** None (Payment milestones emit audit events and notifications).
+- **Tax Impact:** None.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** 3 migrations added creating `audit_logs`, `security_logs`, `in_app_notifications`, `notification_preferences`, and PostgreSQL/SQLite immutability triggers.
+- **Testing Impact:** 40 new targeted automated tests across `tests/Feature/Notification/*` and `tests/Feature/Audit/*`. Total repository test suite: 1,443 tests (1,431 passed, 8,358 assertions, 12 skipped, 0 failures).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Feature branch `feature/FEAT-NOTIF-AUD-001-004`.
 
 ---
 

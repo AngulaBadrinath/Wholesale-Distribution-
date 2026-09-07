@@ -985,10 +985,15 @@
 - [ ] **Immutability Assertion:** Direct `UPDATE` or `DELETE` on `journal_lines` rejected by database constraint (`RULE-ACC-001`).
 - [ ] **Reversal:** Reversing journal entry successfully offsets original entry and is linked by reference ID (`FEAT-ACC-008`, `EDGE-018`).
 
-### 1.19 Audit & Compliance (`AUDIT`)
-- [ ] **Completeness:** All state changes across orders, adjustments, prices, payments, and permissions produce `audit_logs` entries (`FEAT-AUD-001`).
-- [ ] **Immutability:** Audit log table rejects `UPDATE` and `DELETE` commands (`FEAT-AUD-003`).
-- [ ] **Timeline UI:** Activity timeline renders human-readable chronological event stream.
+### 1.19 Audit, Compliance & Notifications (`AUDIT` & `NOTIF`)
+- [x] **In-App Operational Action Notifications (`FEAT-NOTIF-001`):** User-scoped action notifications, deterministic deduplication key enforcement, read status toggling, unread count decrement, role broadcasts, feed and popover endpoints (`NotificationGenerationTest::test_can_send_operational_notification_to_user`..`test_notify_role_broadcasts_to_active_users_holding_role`).
+- [x] **Notification Preferences Architecture (`FEAT-NOTIF-002`):** User-scoped preference isolation, default opt-in, configurable categories (`ORDERS`, `PAYMENTS`, `INVENTORY`, `DELIVERY`, `RETURNS`), mandatory non-disableable category protection (`SECURITY`, `SYSTEM`), and HTTP preference management (`NotificationPreferenceTest::test_user_preferences_default_to_enabled`..`test_http_endpoint_rejects_disabling_mandatory_categories`).
+- [x] **Anti-IDOR Notification Security (`NOTIF-SEC`):** Cross-user read and deletion attempts rejected (404), authenticated feed isolation, unauthenticated access denied (`NotificationSecurityTest::test_user_a_cannot_mark_user_b_notification_as_read_idor_prevention`..`test_unauthenticated_request_is_denied`).
+- [x] **Concurrent Notification Deduplication (`NOTIF-CONC`):** Simultaneous duplicate event generation collapses into single deterministic record (`NotificationConcurrencyTest::test_concurrent_deduplicated_events_yield_single_notification_record`).
+- [x] **Business Audit Event Logger (`FEAT-AUD-001`):** Structured business mutation logging to `audit_logs` table, actor attribution, entity association, deep metadata secret scrubbing (passwords, tokens, mfa secrets redacted), entity audit history (`BusinessAuditEventTest::test_can_record_structured_business_audit_event`..`test_can_retrieve_entity_audit_history`).
+- [x] **Security Event Logging Channel (`FEAT-AUD-002`):** Dedicated security stream to `security_logs` table and logging channel, severity classification, security context secret redaction, and filtered security inquiries (`SecurityEventTest::test_can_log_security_event_with_severity_and_actor`..`test_can_query_filtered_security_logs`).
+- [x] **Audit Table Immutability Enforcement (`FEAT-AUD-003`):** Eloquent updating and deleting DomainException guards, PostgreSQL triggers `trg_protect_audit_logs` and `trg_protect_security_logs`, and SQLite unit test triggers preventing raw SQL updates and deletions (`AuditImmutabilityTest::test_eloquent_update_on_audit_log_is_blocked_by_domain_exception`..`test_raw_sql_delete_on_security_log_is_blocked_by_postgresql_trigger`).
+- [x] **User Activity Timeline UI & Security Scoping (`FEAT-AUD-004`):** Responsive activity timeline, module filtering, search term filtering, date range filtering, entity history endpoint, and RBAC permission enforcement (`ActivityTimelineTest::test_timeline_filters_by_module`..`test_can_retrieve_entity_history_endpoint`, `AuditSecurityTest::test_admin_and_super_admin_can_view_activity_timeline`..`test_unauthorized_roles_cannot_view_security_logs`).
 
 ---
 
