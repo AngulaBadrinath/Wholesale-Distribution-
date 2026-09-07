@@ -36,33 +36,52 @@ export default function NotificationBell() {
     const [loading, setLoading] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
 
+    const isMountedRef = useRef(true);
+
     // Fetch feed and unread count
-    const fetchFeed = async () => {
+    const fetchFeed = async (signal?: AbortSignal) => {
         try {
-            setLoading(true);
+            if (isMountedRef.current) setLoading(true);
             const res = await fetch('/notifications/feed', {
+                signal,
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
-            if (res.ok) {
+            if (res.ok && isMountedRef.current) {
                 const data = await res.json();
-                setUnreadCount(data.unread_count || 0);
-                setNotifications(data.notifications || []);
+                if (isMountedRef.current) {
+                    setUnreadCount(data.unread_count || 0);
+                    setNotifications(data.notifications || []);
+                }
             }
-        } catch (err) {
-            console.error('Failed to fetch notification feed', err);
+        } catch (err: any) {
+            if (err?.name !== 'AbortError') {
+                console.error('Failed to fetch notification feed', err);
+            }
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) {
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
-        fetchFeed();
+        isMountedRef.current = true;
+        const controller = new AbortController();
+        fetchFeed(controller.signal);
+
         // Periodic check for new unread notifications
-        const interval = setInterval(fetchFeed, 30000);
-        return () => clearInterval(interval);
+        const interval = setInterval(() => {
+            fetchFeed(controller.signal);
+        }, 30000);
+
+        return () => {
+            isMountedRef.current = false;
+            controller.abort();
+            clearInterval(interval);
+        };
     }, []);
 
     // Close popover on outside click
