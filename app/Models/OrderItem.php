@@ -143,12 +143,15 @@ class OrderItem extends Model
     {
         if ($this->relationLoaded('allocations')) {
             return (int) $this->allocations
-                ->filter(fn (OrderItemAllocation $a) => $a->status !== \App\Enums\AllocationStatus::CANCELLED && $a->status !== \App\Enums\AllocationStatus::RELEASED)
+                ->filter(function (OrderItemAllocation $a) {
+                    $status = $a->status instanceof \App\Enums\AllocationStatus ? $a->status->value : (string) $a->status;
+                    return ! in_array($status, [\App\Enums\AllocationStatus::CANCELLED->value, \App\Enums\AllocationStatus::RELEASED->value], true);
+                })
                 ->sum('allocated_quantity');
         }
 
         return (int) $this->allocations()
-            ->whereNotIn('status', [\App\Enums\AllocationStatus::CANCELLED, \App\Enums\AllocationStatus::RELEASED])
+            ->whereNotIn('status', [\App\Enums\AllocationStatus::CANCELLED->value, \App\Enums\AllocationStatus::RELEASED->value])
             ->sum('allocated_quantity');
     }
 

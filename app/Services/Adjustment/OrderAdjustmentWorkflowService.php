@@ -552,7 +552,7 @@ class OrderAdjustmentWorkflowService
             $lockedItems = OrderItem::where('order_id', $lockedOrder->id)
                 ->lockForUpdate()
                 ->orderBy('id', 'asc')
-                ->with('product')
+                ->with(['product', 'allocations'])
                 ->get();
             $lockedItemsById = $lockedItems->keyBy('id');
 
@@ -640,7 +640,7 @@ class OrderAdjustmentWorkflowService
                     // Calculate available releasable capacity across eligible allocations:
                     // Must be ALLOCATED or RESERVED, and picked == 0, dispatched == 0, delivered == 0, returned == 0
                     $releasableCapacity = (int) OrderItemAllocation::where('order_item_id', $item->id)
-                        ->whereIn('status', [AllocationStatus::ALLOCATED, AllocationStatus::RESERVED])
+                        ->whereIn('status', [AllocationStatus::ALLOCATED->value, AllocationStatus::RESERVED->value])
                         ->where('picked_quantity', 0)
                         ->where('dispatched_quantity', 0)
                         ->where('delivered_quantity', 0)
@@ -668,7 +668,7 @@ class OrderAdjustmentWorkflowService
 
                     // Deterministic release order: ALLOCATED before RESERVED, then id DESC (LIFO)
                     $eligibleAllocations = OrderItemAllocation::where('order_item_id', $item->id)
-                        ->whereIn('status', [AllocationStatus::ALLOCATED, AllocationStatus::RESERVED])
+                        ->whereIn('status', [AllocationStatus::ALLOCATED->value, AllocationStatus::RESERVED->value])
                         ->where('picked_quantity', 0)
                         ->where('dispatched_quantity', 0)
                         ->where('delivered_quantity', 0)

@@ -343,6 +343,7 @@ class OrderAllocationService
         $item->dispatched_quantity = (int) $allocations->sum('dispatched_quantity');
         $item->delivered_quantity = (int) $allocations->sum('delivered_quantity');
         $item->returned_quantity = (int) $allocations->sum('returned_quantity');
+        $item->setRelation('allocations', $allocations);
         $item->save();
 
         return $item;
