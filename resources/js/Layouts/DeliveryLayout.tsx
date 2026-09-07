@@ -11,6 +11,7 @@ import {
     Shield,
     ChevronLeft
 } from 'lucide-react';
+import NotificationBell from '@/Components/Notifications/NotificationBell';
 
 interface DeliveryLayoutProps {
     children: React.ReactNode;
@@ -61,6 +62,7 @@ export default function DeliveryLayout({
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <NotificationBell />
                     <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Online
@@ -68,7 +70,8 @@ export default function DeliveryLayout({
                     <button
                         onClick={handleLogout}
                         title="Sign Out"
-                        className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/60 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 transition-colors"
+                        className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/60 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 transition-colors cursor-pointer"
+                        aria-label="Sign Out"
                     >
                         <LogOut className="w-4 h-4" />
                     </button>
