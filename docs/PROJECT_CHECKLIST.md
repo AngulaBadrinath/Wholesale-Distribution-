@@ -238,8 +238,8 @@
 - [x] `UI-006`: Responsive Table System (Desktop dense table, mobile stacked cards)
 - [x] `UI-007`: Unified Form State System (Default, loading skeleton, error, empty)
 - [x] `UI-008`: Payment Evidence Upload & Preview UI Component
-- [ ] `UI-009`: Order Creation Mobile/Tablet Flow
-- [ ] `UI-010`: Responsive QA Width Matrix Verification (320px to 1920px)
+- [x] `UI-009`: Order Creation Mobile/Tablet Flow (Flagship 3-step mobile wizard, desktop split workspace with sticky summary panel, tablet 2-col adaptive layout, draft persistence, server authority preview)
+- [x] `UI-010`: Responsive QA Width Matrix Verification (320px to 1920px audit across Admin, Salesman, Delivery, Notifications, and Payments; non-production ManualTestingSeeder & QA docs)
 
 ---
 

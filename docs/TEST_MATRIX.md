@@ -1002,6 +1002,11 @@
 - [x] **Responsive Table System (`UI-006`):** Desktop dense table with sorted headers & right-aligned numbers, automatic mobile list-card conversion, server pagination, loading/empty/error states (`ResponsiveTable.tsx`, `MobileListCard.tsx`, `TablePagination.tsx`, `TableSkeleton.tsx`, `TableEmptyState.tsx`).
 - [x] **Unified Form State System (`UI-007`):** Reusable form primitives supporting loading/disabled/error/empty/read-only states, financial/operational safety, duplicate submit prevention, price boundary enforcement, and supervisor override workflows (`FormField.tsx`, `FieldError.tsx`, `FormAlert.tsx`, `CurrencyInput.tsx`, `QuantityInput.tsx`, `PriceInput.tsx`, `Select.tsx`, `Combobox.tsx`, `DatePicker.tsx`, `DateRangePicker.tsx`, `Textarea.tsx`, `Checkbox.tsx`, `Radio.tsx`, `Switch.tsx`, `SubmitButton.tsx`).
 
+### 1.21 Responsive Order Creation & System-Wide Matrix QA (`UI-009`, `UI-010`)
+- [x] **Order Creation Mobile/Tablet Flow (`UI-009`):** Flagship order creation workflow with 3-step mobile wizard, persistent bottom summary action bar with running subtotal and item count, 2-column adaptive tablet grid, desktop split-workspace with sticky right-hand `OrderSummaryPanel`, zero client pricing trust, draft backup/resume persistence, and touch targets $\ge 44\text{px}$.
+- [x] **Responsive QA Width Matrix (`UI-010`):** System-wide 10-viewport verification across $320\text{px}, 375\text{px}, 390\text{px}, 430\text{px}, 768\text{px}, 820\text{px}, 1024\text{px}, 1280\text{px}, 1440\text{px}, 1920\text{px}$ across Admin, Salesman, Delivery, Notifications, and Payments modules.
+- [x] **Manual QA Test Infrastructure:** Production-guarded `ManualTestingSeeder`, comprehensive credentials matrix (`docs/MANUAL_TEST_CREDENTIALS.md`), and step-by-step role execution guide (`docs/MANUAL_TESTING_GUIDE.md`).
+
 ---
 
 ## 2. Cross-Feature Edge Case Register (`EDGE-001` to `EDGE-025`)
