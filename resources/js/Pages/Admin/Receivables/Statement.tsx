@@ -17,6 +17,7 @@ import {
     CreditCard,
     ShieldCheck
 } from 'lucide-react';
+import { DATE_PRESETS, detectActivePreset, DatePresetKey } from '@/lib/datePresets';
 
 interface StatementTransaction {
     id: number;
@@ -79,6 +80,21 @@ export default function ReceivablesStatement({ statement, filters }: Props) {
     const [startDate, setStartDate] = useState(filters.start_date || statement.statement_period.start_date);
     const [endDate, setEndDate] = useState(filters.end_date || statement.statement_period.end_date);
 
+    const activePreset = detectActivePreset(startDate, endDate);
+
+    const applyPreset = (presetKey: DatePresetKey) => {
+        const preset = DATE_PRESETS.find((p) => p.key === presetKey);
+        if (!preset) return;
+        const range = preset.getRange();
+        setStartDate(range.startDate);
+        setEndDate(range.endDate);
+        router.get(
+            `/admin/receivables/${statement.customer.id}/statement`,
+            { start_date: range.startDate, end_date: range.endDate },
+            { preserveState: true, preserveScroll: true }
+        );
+    };
+
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
         router.get(
@@ -134,16 +150,43 @@ export default function ReceivablesStatement({ statement, filters }: Props) {
                     </div>
                 </div>
 
-                {/* Filter Controls (Screen-only) */}
-                <div className="bg-card border rounded-lg p-4 shadow-sm print:hidden">
-                    <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
+                {/* Filter & Quick Preset Controls (Screen-only) */}
+                <div className="bg-card border rounded-lg p-4 shadow-sm space-y-3 print:hidden">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Presets</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {DATE_PRESETS.map((preset) => {
+                                const isSelected = activePreset === preset.key;
+                                return (
+                                    <button
+                                        key={preset.key}
+                                        type="button"
+                                        onClick={() => applyPreset(preset.key)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[36px] sm:min-h-[32px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+                                            isSelected
+                                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                                : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
+                                        }`}
+                                        aria-pressed={isSelected}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4 pt-2 border-t border-border/50">
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase">Period Start</label>
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="block bg-background border rounded-md px-3 py-1.5 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                                className="block bg-background border rounded-md px-3 py-1.5 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none min-h-[38px]"
                             />
                         </div>
                         <div className="space-y-1">
@@ -152,10 +195,10 @@ export default function ReceivablesStatement({ statement, filters }: Props) {
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="block bg-background border rounded-md px-3 py-1.5 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                                className="block bg-background border rounded-md px-3 py-1.5 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none min-h-[38px]"
                             />
                         </div>
-                        <Button type="submit" variant="secondary" size="sm" className="h-9">
+                        <Button type="submit" variant="secondary" size="sm" className="h-9 min-h-[38px]">
                             Update Statement Period
                         </Button>
                     </form>
