@@ -31,12 +31,14 @@ export default function Review({
     const [isApproveOpen, setIsApproveOpen] = useState(false);
     const [isRejectOpen, setIsRejectOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [approvalError, setApprovalError] = useState<string | undefined>(undefined);
     const [rejectionError, setRejectionError] = useState<string | undefined>(undefined);
 
     const isReviewable = order.status === 'SUBMITTED' || order.status === 'PENDING_APPROVAL';
 
     const handleApprove = () => {
         setIsSubmitting(true);
+        setApprovalError(undefined);
         router.post(
             `/admin/orders/${order.id}/approve`,
             {},
@@ -45,9 +47,18 @@ export default function Review({
                 onSuccess: () => {
                     setIsApproveOpen(false);
                     setIsSubmitting(false);
+                    setApprovalError(undefined);
                 },
-                onError: () => {
+                onError: (errors) => {
                     setIsSubmitting(false);
+                    const msg =
+                        errors.inventory ||
+                        errors.order ||
+                        errors.error ||
+                        errors.message ||
+                        (typeof errors === 'object' && Object.values(errors)[0]) ||
+                        'An unexpected error occurred while approving the order.';
+                    setApprovalError(typeof msg === 'string' ? msg : JSON.stringify(msg));
                 },
                 onFinish: () => {
                     setIsSubmitting(false);
@@ -67,6 +78,7 @@ export default function Review({
                 onSuccess: () => {
                     setIsRejectOpen(false);
                     setIsSubmitting(false);
+                    setRejectionError(undefined);
                 },
                 onError: (errors) => {
                     setIsSubmitting(false);
@@ -76,6 +88,11 @@ export default function Review({
                         setRejectionError(errors.order);
                     } else if (errors.message) {
                         setRejectionError(errors.message);
+                    } else if (errors.error) {
+                        setRejectionError(errors.error);
+                    } else {
+                        const first = Object.values(errors)[0];
+                        setRejectionError(typeof first === 'string' ? first : 'An error occurred while rejecting the order.');
                     }
                 },
                 onFinish: () => {
@@ -192,7 +209,10 @@ export default function Review({
                                                     type="button"
                                                     className="w-full h-9 gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
                                                     disabled={has_blockers || isSubmitting}
-                                                    onClick={() => setIsApproveOpen(true)}
+                                                    onClick={() => {
+                                                        setApprovalError(undefined);
+                                                        setIsApproveOpen(true);
+                                                    }}
                                                 >
                                                     <ShieldCheck className="h-4 w-4" />
                                                     <span>Approve Order</span>
@@ -204,7 +224,10 @@ export default function Review({
                                                     variant="outline"
                                                     className="w-full h-9 gap-2 font-semibold text-destructive hover:bg-destructive/10 border-destructive/30"
                                                     disabled={isSubmitting}
-                                                    onClick={() => setIsRejectOpen(true)}
+                                                    onClick={() => {
+                                                        setRejectionError(undefined);
+                                                        setIsRejectOpen(true);
+                                                    }}
                                                 >
                                                     <AlertOctagon className="h-4 w-4" />
                                                     <span>Reject Order</span>
@@ -258,18 +281,29 @@ export default function Review({
             {/* Modal Dialogs */}
             <ApproveOrderModal
                 isOpen={isApproveOpen}
-                onClose={() => setIsApproveOpen(false)}
+                onClose={() => {
+                    if (!isSubmitting) {
+                        setIsApproveOpen(false);
+                        setApprovalError(undefined);
+                    }
+                }}
                 onConfirm={handleApprove}
                 isProcessing={isSubmitting}
                 orderNumber={order.order_number}
                 grandTotal={order.grand_total}
                 currency={order.currency}
                 warnings={warnings}
+                errorMessage={approvalError}
             />
 
             <RejectOrderModal
                 isOpen={isRejectOpen}
-                onClose={() => setIsRejectOpen(false)}
+                onClose={() => {
+                    if (!isSubmitting) {
+                        setIsRejectOpen(false);
+                        setRejectionError(undefined);
+                    }
+                }}
                 onConfirm={handleReject}
                 isProcessing={isSubmitting}
                 orderNumber={order.order_number}

@@ -41,9 +41,12 @@ class InsufficientStockException extends Exception
             ], 422);
         }
 
-        return redirect()->back()->withErrors([
-            'inventory' => $this->getMessage(),
-            'error' => $this->getMessage(),
-        ]);
+        return redirect()->back()
+            ->withErrors([
+                'inventory' => $this->getMessage(),
+                'order' => $this->getMessage(),
+                'error' => $this->getMessage(),
+            ])
+            ->with('error', $this->getMessage());
     }
 }

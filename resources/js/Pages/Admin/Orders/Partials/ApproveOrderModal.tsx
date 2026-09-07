@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ShieldCheck, AlertTriangle, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, AlertOctagon, Loader2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { AdminOrderReviewData } from '@/types/order';
 
@@ -12,6 +12,7 @@ interface ApproveOrderModalProps {
     grandTotal: string;
     currency: string;
     warnings: AdminOrderReviewData['warnings'];
+    errorMessage?: string;
 }
 
 export default function ApproveOrderModal({
@@ -23,6 +24,7 @@ export default function ApproveOrderModal({
     grandTotal,
     currency,
     warnings,
+    errorMessage,
 }: ApproveOrderModalProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,10 +65,32 @@ export default function ApproveOrderModal({
                             </p>
                         </div>
                     </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isProcessing}
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 cursor-pointer"
+                        aria-label="Close modal"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
 
                 {/* Modal Body */}
                 <div className="p-6 space-y-4 text-xs">
+                    {/* Error Banner when approval fails */}
+                    {errorMessage && (
+                        <div className="p-3.5 rounded-md bg-destructive/10 border border-destructive/30 text-destructive space-y-1.5 animate-in fade-in-50">
+                            <div className="flex items-center gap-2 font-bold text-xs">
+                                <AlertOctagon className="h-4 w-4 shrink-0 text-destructive" />
+                                <span>Approval Cannot Proceed</span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-destructive/90 pl-6 whitespace-pre-line">
+                                {errorMessage}
+                            </p>
+                        </div>
+                    )}
+
                     <div id="approve-modal-description" className="p-3.5 rounded-md bg-muted/40 border text-muted-foreground leading-relaxed space-y-2">
                         <p className="font-semibold text-foreground text-sm">
                             Authoritative Approval & Order-Level Reservation
