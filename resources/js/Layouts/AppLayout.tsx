@@ -82,7 +82,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
     // Permission checks
     const hasRoleManage = auth?.user?.permissions?.includes('role.manage') || auth?.user?.role === 'SUPER_ADMIN' || auth?.user?.role === 'ADMIN';
     const hasCustomerView = auth?.user?.permissions?.includes('customer.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
-    const hasCustomerCreate = auth?.user?.permissions?.includes('customer.create') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
+    const hasCustomerCreate = auth?.user?.permissions?.includes('customer.create') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasUserView = auth?.user?.permissions?.includes('user.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasProductView = auth?.user?.permissions?.includes('product.view') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasTaxManage = auth?.user?.permissions?.includes('product.tax.update') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
@@ -98,7 +98,9 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
     const hasAccountingView = auth?.user?.permissions?.includes('accounting.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
     const hasInventoryView = auth?.user?.permissions?.includes('inventory.view') || ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasDeliveryView = auth?.user?.permissions?.includes('delivery.view') || ['SUPER_ADMIN', 'ADMIN', 'DELIVERY_PARTNER', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
-    const hasReportingAccess = hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView;
+    const hasInvoiceView = auth?.user?.permissions?.includes('invoice.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
+    const invoiceUrl = auth?.user?.role === 'SALESMAN' ? '/salesman/invoices' : '/admin/invoices';
+    const hasReportingAccess = hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView || hasUserView;
     const hasAuditView = auth?.user?.permissions?.includes('audit.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasSecurityView = auth?.user?.permissions?.includes('audit.security.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
 
@@ -181,7 +183,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                         </div>
 
                         {/* Sales & Orders */}
-                        {(hasOrderView || hasOrderCreate || hasAdjustReview || hasReturnReview) && (
+                        {(hasOrderView || hasOrderCreate || hasAdjustReview || hasReturnReview || hasInvoiceView) && (
                             <div>
                                 {!sidebarCollapsed && (
                                     <div className="mb-1.5 px-3 text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/80 font-mono">
@@ -192,8 +194,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                     {hasAdminOrderQueue && renderNavLink('/admin/orders', <Layers className="h-4 w-4" />, 'Order Processing')}
                                     {hasAdjustReview && renderNavLink('/admin/adjustments', <SlidersHorizontal className="h-4 w-4" />, 'Order Adjustments')}
                                     {hasReturnReview && renderNavLink('/admin/returns', <RotateCcw className="h-4 w-4" />, 'Reverse Logistics')}
-                                    {hasOrderCreate && renderNavLink('/orders/create', <PlusCircle className="h-4 w-4" />, 'New Sales Order')}
-                                    {renderNavLink('/invoices', <FileText className="h-4 w-4" />, 'Invoices & Billing')}
+                                    {hasOrderCreate && renderNavLink('/salesman/orders/create', <PlusCircle className="h-4 w-4" />, 'New Sales Order')}
+                                    {hasInvoiceView && renderNavLink(invoiceUrl, <FileText className="h-4 w-4" />, 'Invoices & Billing')}
                                 </nav>
                             </div>
                         )}
@@ -225,7 +227,6 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                     {renderNavLink('/products', <Package className="h-4 w-4" />, 'Product Catalog')}
                                     {renderNavLink('/categories', <FolderTree className="h-4 w-4" />, 'Categories')}
                                     {hasTaxManage && renderNavLink('/tax-profiles', <Receipt className="h-4 w-4" />, 'Tax Profiles')}
-                                    {renderNavLink('/pricing-overrides', <DollarSign className="h-4 w-4" />, 'Price Overrides')}
                                 </nav>
                             </div>
                         )}
@@ -289,12 +290,12 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                     </div>
                                 )}
                                 <nav className="space-y-0.5">
-                                    {renderNavLink('/admin/reports/sales', <BarChart3 className="h-4 w-4" />, 'Sales Analysis')}
-                                    {renderNavLink('/admin/reports/customers', <Users className="h-4 w-4" />, 'Customer Reports')}
-                                    {renderNavLink('/admin/reports/salesmen', <TrendingUp className="h-4 w-4" />, 'Sales Rep Performance')}
-                                    {renderNavLink('/admin/reports/inventory', <Boxes className="h-4 w-4" />, 'Inventory Analytics')}
-                                    {renderNavLink('/admin/reports/delivery', <Truck className="h-4 w-4" />, 'Delivery Performance')}
-                                    {renderNavLink('/admin/reports/financial', <Landmark className="h-4 w-4" />, 'Financial Reports')}
+                                    {hasOrderView && renderNavLink('/admin/reports/sales', <BarChart3 className="h-4 w-4" />, 'Sales Analysis')}
+                                    {hasCustomerView && renderNavLink('/admin/reports/customers', <Users className="h-4 w-4" />, 'Customer Reports')}
+                                    {(hasOrderView || hasUserView) && renderNavLink('/admin/reports/salesmen', <TrendingUp className="h-4 w-4" />, 'Sales Rep Performance')}
+                                    {hasInventoryView && renderNavLink('/admin/reports/inventory', <Boxes className="h-4 w-4" />, 'Inventory Analytics')}
+                                    {hasDeliveryView && renderNavLink('/admin/reports/delivery', <Truck className="h-4 w-4" />, 'Delivery Performance')}
+                                    {hasAccountingView && renderNavLink('/admin/reports/financial', <Landmark className="h-4 w-4" />, 'Financial Reports')}
                                 </nav>
                             </div>
                         )}
