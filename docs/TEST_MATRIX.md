@@ -1100,4 +1100,43 @@
 ### 5.5 Tax Profile Percentage Display Formatting (`BUG-010`)
 - [x] **Decimal Formatting Helper:** Standardized tax rate formatting via `formatTaxPercentage()` (e.g., `8.25%`, `8%`, `0%`) while preserving backend `DECIMAL(7,4)` database precision (`Wave2UXPolishTest::test_tax_profile_rate_precision_and_retrieval`).
 
+---
+
+## 6. QA Wave 1 Core Commerce Hardening Coverage Matrix (`QA-WAVE-1`)
+
+### 6.1 Authentication Test Suite (`QA-001`)
+- [x] **Valid Login & Portal Redirection:** Authenticated session created and redirected to role home (`QA001AuthenticationTest::test_01_valid_login_authenticates_and_redirects_to_portal`).
+- [x] **Invalid Credentials Anti-Enumeration:** Generic `auth.failed` message returned without account existence leakage (`test_02_invalid_credentials_returns_generic_error_without_enumeration`).
+- [x] **Rate Limiting / Throttling:** 5 failed login attempts trigger 429 Too Many Requests lockout (`test_03_authentication_throttles_after_repeated_failures`).
+- [x] **Logout & Session Invalidation:** Session data and authentication tokens purged upon logout (`test_04_logout_invalidates_session`).
+- [x] **Single-Use Password Reset Tokens:** Reset token consumed and invalidated immediately upon first use (`test_05_password_reset_token_is_single_use`).
+- [x] **Programmatic Session Revocation:** Other user sessions purged on security events (`test_06_session_revocation_service_invalidates_other_sessions`).
+- [x] **Suspended Account Gating:** Suspended accounts fail closed with auth rejection (`test_07_suspended_account_cannot_authenticate`).
+- [x] **Portal Role Isolation:** Non-admin roles denied access to administrative workspaces (`test_08_salesman_portal_isolation_prevents_admin_route_access`).
+- [x] **Mid-Session Account Suspension:** Active sessions invalidated upon account status transition to `SUSPENDED` (`test_09_account_status_transition_to_suspended_revokes_active_access`).
+- [x] **Zero Credential / Password Leakage:** Passwords, hashes, and tokens never returned in responses or flash data (`test_10_zero_credential_disclosure_in_error_or_session_responses`).
+
+### 6.2 Order Lifecycle E2E Test Suite (`QA-003`)
+- [x] **Salesman Customer Scoping:** Salesman cannot place orders for unassigned customers (`QA003OrderLifecycleE2ETest::test_01_salesman_can_only_create_order_for_assigned_customer`).
+- [x] **Draft Order Lifecycle:** Working draft creation, line updates, and atomic submission (`test_02_draft_order_lifecycle_create_update_submit`).
+- [x] **Pricing Boundary Enforcement:** Prices below `minimum_allowed_price` rejected (422) without authorized override (`test_03_pricing_boundaries_enforced_strictly`).
+- [x] **Multi-Line Tax Snapshotting:** Order lines snapshot immutable tax rates, taxable amounts, and tax amounts (`test_04_multi_line_tax_rates_snapshotted_correctly`).
+- [x] **Order Submission Idempotency:** Duplicate request replay returns original order without duplicate DB records (`test_05_order_submission_idempotency_prevents_duplicate_records`).
+- [x] **Admin Review & Approval:** Admin approves order -> Status `APPROVED` -> Initial item allocations created (`test_06_admin_order_review_and_approval_flow`).
+- [x] **Super Admin Independent Approval:** Super Admin approves independent order on fresh test data (`test_07_super_admin_independent_approval_flow`).
+- [x] **Stock-Insufficient Blocker:** Insufficient available inventory blocks order approval with domain error (`test_08_stock_insufficient_blocker_prevents_approval`).
+- [x] **Unauthorized Role Approval Guard:** Salesman cannot approve orders (403) (`test_09_salesman_cannot_approve_orders`).
+- [x] **Zero Cost-Price / Margin Leakage:** Product `cost_price` redacted from non-admin/salesman responses (`test_10_zero_financial_cost_price_leakage_to_salesman`).
+
+### 6.3 Order Adjustment E2E Test Suite (`QA-004`)
+- [x] **Salesman Adjustment Request:** Salesman requests reduction on approved order -> Status `SUBMITTED` (`QA004OrderAdjustmentE2ETest::test_01_salesman_can_request_order_adjustment`).
+- [x] **Over-Reduction Domain Validation:** Requesting reduction exceeding fulfillable quantity rejected (422) (`test_02_cannot_reduce_more_than_fulfillable_quantity`).
+- [x] **Maker-Checker Segregation:** Requester cannot approve own adjustment (403); distinct checker approves (`test_03_maker_checker_enforces_requester_cannot_approve_adjustment`).
+- [x] **Case A Unallocated Reduction:** Fulfillable reduction within unallocated capacity recalculates line/order totals (`test_04_case_a_unallocated_reduction_preserves_conservation_invariants`).
+- [x] **Case B Allocation Split & Release:** Allocation-impacting reduction splits allocation row and releases unpicked stock (`test_05_case_b_allocated_reduction_releases_physical_inventory`).
+- [x] **Duplicate Apply Idempotency:** Re-applying already `APPLIED` adjustment returns 409 Conflict (`test_06_duplicate_apply_is_prevented_with_conflict`).
+- [x] **Adjustment Reversal Engine:** Admin reverses `APPLIED` adjustment, restoring order version, subtotal, and tax (`test_07_admin_can_reverse_applied_adjustment_restoring_state`).
+- [x] **Stale Order Version Detection:** Adjustment review detects concurrent order modifications and flags `STALE` (`test_08_adjustment_rejection_on_stale_order_version`).
+
+
 

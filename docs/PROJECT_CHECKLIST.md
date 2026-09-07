@@ -245,10 +245,10 @@
 
 ## 13. QUALITY ASSURANCE, SECURITY & PERFORMANCE
 
-- [ ] `QA-001`: Authentication Test Suite
+- [x] `QA-001`: Authentication Test Suite (10 tests in QA001AuthenticationTest.php, valid login, anti-enumeration, rate throttling, logout, session revocation, single-use password reset, suspended accounts, portal isolation, zero credential leakage)
 - [x] `QA-002`: Authorization & IDOR Penetration Test Suite (42 penetration tests, Categories A through L, 100% passing)
-- [ ] `QA-003`: Order Lifecycle E2E Test Suite
-- [ ] `QA-004`: Order Adjustment E2E Test Suite
+- [x] `QA-003`: Order Lifecycle E2E Test Suite (10 tests in QA003OrderLifecycleE2ETest.php, salesman customer scoping, draft lifecycle, pricing boundaries, multi-line tax snapshotting, submission idempotency, independent Admin & Super Admin approval, stock-insufficient blockers, role authorization, zero cost-price leakage)
+- [x] `QA-004`: Order Adjustment E2E Test Suite (8 tests in QA004OrderAdjustmentE2ETest.php, salesman request flow, over-reduction validation, maker-checker segregation, Case A unallocated reduction, Case B allocation split & release, duplicate apply idempotency, reversal engine, stale version detection)
 - [ ] `QA-005`: Inventory Concurrency & Race-Condition Test Suite
 - [ ] `QA-006`: Payment Evidence Storage Security Test Suite
 - [ ] `QA-007`: Payment & Refund Financial Integrity Test Suite

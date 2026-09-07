@@ -947,8 +947,30 @@ When a new business requirement, client change request, or technical modificatio
 - **Testing Impact:** `Wave2UXPolishTest.php` created (3 tests, 78 assertions); full test suite passing (1,475 tests, 1,463 passed, 12 skipped, 8,637 assertions, 0 failures); `npm run type-check` (0 errors); `npm run build` (clean bundle in 2.86s).
 - **Deployment Impact:** None.
 - **Approved By:** Lead Software Architect
+### CHANGE-022: QA Wave 1 Core Security & Commerce Hardening
+- **Change ID:** `CHANGE-022`
+- **Date:** September 8, 2026
+- **Requested By:** Principal Product Architect & QA Lead
+- **Request:** Implement and formalize dedicated E2E test suites for `QA-001` (Authentication Test Suite), `QA-003` (Order Lifecycle E2E Test Suite), and `QA-004` (Order Adjustment E2E Test Suite) against live database transactions.
+- **Reason:** Guarantee end-to-end correctness of authentication flows, salesman order creation, multi-line tax snapshotting, independent Admin & Super Admin approvals, stock-insufficient blockers, non-destructive quantity adjustments, maker-checker segregation, and allocation splitting.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (QA Wave 1 Master Roadmap)
+- **Affected PRD Requirements:** Document 01 Section 1 (Auth & Multi-Portal Access), Section 4 (Pricing & Taxes), Section 5 (Order Capture & Processing), Section 6 (Order Lifecycle & Approval).
+- **Affected Architecture:** Document 02 Section 2 (Authentication & Session), Section 5 (Order Domain), Section 6 (Adjustment Domain).
+- **Affected Security:** Document 03 Section 2 (Zero Client Trust), Section 3 (RBAC & Permissions), Section 7 (Resource Scoping & Anti-IDOR).
+- **Affected Frontend:** Document 04 Section 5 (Admin Portal Layout), Section 6 (Salesman Flow).
+- **Affected Tickets:** `QA-001`, `QA-003`, `QA-004`.
+- **Inventory Impact:** Verified physical stock reservation and domain allocation release on order adjustments without inventory balance corruption.
+- **Order Impact:** Verified draft persistence, multi-line tax snapshotting, order submission idempotency, independent Admin/Super Admin approvals, and non-destructive quantity adjustments (`ordered = cancelled + fulfillable`).
+- **Payment Impact:** None.
+- **Tax Impact:** Verified line-item tax snapshotting and authoritative tax recalculation on adjustments.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None.
+- **Testing Impact:** `QA001AuthenticationTest.php` (10 tests, 31 assertions), `QA003OrderLifecycleE2ETest.php` (10 tests, 89 assertions), and `QA004OrderAdjustmentE2ETest.php` (8 tests, 78 assertions) added; full test suite passing (1,503 tests, 1,491 passed, 12 skipped, 8,835 assertions, 0 failures); `npm run type-check` (0 errors); `npm run build` (clean bundle in 3.03s).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
 - **Implementation Status:** Complete and verified.
-- **Release/Commit Reference:** Feature branch `feature/WAVE-2-ux-polish-20260908`.
+- **Release/Commit Reference:** Feature branch `feature/QA-WAVE-1-core-commerce-20260908`.
 
 ---
 

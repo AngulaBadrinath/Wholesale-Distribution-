@@ -14,20 +14,20 @@
 | Metric | Current Value | Notes |
 | Metric | Current Value | Notes |
 |---|---|---|
-| **Overall Code Completion** | **90.6%** (116 / 128 tickets) | Wave 2 UX Polish & Consistency Hardening complete; 1,475 automated tests (1,463 passed, 8,637 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
+| **Overall Code Completion** | **93.0%** (119 / 128 tickets) | QA Wave 1 Core Commerce Hardening complete; 1,503 automated tests (1,491 passed, 8,835 assertions, 12 skipped, 0 failures), TypeScript verified, Vite build clean |
 | **Specification Completion** | **100.0%** (5 / 5 documents) | PRD, Architecture, Security, Frontend, and Tickets are approved baselines |
 | **Governance Layer Completion** | **100.0%** (13 / 13 files) | AGENTS, CLAUDE, GEMINI, and all `docs/*` operating system files active |
-| **Current Phase** | **Hardening Wave 2 — UX, Polish & Consistency** | Status: `COMPLETED` (BUG-003 React dev doc, BUG-006 AR statement presets, BUG-007 Image dragover, BUG-009 Select tokens, BUG-010 Tax formatting) |
-| **Current Milestone Gate** | **Wave 2 Gate — Hardening Complete** | Status: `COMPLETED` (All audit defects resolved, zero invariant regressions, 1,463 tests passing) |
-| **Current Active Ticket** | **WAVE-2** (Complete) | Ready for Wave 3 review / roadmap progression |
-| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/WAVE-2-ux-polish-20260908` |
-| **Active Blockers** | **0** | Full test suite passed (1,463 passing), TypeScript verified, Vite build clean |
+| **Current Phase** | **QA Wave 1 — Core Security & Commerce Hardening** | Status: `COMPLETED` (QA-001 Auth suite, QA-003 Order lifecycle E2E, QA-004 Adjustment lifecycle E2E) |
+| **Current Milestone Gate** | **QA Wave 1 Gate — Hardening Complete** | Status: `COMPLETED` (Zero regressions, 1,491 tests passing, 8,835 assertions) |
+| **Current Active Ticket** | **QA-WAVE-1** (Complete) | Ready for QA Wave 2 authorization / progression |
+| **Git Working Tree** | Clean / Ready to Commit | Feature branch `feature/QA-WAVE-1-core-commerce-20260908` |
+| **Active Blockers** | **0** | Full test suite passed (1,491 passing), TypeScript verified, Vite build clean |
 
 ### Completion Calculation Formula
 $$\text{Progress} = \left( \frac{\text{Completed Verified Implementation Tickets}}{\text{Total Non-Deferred Implementation Tickets}} \right) \times 100$$
 - Total implementation tickets in backlog: **128** (encompassing Foundation, Features, UI, QA, and Deployment).
-- Completed tickets: **116** (`TECH-FOUND-001`..`004`, `UI-001`..`010`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`..`003`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`, `FEAT-CR-001`..`005`, `FEAT-AR-001`..`003`, `FEAT-AP-001`, `FEAT-ACC-001`..`009`, `FEAT-REP-001`..`006`, `FEAT-NOTIF-001`..`002`, `FEAT-AUD-001`..`004`, `QA-002`).
-- Current progress: **90.6%** (116 / 128).
+- Completed tickets: **119** (`TECH-FOUND-001`..`004`, `UI-001`..`010`, `DEPLOY-003`, `FEAT-AUTH-001`..`004`, `FEAT-RBAC-001`..`003`, `FEAT-SYS-001`, `FEAT-SYS-002`, `FEAT-CUS-001`..`004`, `FEAT-SLM-001`, `FEAT-SLM-002`, `FEAT-PROD-001`..`003`, `FEAT-CAT-001`, `FEAT-PRICE-001`, `FEAT-PRICE-002`, `FEAT-TAX-001`, `FEAT-ORD-001`..`006`, `FEAT-ORD-010`..`013`, `FEAT-ALLOC-001`, `FEAT-ALLOC-002`, `FEAT-ADJ-001`..`006`, `FEAT-INV-001`..`006`, `FEAT-PAY-001`..`009`, `FEAT-DEL-001`..`008`, `FEAT-DOC-001`..`004`, `FEAT-RET-001`..`004`, `FEAT-CR-001`..`005`, `FEAT-AR-001`..`003`, `FEAT-AP-001`, `FEAT-ACC-001`..`009`, `FEAT-REP-001`..`006`, `FEAT-NOTIF-001`..`002`, `FEAT-AUD-001`..`004`, `QA-001`, `QA-002`, `QA-003`, `QA-004`).
+- Current progress: **93.0%** (119 / 128).
 
 ---
 
