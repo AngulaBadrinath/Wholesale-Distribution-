@@ -995,6 +995,13 @@
 - [x] **Audit Table Immutability Enforcement (`FEAT-AUD-003`):** Eloquent updating and deleting DomainException guards, PostgreSQL triggers `trg_protect_audit_logs` and `trg_protect_security_logs`, and SQLite unit test triggers preventing raw SQL updates and deletions (`AuditImmutabilityTest::test_eloquent_update_on_audit_log_is_blocked_by_domain_exception`..`test_raw_sql_delete_on_security_log_is_blocked_by_postgresql_trigger`).
 - [x] **User Activity Timeline UI & Security Scoping (`FEAT-AUD-004`):** Responsive activity timeline, module filtering, search term filtering, date range filtering, entity history endpoint, and RBAC permission enforcement (`ActivityTimelineTest::test_timeline_filters_by_module`..`test_can_retrieve_entity_history_endpoint`, `AuditSecurityTest::test_admin_and_super_admin_can_view_activity_timeline`..`test_unauthorized_roles_cannot_view_security_logs`).
 
+### 1.20 UI Foundation & Portal Shells (`UI-003` to `UI-007`)
+- [x] **Admin Portal Shell (`UI-003`):** Desktop persistent and collapsible sidebar (`w-64` / `w-16`), permission-aware navigation grouping, Notification Center integration, breadcrumbs, search shortcut, and mobile drawer.
+- [x] **Salesman Portal Shell (`UI-004`):** Mobile-first sales workspace, $\ge 48\text{px}$ touch targets, prominent New Order CTA, NotificationBell, and strict isolation preventing admin/accounting control leakage.
+- [x] **Delivery Partner Portal Shell (`UI-005`):** Driver task workspace, bottom navigation tabs (Today, In Transit, Done, All), route/address hierarchy, active driver status indicator, and zero financial/admin leakage.
+- [x] **Responsive Table System (`UI-006`):** Desktop dense table with sorted headers & right-aligned numbers, automatic mobile list-card conversion, server pagination, loading/empty/error states (`ResponsiveTable.tsx`, `MobileListCard.tsx`, `TablePagination.tsx`, `TableSkeleton.tsx`, `TableEmptyState.tsx`).
+- [x] **Unified Form State System (`UI-007`):** Reusable form primitives supporting loading/disabled/error/empty/read-only states, financial/operational safety, duplicate submit prevention, price boundary enforcement, and supervisor override workflows (`FormField.tsx`, `FieldError.tsx`, `FormAlert.tsx`, `CurrencyInput.tsx`, `QuantityInput.tsx`, `PriceInput.tsx`, `Select.tsx`, `Combobox.tsx`, `DatePicker.tsx`, `DateRangePicker.tsx`, `Textarea.tsx`, `Checkbox.tsx`, `Radio.tsx`, `Switch.tsx`, `SubmitButton.tsx`).
+
 ---
 
 ## 2. Cross-Feature Edge Case Register (`EDGE-001` to `EDGE-025`)

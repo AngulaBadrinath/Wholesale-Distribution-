@@ -232,11 +232,11 @@
 
 - [x] `UI-001`: Design Tokens Implementation (Inter font, Tailwind 4, HSL palette)
 - [x] `UI-002`: Core shadcn/ui Component Library Tailoring
-- [ ] `UI-003`: Admin Portal Shell (Desktop-first control center, collapsable sidebar)
-- [ ] `UI-004`: Salesman Portal Shell (Mobile-first workspace, bottom navigation)
-- [ ] `UI-005`: Delivery Partner Portal Shell (Mobile-first driver workspace)
-- [ ] `UI-006`: Responsive Table System (Desktop dense table, mobile stacked cards)
-- [ ] `UI-007`: Unified Form State System (Default, loading skeleton, error, empty)
+- [x] `UI-003`: Admin Portal Shell (Desktop-first control center, collapsable sidebar)
+- [x] `UI-004`: Salesman Portal Shell (Mobile-first workspace, bottom navigation)
+- [x] `UI-005`: Delivery Partner Portal Shell (Mobile-first driver workspace)
+- [x] `UI-006`: Responsive Table System (Desktop dense table, mobile stacked cards)
+- [x] `UI-007`: Unified Form State System (Default, loading skeleton, error, empty)
 - [x] `UI-008`: Payment Evidence Upload & Preview UI Component
 - [ ] `UI-009`: Order Creation Mobile/Tablet Flow
 - [ ] `UI-010`: Responsive QA Width Matrix Verification (320px to 1920px)

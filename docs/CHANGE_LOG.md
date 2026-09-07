@@ -854,6 +854,31 @@ When a new business requirement, client change request, or technical modificatio
 - **Implementation Status:** Complete and verified.
 - **Release/Commit Reference:** Feature branch `feature/FEAT-NOTIF-AUD-001-004`.
 
+### CHANGE-018: Phase 16 UI Foundation & Portal Shells Architecture
+- **Change ID:** `CHANGE-018`
+- **Date:** September 7, 2026
+- **Requested By:** Principal Frontend Architect & Solo Developer
+- **Request:** Implement the canonical frontend architecture for Admin Portal Shell (`UI-003`), Salesman Portal Shell (`UI-004`), Delivery Partner Portal Shell (`UI-005`), Responsive Table System (`UI-006`), and Unified Form State System (`UI-007`).
+- **Reason:** Provide robust, role-isolated, accessible, and responsive user interfaces conforming strictly to Document 04 ("Premium B2B Commerce × Modern SaaS ERP") while enforcing zero client trust and operational financial safety.
+- **Status:** `APPROVED & COMPLETED`
+- **Priority:** `P0` (Phase 16 Baseline)
+- **Affected PRD Requirements:** Document 01 Section 12 (Frontend & Portal Experience).
+- **Affected Architecture:** Document 02 Section 12 (Frontend Architectural Layer).
+- **Affected Security:** Document 03 Section 2 & 7 (Zero Client Trust & Scoped Portal Navigation).
+- **Affected Frontend:** Document 04 (Design Tokens, Responsive Breakpoint Contracts, Table System, Form State System).
+- **Affected Tickets:** `UI-003`, `UI-004`, `UI-005`, `UI-006`, `UI-007`.
+- **Inventory Impact:** None (Safe quantity inputs enforce bounds).
+- **Order Impact:** None (Order mutations handled via safe submit primitives).
+- **Payment Impact:** None (Payment forms utilize bounds and financial inputs).
+- **Tax Impact:** None.
+- **Accounting Impact:** None.
+- **Data Migration Impact:** None.
+- **Testing Impact:** `npm run type-check` (0 errors), `npm run build` (successful compilation), full PHPUnit test suite 100% passing (1,431 passed, 8,358 assertions, 0 failures).
+- **Deployment Impact:** None.
+- **Approved By:** Lead Software Architect
+- **Implementation Status:** Complete and verified.
+- **Release/Commit Reference:** Feature branch `feature/UI-003-007-portal-ux-foundation`.
+
 ---
 
 ## 3. Template for Future Change Requests
