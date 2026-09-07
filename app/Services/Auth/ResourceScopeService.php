@@ -594,6 +594,78 @@ class ResourceScopeService
     }
 
     /**
+     * Determine whether the user can access General Ledger and Chart of Accounts.
+     */
+    public function canAccessAccounting(User $user): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        return $this->permissionService->has($user, Permission::ACCOUNTING_VIEW);
+    }
+
+    /**
+     * Determine whether the user can post manual journals or create accounts.
+     */
+    public function canPostAccounting(User $user): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        return $this->permissionService->has($user, Permission::ACCOUNTING_POST);
+    }
+
+    /**
+     * Determine whether the user can execute controlled journal reversals.
+     */
+    public function canReverseAccounting(User $user): bool
+    {
+        if (! $this->isUserActive($user)) {
+            return false;
+        }
+
+        return $this->permissionService->has($user, Permission::ACCOUNTING_REVERSE);
+    }
+
+    /**
+     * Query scoping helper: apply authoritative journal entries query scope.
+     */
+    public function scopeJournalEntries(Builder $query, User $user): Builder
+    {
+        if (! $this->canAccessAccounting($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative accounts query scope.
+     */
+    public function scopeAccounts(Builder $query, User $user): Builder
+    {
+        if (! $this->canAccessAccounting($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Query scoping helper: apply authoritative cash reconciliations query scope.
+     */
+    public function scopeCashReconciliations(Builder $query, User $user): Builder
+    {
+        if (! $this->canAccessAccounting($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    /**
      * Nested resource verification: CreditNote -> CreditNoteItem.
      */
     public function verifyCreditNoteItemOwnership(CreditNoteItem $item, CreditNote $creditNote): bool

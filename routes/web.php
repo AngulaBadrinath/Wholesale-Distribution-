@@ -534,6 +534,58 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->whereNumber('id')
             ->name('admin.payables.payments.reverse');
     });
+
+    // General Ledger Accounting (FEAT-ACC-001 through FEAT-ACC-009)
+    Route::middleware('permission:accounting.view')->group(function () {
+        Route::get('/admin/accounting', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'index'])
+            ->name('admin.accounting.index');
+        Route::get('/admin/accounting/accounts', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'accounts'])
+            ->name('admin.accounting.accounts');
+        Route::get('/admin/accounting/journals', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'journals'])
+            ->name('admin.accounting.journals');
+        Route::get('/admin/accounting/journals/{id}', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'showJournal'])
+            ->whereNumber('id')
+            ->name('admin.accounting.journals.show');
+        Route::get('/admin/accounting/general-ledger', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'generalLedger'])
+            ->name('admin.accounting.general-ledger');
+        Route::get('/admin/accounting/trial-balance', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'trialBalance'])
+            ->name('admin.accounting.trial-balance');
+        Route::get('/admin/accounting/profit-loss', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'profitLoss'])
+            ->name('admin.accounting.profit-loss');
+        Route::get('/admin/accounting/balance-sheet', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'balanceSheet'])
+            ->name('admin.accounting.balance-sheet');
+        Route::get('/admin/accounting/reconciliation', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'reconciliation'])
+            ->name('admin.accounting.reconciliation');
+    });
+
+    Route::middleware('permission:accounting.post')->group(function () {
+        Route::post('/admin/accounting/accounts', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'storeAccount'])
+            ->name('admin.accounting.accounts.store');
+        Route::put('/admin/accounting/accounts/{account}', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'updateAccount'])
+            ->whereNumber('account')
+            ->name('admin.accounting.accounts.update');
+        Route::delete('/admin/accounting/accounts/{account}', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'deleteAccount'])
+            ->whereNumber('account')
+            ->name('admin.accounting.accounts.destroy');
+        Route::post('/admin/accounting/journals', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'storeManualJournal'])
+            ->name('admin.accounting.journals.store');
+        Route::post('/admin/accounting/reconciliation', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'storeReconciliation'])
+            ->name('admin.accounting.reconciliation.store');
+        Route::post('/admin/accounting/reconciliation/{reconciliation}/finalize', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'finalizeReconciliation'])
+            ->whereNumber('reconciliation')
+            ->name('admin.accounting.reconciliation.finalize');
+        Route::post('/admin/accounting/reconciliation/{reconciliation}/adjustment', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'storeAdjustment'])
+            ->whereNumber('reconciliation')
+            ->name('admin.accounting.reconciliation.adjustment');
+        Route::post('/admin/accounting/sync-events', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'syncEvents'])
+            ->name('admin.accounting.sync-events');
+    });
+
+    Route::middleware('permission:accounting.reverse')->group(function () {
+        Route::post('/admin/accounting/journals/{journal}/reverse', [\App\Http\Controllers\Admin\AdminAccountingController::class, 'reverseJournal'])
+            ->whereNumber('journal')
+            ->name('admin.accounting.journals.reverse');
+    });
 });
 
 

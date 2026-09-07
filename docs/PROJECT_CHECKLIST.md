@@ -196,15 +196,15 @@
 - [x] `FEAT-AP-001`: Supplier Payables Foundation (Immutable accounts payable ledger `payable_transactions`, PostgreSQL sequences `AP-{YYYY}-{SEQ}`, `SUP-{SEQ}`, `BILL-{YYYY}-{SEQ}`, `SP-{YYYY}-{SEQ}`, draft/posted supplier bills, partial payments, overpayment rejection, payment reversals with restored liabilities, DB immutability triggers, RBAC-003 scoping, Admin UI workspaces, 27 targeted automated tests)
 
 ### Accounting Foundations
-- [ ] `FEAT-ACC-001`: Standard Chart of Accounts Setup
-- [ ] `FEAT-ACC-002`: Double-Entry Journal Entry Foundation
-- [ ] `FEAT-ACC-003`: Business Event-to-Journal Automated Mapping Engine
-- [ ] `FEAT-ACC-004`: General Ledger Inquiry & Drill-Down
-- [ ] `FEAT-ACC-005`: Trial Balance Report Generation
-- [ ] `FEAT-ACC-006`: Profit & Loss (Income Statement) Report Generation
-- [ ] `FEAT-ACC-007`: Balance Sheet Report Generation
-- [ ] `FEAT-ACC-008`: Controlled Accounting Reversals (Journal entry immutability)
-- [ ] `FEAT-ACC-009`: Cash Collection Shift Reconciliation
+- [x] `FEAT-ACC-001`: Standard Chart of Accounts Setup (Hierarchical accounts table, 17 standard GAAP accounts seeded, cycle detection, system account protection, normal balance types, AccountService, 9 targeted tests)
+- [x] `FEAT-ACC-002`: Double-Entry Journal Entry Foundation (PostgreSQL sequence `JE-{YYYY}-{SEQ}`, `journal_entries`, `journal_lines`, double-entry constraint SUM(debit)=SUM(credit), DB trigger immutability protection, JournalService, 6 targeted tests)
+- [x] `FEAT-ACC-003`: Business Event-to-Journal Automated Mapping Engine (Deterministic automated posting from Invoices, Payments, Reversals, Credit Notes, Refunds, Supplier Bills, Supplier Payments, COGS, Stock Adjustments, sync unposted events, JournalMappingService, 5 targeted tests)
+- [x] `FEAT-ACC-004`: General Ledger Inquiry & Drill-Down (Account statement generation, opening balance calculation, running balances, date filtering, pagination, GeneralLedgerService, 2 targeted tests)
+- [x] `FEAT-ACC-005`: Trial Balance Report Generation (Debit/credit equality verification, category breakdowns, net balances, TrialBalanceService, 1 targeted test)
+- [x] `FEAT-ACC-006`: Profit & Loss (Income Statement) Report Generation (Operating revenue, contra-revenue discounts, COGS, gross profit, operating expenses, net income, ProfitAndLossService, 1 targeted test)
+- [x] `FEAT-ACC-007`: Balance Sheet Report Generation (Assets, liabilities, equity, current net earnings, Assets = Liabilities + Equity verification, BalanceSheetService, 1 targeted test)
+- [x] `FEAT-ACC-008`: Controlled Accounting Reversals (Journal entry immutability, equal & opposite offsetting entries, audit lineage, single reversal constraint, JournalReversalService, 2 targeted tests)
+- [x] `FEAT-ACC-009`: Cash Collection Shift Reconciliation (GL Cash vs operational verified receipts & disbursements, discrepancy detection, reconciliation sessions, CashReconciliationService, 2 targeted tests)
 
 ---
 

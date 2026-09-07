@@ -353,7 +353,7 @@ class OrderAdjustmentClassifier
      */
     public static function getBadgeCounts(): array
     {
-        $agingThreshold = self::getAgingThreshold()->toIso8601String();
+        $agingThreshold = self::getAgingThreshold()->toDateTimeString();
         $eligibleStatusesSql = "'" . implode("','", array_map(fn (OrderStatus $s) => $s->value, self::ELIGIBLE_ORDER_STATUSES)) . "'";
 
         $blockerSql = "

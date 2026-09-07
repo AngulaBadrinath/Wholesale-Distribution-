@@ -240,7 +240,7 @@ class PermissionService
                 Permission::PAYABLE_VIEW,
                 Permission::PAYABLE_MANAGE,
 
-                // Accounting View
+                // Accounting
                 Permission::ACCOUNTING_VIEW,
 
                 // User Administration

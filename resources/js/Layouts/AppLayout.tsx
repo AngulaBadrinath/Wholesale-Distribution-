@@ -19,7 +19,12 @@ import {
     FileText,
     RotateCcw,
     DollarSign,
-    CreditCard
+    CreditCard,
+    BookOpen,
+    Scale,
+    TrendingUp,
+    Landmark,
+    FileSpreadsheet
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -48,6 +53,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     const hasReturnRequest = auth?.user?.permissions?.includes('return.request') || ['SUPER_ADMIN', 'ADMIN', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasReceivableView = auth?.user?.permissions?.includes('receivable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const hasPayableView = auth?.user?.permissions?.includes('payable.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
+    const hasAccountingView = auth?.user?.permissions?.includes('accounting.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'].includes(auth?.user?.role || '');
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col antialiased">
@@ -175,12 +181,72 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                 </nav>
                             </>
                         )}
-                        {(hasReceivableView || hasPayableView) && (
+                        {(hasReceivableView || hasPayableView || hasAccountingView) && (
                             <>
                                 <div className="mb-2 px-3 text-[11px] font-medium tracking-wider uppercase text-muted-foreground">
                                     Financial & Ledgers
                                 </div>
                                 <nav className="space-y-1 mb-6">
+                                    {hasAccountingView && (
+                                        <>
+                                            <Link
+                                                href="/admin/accounting"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <BookOpen className="h-4 w-4 text-primary" />
+                                                <span>Accounting Hub</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/accounts"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <FolderTree className="h-4 w-4 text-primary" />
+                                                <span>Chart of Accounts</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/journals"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <FileText className="h-4 w-4 text-primary" />
+                                                <span>Journal Entries</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/general-ledger"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <FileSpreadsheet className="h-4 w-4 text-primary" />
+                                                <span>General Ledger</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/trial-balance"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Scale className="h-4 w-4 text-primary" />
+                                                <span>Trial Balance</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/profit-loss"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <TrendingUp className="h-4 w-4 text-primary" />
+                                                <span>Profit & Loss</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/balance-sheet"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Landmark className="h-4 w-4 text-primary" />
+                                                <span>Balance Sheet</span>
+                                            </Link>
+                                            <Link
+                                                href="/admin/accounting/reconciliation"
+                                                className="flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                            >
+                                                <Receipt className="h-4 w-4 text-primary" />
+                                                <span>Cash Reconciliation</span>
+                                            </Link>
+                                        </>
+                                    )}
                                     {hasReceivableView && (
                                         <Link
                                             href="/admin/receivables"
