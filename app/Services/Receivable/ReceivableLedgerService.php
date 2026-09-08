@@ -262,7 +262,7 @@ class ReceivableLedgerService
                 OrderStatus::PROCESSING->value,
                 OrderStatus::COMPLETED->value,
             ])
-            ->whereDoesntHave('invoices')
+            ->whereDoesntHave('invoice')
             ->sum('grand_total');
 
         $totalDebits = bcadd((string) $invoiceDebits, (string) $uninvoicedOrderDebits, 2);

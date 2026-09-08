@@ -123,7 +123,7 @@ class ReceivableAgingService
                 OrderStatus::PROCESSING->value,
                 OrderStatus::COMPLETED->value,
             ])
-            ->whereDoesntHave('invoices')
+            ->whereDoesntHave('invoice')
             ->get();
 
         foreach ($uninvoicedOrders as $order) {
