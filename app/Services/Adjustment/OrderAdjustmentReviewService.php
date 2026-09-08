@@ -79,6 +79,10 @@ class OrderAdjustmentReviewService
             $currentAffected = max(0, $requestedReduction - $currentUnallocated);
             $currentCase = $currentAffected > 0 ? 'CASE_B' : 'CASE_A';
             $caseChanged = ($snapshotCase !== $currentCase) || ($snapshotAffected !== $currentAffected);
+            if ($caseChanged) {
+                $isStale = true;
+                $staleReasons[] = "Item {$adjItem->sku_snapshot}: Allocation state drifted from {$snapshotCase} ({$snapshotAffected} affected) to {$currentCase} ({$currentAffected} affected).";
+            }
 
             // Conflict detection: Requested reduction exceeds fulfillable quantity
             $isConflicted = false;

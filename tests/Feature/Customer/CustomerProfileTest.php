@@ -337,7 +337,7 @@ class CustomerProfileTest extends TestCase
     // 3. Financial Summary Deferred State Contracts (CUS-PROFILE-016 to CUS-PROFILE-022)
     // =========================================================================
 
-    public function test_financial_summary_reports_deferred_and_non_authoritative_state(): void
+    public function test_financial_summary_reports_live_authoritative_state(): void
     {
         $admin = $this->createUserWithRole(UserRole::ADMIN);
         $customer = $this->createCustomer(['credit_limit' => 50000.00]);
@@ -346,44 +346,44 @@ class CustomerProfileTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
-            ->where('customer.financial_summary.status', 'DEFERRED')
-            ->where('customer.financial_summary.is_authoritative', false)
+            ->where('customer.financial_summary.status', 'ACTIVE')
+            ->where('customer.financial_summary.is_authoritative', true)
             ->where('customer.financial_summary.credit_limit', fn ($val) => (float) $val === 50000.00)
-            ->where('customer.financial_summary.outstanding_balance', null)
-            ->where('customer.financial_summary.available_credit', null)
-            ->where('customer.financial_summary.credit_utilization_pct', null)
-            ->where('customer.financial_summary.aging.current', null)
-            ->where('customer.financial_summary.aging.days_1_30', null)
-            ->where('customer.financial_summary.aging.days_31_60', null)
-            ->where('customer.financial_summary.aging.days_61_90', null)
-            ->where('customer.financial_summary.aging.days_90_plus', null)
+            ->where('customer.financial_summary.outstanding_balance', '0.00')
+            ->where('customer.financial_summary.available_credit', '50000.00')
+            ->where('customer.financial_summary.credit_utilization_pct', fn ($val) => (float) $val === 0.0)
+            ->where('customer.financial_summary.aging.current', '0.00')
+            ->where('customer.financial_summary.aging.days_1_30', '0.00')
+            ->where('customer.financial_summary.aging.days_31_60', '0.00')
+            ->where('customer.financial_summary.aging.days_61_90', '0.00')
+            ->where('customer.financial_summary.aging.days_90_plus', '0.00')
             ->has('customer.financial_summary.source_notice')
         );
     }
 
-    public function test_outstanding_balance_is_not_fabricated_as_authoritative_zero(): void
-    {
-        $admin = $this->createUserWithRole(UserRole::ADMIN);
-        $customer = $this->createCustomer();
-
-        $profile = $this->service->getProfile($customer, $admin);
-
-        $this->assertNull($profile['financial_summary']['outstanding_balance']);
-        $this->assertFalse($profile['financial_summary']['is_authoritative']);
-    }
-
-    public function test_available_credit_is_not_fabricated_as_authoritative_credit_limit(): void
+    public function test_outstanding_balance_is_computed_authoritatively(): void
     {
         $admin = $this->createUserWithRole(UserRole::ADMIN);
         $customer = $this->createCustomer(['credit_limit' => 100000.00]);
 
         $profile = $this->service->getProfile($customer, $admin);
 
-        $this->assertNull($profile['financial_summary']['available_credit']);
-        $this->assertEquals(100000.00, $profile['financial_summary']['credit_limit']);
+        $this->assertSame('0.00', $profile['financial_summary']['outstanding_balance']);
+        $this->assertTrue($profile['financial_summary']['is_authoritative']);
     }
 
-    public function test_aging_values_are_not_fabricated_as_authoritative_zero_balances(): void
+    public function test_available_credit_is_computed_authoritatively(): void
+    {
+        $admin = $this->createUserWithRole(UserRole::ADMIN);
+        $customer = $this->createCustomer(['credit_limit' => 100000.00]);
+
+        $profile = $this->service->getProfile($customer, $admin);
+
+        $this->assertSame('100000.00', $profile['financial_summary']['available_credit']);
+        $this->assertEquals(100000.00, (float) $profile['financial_summary']['credit_limit']);
+    }
+
+    public function test_aging_values_are_computed_authoritatively(): void
     {
         $admin = $this->createUserWithRole(UserRole::ADMIN);
         $customer = $this->createCustomer();
@@ -391,23 +391,11 @@ class CustomerProfileTest extends TestCase
         $profile = $this->service->getProfile($customer, $admin);
 
         $aging = $profile['financial_summary']['aging'];
-        $this->assertNull($aging['current']);
-        $this->assertNull($aging['days_1_30']);
-        $this->assertNull($aging['days_31_60']);
-        $this->assertNull($aging['days_61_90']);
-        $this->assertNull($aging['days_90_plus']);
-    }
-
-    public function test_no_order_or_payment_database_tables_exist_in_current_phase(): void
-    {
-        $tables = DB::connection()->getSchemaBuilder()->getTableListing();
-
-        $this->assertNotContains('orders', $tables);
-        $this->assertNotContains('order_items', $tables);
-        $this->assertNotContains('payments', $tables);
-        $this->assertNotContains('invoices', $tables);
-        $this->assertNotContains('receivables', $tables);
-        $this->assertNotContains('ledger_entries', $tables);
+        $this->assertSame('0.00', $aging['current']);
+        $this->assertSame('0.00', $aging['days_1_30']);
+        $this->assertSame('0.00', $aging['days_31_60']);
+        $this->assertSame('0.00', $aging['days_61_90']);
+        $this->assertSame('0.00', $aging['days_90_plus']);
     }
 
     // =========================================================================
@@ -470,7 +458,7 @@ class CustomerProfileTest extends TestCase
         $response->assertOk();
         $queries = DB::getQueryLog();
 
-        // 1 query for user auth, 1 query for customer route model binding with eager-loaded salesman
-        $this->assertLessThanOrEqual(5, count($queries));
+        // Bounded queries for auth, customer binding, financial summary, and aging
+        $this->assertLessThanOrEqual(20, count($queries));
     }
 }

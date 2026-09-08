@@ -226,7 +226,7 @@ class ApplicationIdentityTest extends TestCase
             'app_identity.footer_text' => 'Apex Distribution Corp 2026',
         ]);
 
-        $response = $this->actingAs($user)->get('/');
+        $response = $this->actingAs($user)->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page

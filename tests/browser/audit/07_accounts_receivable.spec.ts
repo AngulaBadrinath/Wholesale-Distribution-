@@ -10,32 +10,23 @@ test.describe('Audit Phase 8: Accounts Receivable (Deepest Section)', () => {
         const diagnostics = new DiagnosticsCollector(page);
         await loginAs(page, 'ADMIN');
 
-        // 1. AR Dashboard (Documents BUG-011: returns 500 due to Order::invoices() missing relationship)
+        // 1. AR Dashboard (Verified BUG-011 fix: returns 200 with derived metrics)
         const arResp = await safeGoto(page, '/admin/receivables');
-        if (arResp?.status() === 500) {
-            await diagnostics.captureNamedScreenshot(page, 'BUG-011-ar-dashboard-500', evidenceDir);
-        } else {
-            await page.waitForLoadState('domcontentloaded');
-            await diagnostics.captureNamedScreenshot(page, '07_ar_dashboard', evidenceDir);
-        }
+        expect(arResp?.status()).toBe(200);
+        await page.waitForLoadState('domcontentloaded');
+        await diagnostics.captureNamedScreenshot(page, '07_ar_dashboard', evidenceDir);
 
         // 2. Customer AR Ledger Detail (Customer 31: Apex Supermarket Group)
         const custArResp = await safeGoto(page, '/admin/receivables/31');
-        if (custArResp?.status() === 500) {
-            await diagnostics.captureNamedScreenshot(page, 'BUG-011-ar-customer-31-ledger-500', evidenceDir);
-        } else {
-            await page.waitForLoadState('domcontentloaded');
-            await diagnostics.captureNamedScreenshot(page, '07_ar_customer_31_ledger', evidenceDir);
-        }
+        expect(custArResp?.status()).toBe(200);
+        await page.waitForLoadState('domcontentloaded');
+        await diagnostics.captureNamedScreenshot(page, '07_ar_customer_31_ledger', evidenceDir);
 
         // 3. Customer Statement View (Customer 31)
         const stmtResp = await safeGoto(page, '/admin/receivables/31/statement');
-        if (stmtResp?.status() === 500) {
-            await diagnostics.captureNamedScreenshot(page, 'BUG-011-ar-customer-31-statement-500', evidenceDir);
-        } else {
-            await page.waitForLoadState('domcontentloaded');
-            await diagnostics.captureNamedScreenshot(page, '07_ar_customer_31_statement', evidenceDir);
-        }
+        expect(stmtResp?.status()).toBe(200);
+        await page.waitForLoadState('domcontentloaded');
+        await diagnostics.captureNamedScreenshot(page, '07_ar_customer_31_statement', evidenceDir);
 
         await logout(page);
     });

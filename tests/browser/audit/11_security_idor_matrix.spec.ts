@@ -37,15 +37,9 @@ test.describe('Audit Phase 12: Security, Authorization & Anti-IDOR Abuse Matrix'
         const payResp = await safeGoto(page, '/admin/payments');
         expect([403, 404]).toContain(payResp?.status());
 
-        // Documents BUG-013: Delivery Partner leaks access into /admin/orders (returns 200 instead of 403)
+        // Documents BUG-013 fix: Delivery Partner is strictly rejected with 403 on /admin/orders
         const ordersResp = await safeGoto(page, '/admin/orders');
-        if (ordersResp?.status() === 200) {
-            const fs = await import('fs');
-            const path = await import('path');
-            const evidenceDir = path.resolve(process.cwd(), 'artifacts/browser-audit');
-            fs.mkdirSync(evidenceDir, { recursive: true });
-            await page.screenshot({ path: path.join(evidenceDir, 'BUG-013-delivery-partner-orders-leakage.png'), fullPage: true });
-        }
+        expect([403, 404]).toContain(ordersResp?.status());
         await logout(page);
 
         // 3. Accountant cannot alter product master pricing boundaries
