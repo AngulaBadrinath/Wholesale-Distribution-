@@ -189,6 +189,8 @@ class SalesmanOrderHistoryTest extends TestCase
             ->has('orders.data', 1)
             ->where('orders.data.0.id', $orderA->id)
             ->where('orders.data.0.order_number', 'ORD-001')
+            ->has('statusOptions')
+            ->where('statusOptions.0.value', 'SUBMITTED')
         );
     }
 

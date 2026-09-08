@@ -152,22 +152,22 @@ class SalesmanOrderController extends Controller
                 'date_from' => $request->validated('date_from', ''),
                 'date_to' => $request->validated('date_to', ''),
             ],
-            'statusOptions' => array_map(fn (OrderStatus $s) => [
+            'statusOptions' => array_values(array_map(fn (OrderStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),
-            ], array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s !== OrderStatus::DRAFT)),
-            'fulfillmentOptions' => array_map(fn (FulfillmentStatus $s) => [
+            ], array_values(array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s !== OrderStatus::DRAFT)))),
+            'fulfillmentOptions' => array_values(array_map(fn (FulfillmentStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),
-            ], FulfillmentStatus::cases()),
-            'paymentOptions' => array_map(fn (PaymentStatus $s) => [
+            ], FulfillmentStatus::cases())),
+            'paymentOptions' => array_values(array_map(fn (PaymentStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),
-            ], PaymentStatus::cases()),
-            'deliveryOptions' => array_map(fn (DeliveryStatus $s) => [
+            ], PaymentStatus::cases())),
+            'deliveryOptions' => array_values(array_map(fn (DeliveryStatus $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),
-            ], DeliveryStatus::cases()),
+            ], DeliveryStatus::cases())),
         ]);
     }
 

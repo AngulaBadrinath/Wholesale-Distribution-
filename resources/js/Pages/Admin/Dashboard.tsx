@@ -85,12 +85,6 @@ export default function Dashboard({ metrics, recentOrders }: DashboardProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Link href="/foundation">
-                            <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 cursor-pointer">
-                                <span>Platform Foundation</span>
-                                <ArrowUpRight className="h-3.5 w-3.5 opacity-70" />
-                            </Button>
-                        </Link>
                         <Link href="/admin/orders">
                             <Button size="sm" className="text-xs flex items-center gap-1.5 cursor-pointer">
                                 <Layers className="h-3.5 w-3.5" />

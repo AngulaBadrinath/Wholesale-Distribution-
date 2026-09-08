@@ -19,13 +19,18 @@ import {
     SearchX,
 } from 'lucide-react';
 
+interface FilterOption {
+    value: string;
+    label: string;
+}
+
 interface OrderHistoryIndexProps {
     orders: PaginatedResponse<OrderHistoryItem>;
     filters: OrderHistoryFilters;
-    statusOptions: Array<{ value: string; label: string }>;
-    fulfillmentOptions: Array<{ value: string; label: string }>;
-    paymentOptions: Array<{ value: string; label: string }>;
-    deliveryOptions: Array<{ value: string; label: string }>;
+    statusOptions: FilterOption[] | Record<string, FilterOption>;
+    fulfillmentOptions: FilterOption[] | Record<string, FilterOption>;
+    paymentOptions: FilterOption[] | Record<string, FilterOption>;
+    deliveryOptions: FilterOption[] | Record<string, FilterOption>;
 }
 
 export default function OrderHistoryIndex({

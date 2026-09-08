@@ -5,12 +5,17 @@ import { Button } from '@/Components/ui/button';
 import { Search, RotateCcw, Filter, X, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 
+interface FilterOption {
+    value: string;
+    label: string;
+}
+
 interface OrderHistoryFiltersProps {
     filters: OrderHistoryFilters;
-    statusOptions: Array<{ value: string; label: string }>;
-    fulfillmentOptions: Array<{ value: string; label: string }>;
-    paymentOptions: Array<{ value: string; label: string }>;
-    deliveryOptions: Array<{ value: string; label: string }>;
+    statusOptions?: FilterOption[] | Record<string, FilterOption>;
+    fulfillmentOptions?: FilterOption[] | Record<string, FilterOption>;
+    paymentOptions?: FilterOption[] | Record<string, FilterOption>;
+    deliveryOptions?: FilterOption[] | Record<string, FilterOption>;
     onFilterChange: (newFilters: OrderHistoryFilters) => void;
     onReset: () => void;
 }
@@ -25,6 +30,17 @@ export default function OrderHistoryFiltersComponent({
     onReset,
 }: OrderHistoryFiltersProps) {
     const [mobileExpanded, setMobileExpanded] = useState(false);
+
+    const toOptionArray = (options?: FilterOption[] | Record<string, FilterOption>): FilterOption[] => {
+        if (!options) return [];
+        if (Array.isArray(options)) return options;
+        return Object.values(options);
+    };
+
+    const safeStatusOptions = toOptionArray(statusOptions);
+    const safeFulfillmentOptions = toOptionArray(fulfillmentOptions);
+    const safePaymentOptions = toOptionArray(paymentOptions);
+    const safeDeliveryOptions = toOptionArray(deliveryOptions);
 
     const activeFilterCount = [
         filters.status,
@@ -124,7 +140,7 @@ export default function OrderHistoryFiltersComponent({
                         className="w-full text-xs h-8 rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                         <option value="ALL">All Order States</option>
-                        {statusOptions.map((opt) => (
+                        {safeStatusOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
@@ -144,7 +160,7 @@ export default function OrderHistoryFiltersComponent({
                         className="w-full text-xs h-8 rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                         <option value="ALL">All Fulfillment</option>
-                        {fulfillmentOptions.map((opt) => (
+                        {safeFulfillmentOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
@@ -164,7 +180,7 @@ export default function OrderHistoryFiltersComponent({
                         className="w-full text-xs h-8 rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                         <option value="ALL">All Payments</option>
-                        {paymentOptions.map((opt) => (
+                        {safePaymentOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
@@ -184,7 +200,7 @@ export default function OrderHistoryFiltersComponent({
                         className="w-full text-xs h-8 rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                         <option value="ALL">All Deliveries</option>
-                        {deliveryOptions.map((opt) => (
+                        {safeDeliveryOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>

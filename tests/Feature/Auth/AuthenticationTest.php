@@ -281,7 +281,7 @@ class AuthenticationTest extends TestCase
             'status' => AccountStatus::ACTIVE,
         ]);
 
-        $response = $this->actingAs($user)->get('/');
+        $response = $this->actingAs($user)->get('/foundation');
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page

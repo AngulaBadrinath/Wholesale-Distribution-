@@ -10,10 +10,11 @@ use Inertia\Inertia;
 
 // Public routes
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'phpVersion' => PHP_VERSION,
-        'laravelVersion' => app()->version(),
-    ]);
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login');
 })->name('home');
 
 Route::get('/health', HealthCheckController::class)->name('health');

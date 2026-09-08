@@ -2,18 +2,24 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class FoundationTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * Test that the application boots and renders the Inertia root page.
      */
     public function test_application_boots_and_renders_inertia_welcome_view(): void
     {
-        $response = $this->get('/');
+        $admin = \App\Models\User::factory()->create([
+            'role' => \App\Enums\UserRole::ADMIN,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/foundation');
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page

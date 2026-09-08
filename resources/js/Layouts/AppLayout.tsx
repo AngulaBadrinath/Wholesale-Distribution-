@@ -194,6 +194,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                 )}
                                 <nav className="space-y-0.5">
                                     {hasAdminOrderQueue && renderNavLink('/admin/orders', <Layers className="h-4 w-4" />, 'Order Processing')}
+                                    {auth?.user?.role === 'SALESMAN' && renderNavLink('/salesman/orders', <Receipt className="h-4 w-4" />, 'Sales Order History')}
                                     {hasAdjustReview && renderNavLink('/admin/adjustments', <SlidersHorizontal className="h-4 w-4" />, 'Order Adjustments')}
                                     {hasReturnReview && renderNavLink('/admin/returns', <RotateCcw className="h-4 w-4" />, 'Reverse Logistics')}
                                     {hasOrderCreate && renderNavLink('/salesman/orders/create', <PlusCircle className="h-4 w-4" />, 'New Sales Order')}
