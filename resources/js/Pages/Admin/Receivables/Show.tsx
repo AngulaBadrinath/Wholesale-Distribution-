@@ -43,6 +43,8 @@ interface AgingData {
     days_91_plus: string;
     total_receivable: string;
     available_credit: string;
+    operational_outstanding?: string;
+    pending_payments?: string;
     invoices: InvoiceDetail[];
 }
 

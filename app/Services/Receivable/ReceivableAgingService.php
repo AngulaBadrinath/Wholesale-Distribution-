@@ -115,62 +115,7 @@ class ReceivableAgingService
             ];
         }
 
-        // 2. Also check active un-invoiced orders
-        $uninvoicedOrders = Order::query()
-            ->where('customer_id', $customer->id)
-            ->whereIn('status', [
-                OrderStatus::APPROVED->value,
-                OrderStatus::PROCESSING->value,
-                OrderStatus::COMPLETED->value,
-            ])
-            ->whereDoesntHave('invoice')
-            ->get();
-
-        foreach ($uninvoicedOrders as $order) {
-            $orderGrandTotal = number_format((float) $order->grand_total, 2, '.', '');
-            if (bccomp($orderGrandTotal, '0.00', 2) <= 0) {
-                continue;
-            }
-
-            $totalReceivable = bcadd($totalReceivable, $orderGrandTotal, 2);
-            $orderDate = $order->created_at ? Carbon::parse($order->created_at)->startOfDay() : $refDate;
-            $daysOverdue = $orderDate->isAfter($refDate) ? 0 : (int) $orderDate->diffInDays($refDate);
-
-            $bucket = match (true) {
-                $daysOverdue <= 0 => 'current',
-                $daysOverdue <= 30 => 'days_1_30',
-                $daysOverdue <= 60 => 'days_31_60',
-                $daysOverdue <= 90 => 'days_61_90',
-                default => 'days_91_plus',
-            };
-
-            match ($bucket) {
-                'current' => $current = bcadd($current, $orderGrandTotal, 2),
-                'days_1_30' => $days1To30 = bcadd($days1To30, $orderGrandTotal, 2),
-                'days_31_60' => $days31To60 = bcadd($days31To60, $orderGrandTotal, 2),
-                'days_61_90' => $days61To90 = bcadd($days61To90, $orderGrandTotal, 2),
-                'days_91_plus' => $days91Plus = bcadd($days91Plus, $orderGrandTotal, 2),
-            };
-
-            $invoiceDetails[] = [
-                'id' => $order->id,
-                'invoice_number' => "ORD-{$order->order_number} (Unbilled)",
-                'invoice_date' => $order->created_at?->toDateString(),
-                'due_date' => $order->created_at?->toDateString(),
-                'grand_total' => $orderGrandTotal,
-                'amount_paid' => '0.00',
-                'amount_due' => $orderGrandTotal,
-                'days_overdue' => $daysOverdue,
-                'bucket' => $bucket,
-                'status' => 'PENDING_INVOICE',
-            ];
-        }
-
-        // Align total receivable with authoritative net receivable if invoices exist
-        if (bccomp($financialSummary['net_receivable'], '0.00', 2) > 0 && bccomp($totalReceivable, '0.00', 2) === 0) {
-            $totalReceivable = $financialSummary['net_receivable'];
-            $current = $financialSummary['net_receivable'];
-        }
+        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
 
         return [
             'customer_id' => $customer->id,
@@ -185,7 +130,7 @@ class ReceivableAgingService
             'total_receivable' => $totalReceivable,
             'pending_payments' => $financialSummary['pending_payments'],
             'operational_outstanding' => $financialSummary['operational_outstanding'],
-            'available_credit' => $financialSummary['available_credit'],
+            'available_credit' => $availableCredit,
             'invoices' => $invoiceDetails,
         ];
     }
