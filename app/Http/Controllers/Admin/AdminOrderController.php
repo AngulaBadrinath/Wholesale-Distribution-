@@ -50,9 +50,9 @@ class AdminOrderController extends Controller
         $actor = $request->user();
         $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
 
-        // Salesmen are strictly restricted to the salesman portal (/salesman/orders)
-        if ($actor->role === UserRole::SALESMAN) {
-            throw new AuthorizationException('Salesmen must access orders via their salesman portal.');
+        // Salesmen and delivery partners are strictly restricted from the admin operational order queues
+        if (in_array($actor->role, [UserRole::SALESMAN, UserRole::DELIVERY_PARTNER], true)) {
+            throw new AuthorizationException('Field and delivery roles must access orders via their dedicated portals.');
         }
 
         $now = Carbon::now();
@@ -672,9 +672,9 @@ class AdminOrderController extends Controller
         $actor = $request->user();
         $this->permissionService->authorize($actor, Permission::ORDER_VIEW);
 
-        // Salesmen are strictly denied from the admin review workspace
-        if ($actor->role === UserRole::SALESMAN) {
-            throw new AuthorizationException('Salesmen are not authorized to access the admin order review workspace.');
+        // Salesmen and delivery partners are strictly denied from the admin review workspace
+        if (in_array($actor->role, [UserRole::SALESMAN, UserRole::DELIVERY_PARTNER], true)) {
+            throw new AuthorizationException('Field and delivery roles are not authorized to access the admin order review workspace.');
         }
 
         // Draft orders are strictly excluded from admin review (fail-closed draft isolation)
