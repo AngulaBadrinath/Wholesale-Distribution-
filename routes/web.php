@@ -340,6 +340,8 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.deliveries.index');
         Route::get('/delivery', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'index'])
             ->name('delivery.index');
+        Route::get('/delivery/today', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'index'])
+            ->name('delivery.today');
         Route::get('/delivery/{delivery}', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'show'])
             ->whereNumber('delivery')
             ->name('delivery.show');
