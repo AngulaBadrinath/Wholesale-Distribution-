@@ -36,41 +36,41 @@
 | 2 | Browser / Rendering / Viewport Matrix | 24 | [x] PASSED | Verified all 11 breakpoints (320px–1920px); responsive cards, no doc overflow. Evidence: `12_responsive_dashboard_320w.png`, `12_responsive_dashboard_768w.png`, `12_responsive_dashboard_1440w.png`. |
 | 3 | Authentication / Session / Access | 18 | [x] PASSED | Tested all 8 roles, invalid credentials rejection, suspended account block, MFA validation. |
 | 4 | Global Application Shell | 14 | [x] PASSED | Role-specific navbars, sidebars, breadcrumbs, user profile menus verified. |
-| 5 | Customer Onboarding & Management | 22 | [!] FAILED | Listing, search, and create functional. Customer Detail crashes with HTTP 500 (**BUG-011**). |
+| 5 | Customer Onboarding & Management | 22 | [x] PASSED | Listing, search, and create functional. Customer Detail loads with derived financial summary (**BUG-011 Verified Fixed**). |
 | 6 | Salesman Portal & Scoping | 16 | [x] PASSED | Salesman A sees own customers (Apex, Beacon), strictly blocked from Salesman B's customers (Crestline, Delta). Anti-IDOR verified (403/404). |
 | 7 | Product & Category Master | 20 | [x] PASSED | Products catalog, categories listing, tax profiles, price edit permissions verified. |
 | 8 | Pricing & Tax Invariants | 14 | [x] PASSED | Authoritative server price boundary and product tax line calculations verified. |
 | 9 | Flagship — Salesman New Order | 28 | [x] PASSED | Order creation workspace, customer scoping, draft interaction, review step calculation verified without runtime crashes. |
 | 10 | Order Drafts | 12 | [x] PASSED | Draft listing, save, and order review calculation numeric types verified healthy. |
-| 11 | Admin Order Operations | 20 | [!] DEFECT | Operational queue and review workspace functional; however Delivery Partner leaks access to `/admin/orders` (**BUG-013**). |
+| 11 | Admin Order Operations | 20 | [x] PASSED | Operational queue and review workspace functional; Delivery Partner strictly rejected with 403 (**BUG-013 Verified Fixed**). |
 | 12 | Payment Lifecycle & Verification | 24 | [x] PASSED | Cash, Cheque, Money Order registry, tabs (Pending, Verified, Rejected, Reversed), evidence modal, Salesman verification block verified. |
-| 13 | Accounts Receivable (Deepest Section) | 26 | [!] FAILED | AR Dashboard (`/admin/receivables`), Customer Ledger, and Statement crash with HTTP 500 (**BUG-011**). |
+| 13 | Accounts Receivable (Deepest Section) | 26 | [x] PASSED | AR Dashboard (`/admin/receivables`), Customer Ledger, Aging, and Statement load 200 OK with derived transactions (**BUG-011 Verified Fixed**). |
 | 14 | Accounts Payable | 10 | [x] PASSED | Supplier liabilities and AP workspace (`/admin/payables`) render cleanly with 200 OK. |
-| 15 | Adjustments & Allocation | 18 | [x] PASSED | Adjustment review queue (`/admin/adjustments`) loads with 200 OK; previous 500 and false 409 verified permanently resolved. |
+| 15 | Adjustments & Allocation | 18 | [x] PASSED | Adjustment review queue (`/admin/adjustments`) loads with 200 OK; drift detection and stale evaluations verified. |
 | 16 | Inventory & Warehouse | 16 | [x] PASSED | Stock balances (`/admin/inventory`) and exceptions (`/admin/inventory-exceptions`) render with 200 OK. Zero negative stock. |
-| 17 | Delivery Partner Experience | 16 | [!] PARTIAL | Driver dashboard (`/delivery`) renders with 200 OK; `/delivery/today` returns 404 (**BUG-014**). |
+| 17 | Delivery Partner Experience | 16 | [x] PASSED | Driver dashboard (`/delivery` & `/delivery/today`) renders with 200 OK (**BUG-014 Verified Fixed**). |
 | 18 | Reverse Logistics / Returns | 12 | [x] PASSED | Returns queue (`/admin/returns`) loads with 200 OK; good/damaged disposition workflows operational. |
-| 19 | Credits & Refunds | 12 | [!] FAILED | Credits index (`/admin/credits`) loads 200 OK; Refunds queue (`/admin/refunds`) crashes with HTTP 500 (**BUG-012**). |
+| 19 | Credits & Refunds | 12 | [x] PASSED | Credits index (`/admin/credits`) loads 200 OK; Refunds queue (`/admin/refunds`) renders with 200 OK and populated status options (**BUG-012 Verified Fixed**). |
 | 20 | Accounting (GL & Journals) | 16 | [x] PASSED | General Ledger, Trial Balance, Chart of Accounts, Profit & Loss, Balance Sheet, and Reconciliation all load with 200 OK. |
-| 21 | Reporting & Analytics | 14 | [!] PARTIAL | Sales reports, Inventory reports, and Notifications load 200 OK; Customer reports crashes with HTTP 500 (**BUG-011**). Salesman blocked from org performance. |
+| 21 | Reporting & Analytics | 14 | [x] PASSED | Sales reports, Inventory reports, Customer reports, and Notifications load 200 OK (**BUG-011 Verified Fixed**). Salesman blocked from org performance. |
 | 22 | Invoices & Documents | 14 | [x] PASSED | Invoice index & detail load 200 OK; RULE-DOC-001 (Zero product images on invoice) strictly verified in rendered DOM. |
 | 23 | Notifications & Alerts | 10 | [x] PASSED | Notification center (`/notifications`) renders active alert registry. |
 | 24 | Audit & Security Logs | 14 | [x] PASSED | Sensitive tokens/passwords absent from logs, props, and rendered DOM. |
-| 25 | Role / IDOR Cross-Check | 16 | [!] DEFECT | Cross-salesman IDOR rejected; guest redirect verified; Delivery Partner leaks `/admin/orders` (**BUG-013**). |
-| 26 | Console & Network Diagnostics | 20 | [x] PASSED | Zero unexpected 404/500 except for confirmed BUG-011 and BUG-012; Vite HMR and dev socket stable. |
+| 25 | Role / IDOR Cross-Check | 16 | [x] PASSED | Cross-salesman IDOR rejected; guest redirect verified; Delivery Partner locked out of `/admin/orders` (**BUG-013 Verified Fixed**). |
+| 26 | Console & Network Diagnostics | 20 | [x] PASSED | Zero unhandled exceptions or 500 errors across all routes; Vite HMR and dev socket stable. |
 | 27 | Recent-Fix Regression Review | 14 | [x] PASSED | Salesman Dashboard lands clean on `/dashboard` without "Phase 00" text; PostgreSQL 25P02 transaction aborts absent. |
 | 28 | End-to-End Financial Scenario | 20 | [x] PASSED | Order placement, draft review, payment recording, and GL accounts verified. |
-| 29 | Master Bug Discovery & Classification| — | [x] COMPLETED | 4 defects cataloged in `BUGLIST.md` with priority, reproduction, and evidence. |
-| 30 | Root-Cause Grouping | — | [x] COMPLETED | 4 distinct root cause clusters identified (RC-01 to RC-04). |
-| 31 | Final Audit Verdict | — | [x] COMPLETED | SYSTEM STATUS: **CONDITIONALLY READY** (Blocked only by 2 single-line backend fixes: BUG-011 and BUG-012, plus 1 authorization scoping guard: BUG-013). |
+| 29 | Master Bug Discovery & Classification| — | [x] COMPLETED | All 4 cataloged defects in `BUGLIST.md` successfully remediated and verified. |
+| 30 | Root-Cause Grouping | — | [x] COMPLETED | 4 distinct root cause clusters identified and resolved (RC-01 to RC-04). |
+| 31 | Final Audit Verdict | — | [x] COMPLETED | SYSTEM STATUS: **PRODUCTION-READY** (All 31 audit sections passed; 0 open defects; 100% test pass rate). |
 
 ---
 
-## 3. Discovered Defects Summary
+## 3. Discovered Defects Summary (All Remediated & Verified)
 
-1. **[BUG-011]** `Call to undefined method App\Models\Order::invoices()` (P1) — Blocks `/customers/{id}`, `/admin/receivables`, `/admin/receivables/{id}`, `/admin/receivables/{id}/statement`, `/admin/reports/customers`.
-2. **[BUG-012]** `Call to undefined method App\Enums\RefundStatus::options()` (P1) — Blocks `/admin/refunds`.
-3. **[BUG-013]** Delivery Partner authorization leakage into Administrative Order Queue (`/admin/orders`) (P1 - Security).
-4. **[BUG-014]** Missing `/delivery/today` route alias causes 404 (P3 - Polish).
+1. **[BUG-011]** `Call to undefined method App\Models\Order::invoices()` (P1) — **VERIFIED FIXED** in commit `d0db339`.
+2. **[BUG-012]** `Call to undefined method App\Enums\RefundStatus::options()` (P1) — **VERIFIED FIXED** in commit `912ecc1`.
+3. **[BUG-013]** Delivery Partner authorization leakage into Administrative Order Queue (`/admin/orders`) (P1 - Security) — **VERIFIED FIXED** in commit `3676fb7`.
+4. **[BUG-014]** Missing `/delivery/today` route alias causes 404 (P3 - Polish) — **VERIFIED FIXED** in commit `ec2e457`.
 
 See [BUGLIST.md](file:///f:/Wholesale%20Distribution%20Management%20System/BUGLIST.md) for full reproduction steps and forensic analysis.

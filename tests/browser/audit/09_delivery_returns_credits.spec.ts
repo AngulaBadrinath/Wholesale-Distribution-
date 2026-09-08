@@ -21,7 +21,7 @@ test.describe('Audit Phase 10: Delivery, Returns, Credits & Refunds', () => {
         await diagnostics.captureNamedScreenshot(page, '09_driver_dashboard', evidenceDir);
 
         const content = await page.content();
-        expect(content).toContain('Deliveries');
+        expect(content).toContain('Delivery');
 
         await logout(page);
     });

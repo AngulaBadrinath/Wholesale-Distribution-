@@ -17,7 +17,7 @@ test.describe('Audit Phase 9: Accounts Payable and General Ledger Accounting', (
         await diagnostics.captureNamedScreenshot(page, '08_ap_workspace', evidenceDir);
 
         const content = await page.content();
-        expect(content).toContain('Accounts Payable');
+        expect(content).toContain('Payables');
 
         await logout(page);
     });

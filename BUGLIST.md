@@ -10,26 +10,26 @@
 
 ## 1. Summary Defect Metrics
 
-| Priority | Classification | Count | Description |
-|---|---|:---:|---|
-| **P0** | Blocker / Catastrophic | 0 | Severe security breach, data corruption, financial integrity failure. |
-| **P1** | High / Core Workflow | 3 | Core business workflow failure, critical role unable to perform action, or auth leakage. |
-| **P2** | Medium / Important | 0 | Important functional defect, responsive breakdown, or scoping issue. |
-| **P3** | Low / Polish | 1 | Minor route alias, wording, non-blocking usability issue. |
-| **P4** | Enhancement / Deferred | 0 | Approved roadmap enhancement or optional polish. |
-| **Total** | | **4** | Confirmed defects discovered during this forensic audit. |
+| Priority | Classification | Open Count | Remediated & Verified | Description |
+|---|---|:---:|:---:|---|
+| **P0** | Blocker / Catastrophic | 0 | 0 | Severe security breach, data corruption, financial integrity failure. |
+| **P1** | High / Core Workflow | 0 | 3 | Core business workflow failure, critical role unable to perform action, or auth leakage. |
+| **P2** | Medium / Important | 0 | 0 | Important functional defect, responsive breakdown, or scoping issue. |
+| **P3** | Low / Polish | 0 | 1 | Minor route alias, wording, non-blocking usability issue. |
+| **P4** | Enhancement / Deferred | 0 | 0 | Approved roadmap enhancement or optional polish. |
+| **Total** | | **0** | **4** | **100% of discovered defects successfully remediated and verified.** |
 
 ### Domain Breakdown
-- **Security & Authorization (IDOR):** 1 (BUG-013)
-- **Financial & Accounts Receivable:** 1 (BUG-011)
-- **Credits, Refunds & Reverse Logistics:** 1 (BUG-012)
-- **Logistics & Navigation:** 1 (BUG-014)
-- **Inventory & Allocation:** 0 (Verified sound, zero negative stock or over-allocation)
-- **Order Processing & Workflows:** 0 (Adjustments, queue, approvals functional)
-- **Payments & Evidence:** 0 (Cash/Cheque/Money Order verification and validation operational)
-- **Responsive & Viewports (320px–1920px):** 0 (All 11 breakpoints structurally compliant)
-- **Accessibility (WCAG 2.1 AA):** 0 (Form control keyboard Tab cycles validated)
-- **Regressions:** 0 (No previously fixed defects regressed; Phase 00 copy clean; 25P02 transaction aborts absent)
+- **Security & Authorization (IDOR):** 0 Open (BUG-013 Verified Fixed)
+- **Financial & Accounts Receivable:** 0 Open (BUG-011 Verified Fixed)
+- **Credits, Refunds & Reverse Logistics:** 0 Open (BUG-012 Verified Fixed)
+- **Logistics & Navigation:** 0 Open (BUG-014 Verified Fixed)
+- **Inventory & Allocation:** 0 Open (Verified sound, zero negative stock or over-allocation)
+- **Order Processing & Workflows:** 0 Open (Adjustments, queue, approvals functional)
+- **Payments & Evidence:** 0 Open (Cash/Cheque/Money Order verification and validation operational)
+- **Responsive & Viewports (320px–1920px):** 0 Open (All 11 breakpoints structurally compliant)
+- **Accessibility (WCAG 2.1 AA):** 0 Open (Form control keyboard Tab cycles validated)
+- **Regressions:** 0 (Zero regressions across all modules)
 
 ---
 
@@ -104,15 +104,8 @@
   - **Security Impact:** None (fails closed via 500 error).
   - **Data Integrity:** No data corruption; purely a query relationship invocation defect.
 - **Suggested Fix Direction:**
-  In `app/Models/Order.php`, add an alias method:
-  ```php
-  public function invoices(): HasOne
-  {
-      return $this->hasOne(Invoice::class);
-  }
-  ```
-  Or change `whereDoesntHave('invoices')` to `whereDoesntHave('invoice')` in `ReceivableLedgerService.php` and `ReceivableAgingService.php`.
-- **Status:** CONFIRMED / REPRODUCED
+  Change `whereDoesntHave('invoices')` to `whereDoesntHave('invoice')` in `ReceivableLedgerService.php` and `ReceivableAgingService.php`.
+- **Status:** VERIFIED (Fixed in commit `d0db339`, tested via PHPUnit & Playwright with 100% pass rate)
 
 ---
 
@@ -158,7 +151,7 @@
       ], self::cases());
   }
   ```
-- **Status:** CONFIRMED / REPRODUCED
+- **Status:** VERIFIED (Fixed in commit `912ecc1`, verified via Playwright returning HTTP 200 with populated filter options)
 
 ---
 
@@ -210,7 +203,7 @@
   }
   ```
   Or place `/admin/orders` behind an administrative-level permission (e.g. `order.approve` or dedicated `admin.order.view`).
-- **Status:** CONFIRMED / REPRODUCED
+- **Status:** VERIFIED (Fixed in commit `3676fb7`, verified via Playwright asserting fail-closed HTTP 403 Forbidden)
 
 ---
 
@@ -233,7 +226,7 @@
   `/delivery/today` should either exist or automatically redirect (301/302) to `/delivery` with active tab `today`.
 - **Root Cause Analysis:**
   In `routes/web.php:341`, the driver dashboard is registered as `Route::get('/delivery', ...)`. No route or redirect exists for `/delivery/today`.
-- **Status:** CONFIRMED / DOCUMENTATION GAP
+- **Status:** VERIFIED (Fixed in commit `ec2e457`, verified via Playwright returning HTTP 200 on `/delivery/today`)
 
 ---
 
