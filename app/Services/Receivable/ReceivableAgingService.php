@@ -51,8 +51,7 @@ class ReceivableAgingService
 
         $refDate = ($referenceDate ?? Carbon::now())->startOfDay();
 
-        // 0. Ensure ledger sync
-        $this->ledgerService->syncUnpostedHistoricalEvents();
+        // 0. Authoritative financial summary
         $financialSummary = $this->ledgerService->getCustomerFinancialSummary($customer);
 
         // 1. Fetch all open invoices for this customer (amount_due > 0 and not VOID)

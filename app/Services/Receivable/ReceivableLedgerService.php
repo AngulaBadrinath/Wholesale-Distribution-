@@ -58,37 +58,25 @@ class ReceivableLedgerService
             $postingDate = Carbon::now()->toDateString();
             $dueDate = $invoice->due_date ? Carbon::parse($invoice->due_date)->toDateString() : null;
 
-            try {
-                return ReceivableTransaction::create([
-                    'transaction_number' => $transactionNumber,
-                    'customer_id' => $invoice->customer_id,
-                    'type' => ReceivableTransactionType::INVOICE_CHARGE,
-                    'source_type' => 'invoice',
-                    'source_id' => $invoice->id,
-                    'source_number' => $invoice->invoice_number,
-                    'amount' => $invoice->grand_total,
-                    'debit_amount' => $invoice->grand_total,
-                    'credit_amount' => '0.00',
-                    'transaction_date' => $transactionDate,
-                    'posting_date' => $postingDate,
-                    'due_date' => $dueDate,
-                    'currency' => $invoice->currency ?? 'USD',
-                    'description' => "Invoice #{$invoice->invoice_number} charge",
-                    'created_by' => $actor?->id ?? $invoice->created_by,
-                ]);
-            } catch (QueryException $e) {
-                // If unique constraint hit concurrently, return the winning transaction
-                $existing = ReceivableTransaction::where('source_type', 'invoice')
-                    ->where('source_id', $invoice->id)
-                    ->where('type', ReceivableTransactionType::INVOICE_CHARGE)
-                    ->first();
-
-                if ($existing) {
-                    return $existing;
-                }
-
-                throw $e;
-            }
+            return ReceivableTransaction::create([
+                'transaction_number' => $transactionNumber,
+                'customer_id' => $invoice->customer_id,
+                'order_id' => $invoice->order_id,
+                'invoice_id' => $invoice->id,
+                'type' => ReceivableTransactionType::INVOICE_CHARGE,
+                'source_type' => 'invoice',
+                'source_id' => $invoice->id,
+                'source_number' => $invoice->invoice_number,
+                'amount' => $invoice->grand_total,
+                'debit_amount' => $invoice->grand_total,
+                'credit_amount' => '0.00',
+                'transaction_date' => $transactionDate,
+                'posting_date' => $postingDate,
+                'due_date' => $dueDate,
+                'currency' => $invoice->currency ?? 'USD',
+                'description' => "Invoice #{$invoice->invoice_number} charge",
+                'created_by' => $actor?->id ?? $invoice->created_by,
+            ]);
         });
     }
 
@@ -121,36 +109,25 @@ class ReceivableLedgerService
             $postingDate = Carbon::now()->toDateString();
             $methodLabel = $payment->payment_method ? $payment->payment_method->label() : 'Payment';
 
-            try {
-                return ReceivableTransaction::create([
-                    'transaction_number' => $transactionNumber,
-                    'customer_id' => $payment->customer_id,
-                    'type' => ReceivableTransactionType::PAYMENT,
-                    'source_type' => 'payment',
-                    'source_id' => $payment->id,
-                    'source_number' => $payment->payment_number,
-                    'amount' => $payment->amount,
-                    'debit_amount' => '0.00',
-                    'credit_amount' => $payment->amount,
-                    'transaction_date' => $transactionDate,
-                    'posting_date' => $postingDate,
-                    'due_date' => null,
-                    'currency' => 'USD',
-                    'description' => "Payment #{$payment->payment_number} ({$methodLabel}) received",
-                    'created_by' => $actor?->id ?? $payment->verified_by ?? $payment->recorded_by,
-                ]);
-            } catch (QueryException $e) {
-                $existing = ReceivableTransaction::where('source_type', 'payment')
-                    ->where('source_id', $payment->id)
-                    ->where('type', ReceivableTransactionType::PAYMENT)
-                    ->first();
-
-                if ($existing) {
-                    return $existing;
-                }
-
-                throw $e;
-            }
+            return ReceivableTransaction::create([
+                'transaction_number' => $transactionNumber,
+                'customer_id' => $payment->customer_id,
+                'order_id' => $payment->order_id,
+                'payment_id' => $payment->id,
+                'type' => ReceivableTransactionType::PAYMENT,
+                'source_type' => 'payment',
+                'source_id' => $payment->id,
+                'source_number' => $payment->payment_number,
+                'amount' => $payment->amount,
+                'debit_amount' => '0.00',
+                'credit_amount' => $payment->amount,
+                'transaction_date' => $transactionDate,
+                'posting_date' => $postingDate,
+                'due_date' => null,
+                'currency' => 'USD',
+                'description' => "Payment #{$payment->payment_number} ({$methodLabel}) received",
+                'created_by' => $actor?->id ?? $payment->verified_by ?? $payment->recorded_by,
+            ]);
         });
     }
 
@@ -183,36 +160,25 @@ class ReceivableLedgerService
             $postingDate = Carbon::now()->toDateString();
             $reasonLabel = $payment->reversal_reason_code ? $payment->reversal_reason_code->label() : 'Reversal';
 
-            try {
-                return ReceivableTransaction::create([
-                    'transaction_number' => $transactionNumber,
-                    'customer_id' => $payment->customer_id,
-                    'type' => ReceivableTransactionType::PAYMENT_REVERSAL,
-                    'source_type' => 'payment',
-                    'source_id' => $payment->id,
-                    'source_number' => $payment->payment_number,
-                    'amount' => $payment->amount,
-                    'debit_amount' => $payment->amount, // Compensating debit to restore receivable balance
-                    'credit_amount' => '0.00',
-                    'transaction_date' => $transactionDate,
-                    'posting_date' => $postingDate,
-                    'due_date' => null,
-                    'currency' => 'USD',
-                    'description' => "Payment #{$payment->payment_number} reversed ({$reasonLabel})",
-                    'created_by' => $actor?->id ?? $payment->reversed_by,
-                ]);
-            } catch (QueryException $e) {
-                $existing = ReceivableTransaction::where('source_type', 'payment')
-                    ->where('source_id', $payment->id)
-                    ->where('type', ReceivableTransactionType::PAYMENT_REVERSAL)
-                    ->first();
-
-                if ($existing) {
-                    return $existing;
-                }
-
-                throw $e;
-            }
+            return ReceivableTransaction::create([
+                'transaction_number' => $transactionNumber,
+                'customer_id' => $payment->customer_id,
+                'order_id' => $payment->order_id,
+                'payment_id' => $payment->id,
+                'type' => ReceivableTransactionType::PAYMENT_REVERSAL,
+                'source_type' => 'payment',
+                'source_id' => $payment->id,
+                'source_number' => $payment->payment_number,
+                'amount' => $payment->amount,
+                'debit_amount' => $payment->amount, // Compensating debit to restore receivable balance
+                'credit_amount' => '0.00',
+                'transaction_date' => $transactionDate,
+                'posting_date' => $postingDate,
+                'due_date' => null,
+                'currency' => 'USD',
+                'description' => "Payment #{$payment->payment_number} reversed ({$reasonLabel})",
+                'created_by' => $actor?->id ?? $payment->reversed_by,
+            ]);
         });
     }
 
@@ -244,36 +210,24 @@ class ReceivableLedgerService
             $transactionDate = $creditNote->issued_at ? Carbon::parse($creditNote->issued_at)->toDateString() : Carbon::now()->toDateString();
             $postingDate = Carbon::now()->toDateString();
 
-            try {
-                return ReceivableTransaction::create([
-                    'transaction_number' => $transactionNumber,
-                    'customer_id' => $creditNote->customer_id,
-                    'type' => ReceivableTransactionType::CREDIT_NOTE,
-                    'source_type' => 'credit_note',
-                    'source_id' => $creditNote->id,
-                    'source_number' => $creditNote->credit_number,
-                    'amount' => $creditNote->total_amount,
-                    'debit_amount' => '0.00',
-                    'credit_amount' => $creditNote->total_amount,
-                    'transaction_date' => $transactionDate,
-                    'posting_date' => $postingDate,
-                    'due_date' => null,
-                    'currency' => $creditNote->currency ?? 'USD',
-                    'description' => "Credit Note #{$creditNote->credit_number} issued",
-                    'created_by' => $actor?->id ?? $creditNote->issued_by,
-                ]);
-            } catch (QueryException $e) {
-                $existing = ReceivableTransaction::where('source_type', 'credit_note')
-                    ->where('source_id', $creditNote->id)
-                    ->where('type', ReceivableTransactionType::CREDIT_NOTE)
-                    ->first();
-
-                if ($existing) {
-                    return $existing;
-                }
-
-                throw $e;
-            }
+            return ReceivableTransaction::create([
+                'transaction_number' => $transactionNumber,
+                'customer_id' => $creditNote->customer_id,
+                'credit_note_id' => $creditNote->id,
+                'type' => ReceivableTransactionType::CREDIT_NOTE,
+                'source_type' => 'credit_note',
+                'source_id' => $creditNote->id,
+                'source_number' => $creditNote->credit_number,
+                'amount' => $creditNote->total_amount,
+                'debit_amount' => '0.00',
+                'credit_amount' => $creditNote->total_amount,
+                'transaction_date' => $transactionDate,
+                'posting_date' => $postingDate,
+                'due_date' => null,
+                'currency' => $creditNote->currency ?? 'USD',
+                'description' => "Credit Note #{$creditNote->credit_number} issued",
+                'created_by' => $actor?->id ?? $creditNote->issued_by,
+            ]);
         });
     }
 
@@ -484,6 +438,8 @@ class ReceivableLedgerService
         return ReceivableTransaction::create([
             'transaction_number' => $transactionNumber,
             'customer_id' => $payment->customer_id,
+            'order_id' => $payment->order_id,
+            'payment_id' => $payment->id,
             'type' => ReceivableTransactionType::PAYMENT,
             'source_type' => 'payment',
             'source_id' => $payment->id,

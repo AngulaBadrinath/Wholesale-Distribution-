@@ -49,9 +49,6 @@ class CustomerStatementService
         $start = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::now()->startOfMonth()->startOfDay();
         $end = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::now()->endOfDay();
 
-        // 0. Ensure immutable event ledger is synchronized with authoritative transactions
-        $this->ledgerService->syncUnpostedHistoricalEvents();
-
         // 1. Calculate Opening Balance: Sum of all debits minus sum of all credits before $start
         $openingData = ReceivableTransaction::query()
             ->where('customer_id', $customer->id)
