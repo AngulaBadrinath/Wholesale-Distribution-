@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\User;
@@ -30,12 +31,23 @@ class AdminReportingController extends Controller
     ) {}
 
     /**
+     * Ensure the requesting user is authorized for administrative organization-level reporting.
+     */
+    protected function authorizeReportingAccess(?User $user): void
+    {
+        if (! $user || in_array($user->role, [UserRole::SALESMAN, UserRole::DELIVERY_PARTNER], true)) {
+            abort(403, 'You do not have permission to access administrative reports and analytics.');
+        }
+    }
+
+    /**
      * Reporting Hub / Overview Dashboard.
      */
     public function index(Request $request): Response
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
 
         // High-level KPI snapshots for reporting hub
         $salesSummary = $this->salesReportService->getSalesSummary([], $user);
@@ -56,6 +68,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $filters = $request->only([
             'date_from',
             'date_to',
@@ -89,6 +102,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $filters = $request->only([
             'salesman_id',
             'status',
@@ -114,6 +128,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $filters = $request->only([
             'date_from',
             'date_to',
@@ -135,6 +150,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $tab = $request->input('tab', 'valuation');
         $filters = $request->only([
             'warehouse_id',
@@ -178,6 +194,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $filters = $request->only([
             'driver_id',
             'status',
@@ -207,6 +224,7 @@ class AdminReportingController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $this->authorizeReportingAccess($user);
         $tab = $request->input('tab', 'summary');
         $filters = $request->only([
             'start_date',

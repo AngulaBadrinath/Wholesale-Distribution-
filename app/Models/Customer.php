@@ -67,6 +67,16 @@ class Customer extends Model
     }
 
     /**
+     * Get all orders placed by this customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Order, $this>
+     */
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Order::class, 'customer_id');
+    }
+
+    /**
      * Get all invoices issued to this customer.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Invoice, $this>

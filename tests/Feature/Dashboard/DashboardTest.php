@@ -45,7 +45,7 @@ class DashboardTest extends TestCase
         );
     }
 
-    public function test_salesman_is_redirected_to_salesman_orders(): void
+    public function test_salesman_receives_salesman_overview_dashboard(): void
     {
         $salesman = User::factory()->create([
             'role' => UserRole::SALESMAN,
@@ -53,7 +53,31 @@ class DashboardTest extends TestCase
 
         $response = $this->actingAs($salesman)->get('/dashboard');
 
-        $response->assertRedirect(route('salesman.orders.index'));
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Salesman/Dashboard')
+            ->has('metrics')
+            ->has('metrics.assigned_customers_count')
+            ->has('metrics.draft_orders_count')
+            ->has('metrics.in_flight_orders_count')
+            ->has('metrics.completed_orders_count')
+            ->has('recentOrders')
+            ->has('assignedCustomers')
+            ->has('categories')
+        );
+    }
+
+    public function test_salesman_cannot_access_administrative_sales_reports(): void
+    {
+        $salesman = User::factory()->create([
+            'role' => UserRole::SALESMAN,
+        ]);
+
+        $response = $this->actingAs($salesman)->get('/admin/reports/sales');
+        $response->assertForbidden();
+
+        $responseHub = $this->actingAs($salesman)->get('/admin/reports');
+        $responseHub->assertForbidden();
     }
 
     public function test_delivery_partner_is_redirected_to_delivery_workspace(): void

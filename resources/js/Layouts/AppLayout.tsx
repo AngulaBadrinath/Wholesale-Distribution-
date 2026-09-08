@@ -102,7 +102,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
     const hasDeliveryView = auth?.user?.permissions?.includes('delivery.view') || ['SUPER_ADMIN', 'ADMIN', 'DELIVERY_PARTNER', 'WAREHOUSE_MANAGER'].includes(auth?.user?.role || '');
     const hasInvoiceView = auth?.user?.permissions?.includes('invoice.view') || ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'SALESMAN'].includes(auth?.user?.role || '');
     const invoiceUrl = auth?.user?.role === 'SALESMAN' ? '/salesman/invoices' : '/admin/invoices';
-    const hasReportingAccess = hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView || hasUserView;
+    const hasReportingAccess = (hasOrderView || hasCustomerView || hasInventoryView || hasDeliveryView || hasAccountingView || hasUserView) && !['SALESMAN', 'DELIVERY_PARTNER'].includes(auth?.user?.role || '');
     const hasAuditView = auth?.user?.permissions?.includes('audit.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
     const hasSecurityView = auth?.user?.permissions?.includes('audit.security.view') || ['SUPER_ADMIN', 'ADMIN'].includes(auth?.user?.role || '');
 
