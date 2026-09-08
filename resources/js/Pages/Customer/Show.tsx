@@ -860,7 +860,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                 </div>
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border border-border">
                                     <Layers className="h-3 w-3" />
-                                    Phase 05 — Order Management Integration Container
+                                    Order Management
                                 </span>
                             </CardContent>
                         </Card>
@@ -885,7 +885,7 @@ export default function CustomerShow({ customer, statuses, eligibleSalesmen = []
                                 </div>
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border border-border">
                                     <Layers className="h-3 w-3" />
-                                    Phase 07 — Payment Management Integration Container
+                                    Payment Management
                                 </span>
                             </CardContent>
                         </Card>

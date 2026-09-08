@@ -230,7 +230,7 @@ export default function OrderDetailHeader({
                             {order.approver
                                 ? `Approved by ${order.approver.name} on ${order.approved_at ? new Date(order.approved_at).toLocaleString() : 'N/A'}.`
                                 : 'Order is approved.'}{' '}
-                            Fulfillable quantities have established order-level reservation state. Physical stock picking is handled downstream in Phase 06.
+                            Fulfillable quantities have established order-level reservation state. Physical stock picking is handled downstream in Warehouse Operations.
                         </p>
                     </div>
                 </div>

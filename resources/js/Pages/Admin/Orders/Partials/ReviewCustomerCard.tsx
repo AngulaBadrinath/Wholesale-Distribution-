@@ -102,7 +102,7 @@ export default function ReviewCustomerCard({ customer, salesman }: ReviewCustome
                         </div>
                     </div>
                     <p className="text-[10px] text-muted-foreground/80 italic">
-                        * Note: Ledger receivables balances are deferred to Phase 10.
+                        * Note: Ledger receivables balances reflect posted invoices and verified payments.
                     </p>
                 </div>
 

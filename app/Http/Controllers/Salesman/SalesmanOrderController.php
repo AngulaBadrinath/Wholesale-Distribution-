@@ -590,7 +590,7 @@ class SalesmanOrderController extends Controller
 
         $verifiedPaymentsSum = (float) $order->payments->where('status', PaymentTransactionStatus::VERIFIED)->sum('amount');
         $pendingPaymentsSum = (float) $order->payments->where('status', PaymentTransactionStatus::PENDING_VERIFICATION)->sum('amount');
-        $outstandingBalance = max(0.0, (float) $order->grand_total - $verifiedPaymentsSum);
+        $outstandingBalance = max(0.0, (float) $order->grand_total - ($verifiedPaymentsSum + $pendingPaymentsSum));
 
         return Inertia::render('Salesman/Orders/Show', [
             'order' => [

@@ -17,16 +17,16 @@ export default function Welcome({ phpVersion, laravelVersion }: WelcomeProps) {
     const [clickCount, setClickCount] = useState(0);
 
     return (
-        <AppLayout title="Phase 00: Foundation & Core Infrastructure">
-            <Head title="Platform Foundation" />
+        <AppLayout title="Platform Overview & Infrastructure">
+            <Head title="Platform Overview" />
 
             <div className="space-y-6">
-                {/* Hero / Phase Status Card */}
+                {/* Hero / System Status Card */}
                 <div className="rounded-lg border border-border bg-card p-6 shadow-xs">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <Badge variant="success">Phase 00 Active</Badge>
+                                <Badge variant="success">System Operational</Badge>
                                 <Badge variant="outline">Infrastructure Ready</Badge>
                             </div>
                             <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">

@@ -89,7 +89,7 @@ class AdminOrderAdjustmentController extends Controller
                 'order.salesman:id,name',
                 'requester:id,name,email,role',
                 'items:id,adjustment_id,order_item_id,requested_quantity_reduction,affected_allocation_quantity',
-                'items.orderItem:id,ordered_quantity,cancelled_quantity,status',
+                'items.orderItem:id,ordered_quantity,cancelled_quantity',
                 'items.orderItem.allocations:id,order_item_id,status,allocated_quantity,picked_quantity',
             ]);
 

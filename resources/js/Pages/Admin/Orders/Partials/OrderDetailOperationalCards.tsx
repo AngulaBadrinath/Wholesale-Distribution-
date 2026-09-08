@@ -70,7 +70,7 @@ export default function OrderDetailOperationalCards({
                     <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/20 p-2 rounded border border-border/30">
                         <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                         <div>
-                            <span className="font-semibold text-foreground">Order-Level Reservation:</span> Quantities reflect authoritative order-line reservation. Physical stock picking and warehouse bin movement are scheduled for Phase 06.
+                            <span className="font-semibold text-foreground">Order-Level Reservation:</span> Quantities reflect authoritative order-line reservation. Physical stock picking and warehouse bin movements are managed in Warehouse Operations.
                         </div>
                     </div>
                 </CardContent>
@@ -110,7 +110,7 @@ export default function OrderDetailOperationalCards({
                     <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/20 p-2 rounded border border-border/30">
                         <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                         <div>
-                            <span className="font-semibold text-foreground">Payment Operations:</span> Cash collection, cheque deposits, money order evidence validation, and accountant ledger verification are scheduled for Phase 04.
+                            <span className="font-semibold text-foreground">Payment Operations:</span> Cash collection, cheque deposits, money order evidence validation, and accountant ledger verification are managed in Payments Workspace.
                         </div>
                     </div>
                 </CardContent>
@@ -148,7 +148,7 @@ export default function OrderDetailOperationalCards({
                     <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/20 p-2 rounded border border-border/30">
                         <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                         <div>
-                            <span className="font-semibold text-foreground">Logistics Workflow:</span> Driver assignment, vehicle dispatch routes, and proof-of-delivery capture are scheduled for Phase 08.
+                            <span className="font-semibold text-foreground">Logistics Workflow:</span> Driver assignment, vehicle dispatch routes, and proof-of-delivery capture are managed in Delivery Logistics.
                         </div>
                     </div>
                 </CardContent>

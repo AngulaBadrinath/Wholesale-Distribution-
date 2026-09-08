@@ -581,7 +581,7 @@ class AdminOrderController extends Controller
                     'grand_total' => (string) $order->grand_total,
                     'verified_payments_total' => number_format((float) $order->payments->where('status', \App\Enums\PaymentTransactionStatus::VERIFIED)->sum('amount'), 2, '.', ''),
                     'pending_payments_total' => number_format((float) $order->payments->where('status', \App\Enums\PaymentTransactionStatus::PENDING_VERIFICATION)->sum('amount'), 2, '.', ''),
-                    'outstanding_balance' => number_format(max(0.0, (float) $order->grand_total - (float) $order->payments->where('status', \App\Enums\PaymentTransactionStatus::VERIFIED)->sum('amount')), 2, '.', ''),
+                    'outstanding_balance' => number_format(max(0.0, (float) $order->grand_total - ((float) $order->payments->where('status', \App\Enums\PaymentTransactionStatus::VERIFIED)->sum('amount') + (float) $order->payments->where('status', \App\Enums\PaymentTransactionStatus::PENDING_VERIFICATION)->sum('amount'))), 2, '.', ''),
                 ],
                 'timeline' => $timeline,
                 'can' => [

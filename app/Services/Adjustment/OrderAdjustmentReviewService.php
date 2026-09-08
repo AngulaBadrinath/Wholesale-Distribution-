@@ -50,12 +50,8 @@ class OrderAdjustmentReviewService
             ? $adjustment->order_status_snapshot
             : ($adjustment->order_status_snapshot instanceof OrderStatus ? $adjustment->order_status_snapshot->value : '');
 
-        if ($orderStatusValue !== $snapshotStatusValue) {
-            $isStale = true;
-            $staleReasons[] = "Order status changed from {$snapshotStatusValue} to {$orderStatusValue}.";
-        }
-
         if (! in_array($order->status, $eligibleStatuses, true)) {
+            $isStale = true;
             $staleReasons[] = "Order has transitioned to {$orderStatusValue}, which is not an active adjustment lifecycle state.";
         }
 
@@ -83,11 +79,6 @@ class OrderAdjustmentReviewService
             $currentAffected = max(0, $requestedReduction - $currentUnallocated);
             $currentCase = $currentAffected > 0 ? 'CASE_B' : 'CASE_A';
             $caseChanged = ($snapshotCase !== $currentCase) || ($snapshotAffected !== $currentAffected);
-
-            if ($caseChanged) {
-                $isStale = true;
-                $staleReasons[] = "Item {$adjItem->sku_snapshot} allocation impact shifted from {$snapshotCase} ({$snapshotAffected} affected) to {$currentCase} ({$currentAffected} affected).";
-            }
 
             // Conflict detection: Requested reduction exceeds fulfillable quantity
             $isConflicted = false;
