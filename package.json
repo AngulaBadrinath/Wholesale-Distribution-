@@ -5,9 +5,14 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "browser:check": "node scripts/browser-check.js",
+        "browser:headed": "node scripts/browser-headed.js",
+        "browser:verify": "playwright test tests/browser/setup.spec.ts",
+        "browser:visual": "node scripts/browser-visual.js"
     },
     "devDependencies": {
+        "@playwright/test": "^1.63.0",
         "@tailwindcss/vite": "^4.0.0",
         "@types/node": "^26.4.1",
         "@types/react": "^19.2.18",
