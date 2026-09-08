@@ -23,6 +23,10 @@ import {
     ArrowLeft,
     ListFilter,
     SlidersHorizontal,
+    Banknote,
+    Clock,
+    DollarSign,
+    FileImage,
 } from 'lucide-react';
 
 interface OrderShowPageProps {
@@ -35,6 +39,16 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
     const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
     const totalUnits = order.items.reduce((sum, item) => sum + item.ordered_quantity, 0);
     const submittedDate = order.submitted_at ? new Date(order.submitted_at) : new Date(order.created_at);
+
+    const finSummary = order.financial_summary || {
+        subtotal: order.subtotal,
+        tax_total: order.tax_total,
+        adjustment_total: order.adjustment_total,
+        grand_total: order.grand_total,
+        verified_payments_total: '0.00',
+        pending_payments_total: '0.00',
+        outstanding_balance: order.grand_total,
+    };
 
     return (
         <AppLayout title={`Order ${order.order_number}`}>
@@ -311,6 +325,95 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
                     </CardContent>
                 </Card>
 
+                {/* Recorded Payments & Financial Settlements */}
+                {order.payments && order.payments.length > 0 && (
+                    <Card>
+                        <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Banknote className="h-5 w-5 text-primary" />
+                                <div>
+                                    <CardTitle className="text-base font-bold">Recorded Payment Collections</CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Payments recorded by salesman and queued for authorized administrative verification
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {order.payments.length} {order.payments.length === 1 ? 'payment' : 'payments'}
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="p-0 overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b bg-muted/40 font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
+                                    <tr>
+                                        <th scope="col" className="py-3 px-4">Payment #</th>
+                                        <th scope="col" className="py-3 px-3">Method</th>
+                                        <th scope="col" className="py-3 px-3">Instrument Details</th>
+                                        <th scope="col" className="py-3 px-3">Date</th>
+                                        <th scope="col" className="py-3 px-3">Recorded By</th>
+                                        <th scope="col" className="py-3 px-3 text-right">Amount</th>
+                                        <th scope="col" className="py-3 px-4 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {order.payments.map((pmt) => (
+                                        <tr key={pmt.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="py-3 px-4 font-mono font-bold text-foreground">
+                                                {pmt.payment_number}
+                                            </td>
+                                            <td className="py-3 px-3">
+                                                <Badge variant="outline" className="text-[10px]">
+                                                    {pmt.payment_method_label}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-3 text-muted-foreground text-[11px]">
+                                                {pmt.payment_method === 'CHEQUE' && (
+                                                    <div>
+                                                        <span className="font-mono font-medium text-foreground">{pmt.cheque_number}</span>
+                                                        <span className="block text-[10px]">{pmt.bank_name}</span>
+                                                    </div>
+                                                )}
+                                                {pmt.payment_method === 'MONEY_ORDER' && (
+                                                    <div>
+                                                        <span className="font-mono font-medium text-foreground">{pmt.money_order_number}</span>
+                                                        <span className="block text-[10px]">{pmt.issuer_name}</span>
+                                                    </div>
+                                                )}
+                                                {pmt.payment_method === 'CASH' && (
+                                                    <span>{pmt.receipt_reference || 'Cash on Order'}</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-3 font-mono text-muted-foreground">
+                                                {pmt.payment_date}
+                                            </td>
+                                            <td className="py-3 px-3 text-muted-foreground">
+                                                {pmt.recorded_by || 'Salesman'}
+                                            </td>
+                                            <td className="py-3 px-3 text-right font-mono font-bold text-foreground">
+                                                ${parseFloat(pmt.amount).toFixed(2)}
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-[10px] ${
+                                                        pmt.status === 'VERIFIED'
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                                            : pmt.status === 'PENDING_VERIFICATION'
+                                                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                                            : 'bg-destructive/10 text-destructive border-destructive/30'
+                                                    }`}
+                                                >
+                                                    {pmt.status_label}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Notes & Totals Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Notes */}
@@ -335,39 +438,68 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
                     {/* Financial Totals */}
                     <Card className="border-primary/30">
                         <CardHeader className="pb-3 border-b bg-muted/20">
-                            <CardTitle className="text-base font-bold">Financial Summary</CardTitle>
+                            <CardTitle className="text-base font-bold">Financial Settlement Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4 space-y-3">
                             <div className="flex justify-between text-sm text-muted-foreground">
                                 <span>Subtotal:</span>
                                 <span className="font-mono font-medium text-foreground">
-                                    ${parseFloat(order.subtotal).toFixed(2)}
+                                    ${parseFloat(finSummary.subtotal).toFixed(2)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm text-muted-foreground">
                                 <span>Tax Total:</span>
                                 <span className="font-mono font-medium text-foreground">
-                                    ${parseFloat(order.tax_total).toFixed(2)}
+                                    ${parseFloat(finSummary.tax_total).toFixed(2)}
                                 </span>
                             </div>
-                            {parseFloat(order.adjustment_total) !== 0 && (
+                            {parseFloat(finSummary.adjustment_total) !== 0 && (
                                 <div className="flex justify-between text-sm text-muted-foreground">
                                     <span>Adjustments:</span>
                                     <span className="font-mono font-medium text-foreground">
-                                        ${parseFloat(order.adjustment_total).toFixed(2)}
+                                        ${parseFloat(finSummary.adjustment_total).toFixed(2)}
                                     </span>
                                 </div>
                             )}
-                            <div className="pt-3 border-t flex justify-between items-baseline">
+                            <div className="pt-2.5 border-t flex justify-between items-baseline">
                                 <span className="text-base font-bold text-foreground">Grand Total:</span>
                                 <span className="text-2xl font-bold font-mono text-primary">
-                                    ${parseFloat(order.grand_total).toFixed(2)}
+                                    ${parseFloat(finSummary.grand_total).toFixed(2)}
                                 </span>
+                            </div>
+
+                            {/* Payment Settlement Breakdown */}
+                            <div className="pt-2.5 border-t border-dashed space-y-2 text-xs">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Verified Paid:</span>
+                                    <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                                        ${parseFloat(finSummary.verified_payments_total).toFixed(2)}
+                                    </span>
+                                </div>
+
+                                {parseFloat(finSummary.pending_payments_total) > 0 && (
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                            <span>Pending Verification:</span>
+                                            <Clock className="h-3 w-3 text-amber-500" />
+                                        </span>
+                                        <span className="font-mono font-medium text-amber-600 dark:text-amber-400">
+                                            ${parseFloat(finSummary.pending_payments_total).toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-baseline text-foreground pt-1.5 border-t">
+                                    <span className="font-bold text-sm">Remaining Outstanding:</span>
+                                    <span className="font-mono font-bold text-base">
+                                        ${parseFloat(finSummary.outstanding_balance).toFixed(2)}
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="pt-2 text-[11px] text-muted-foreground flex items-center gap-1">
                                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                                <span>Snapshot-backed immutable record</span>
+                                <span>Snapshot-backed immutable financial record</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -376,3 +508,4 @@ export default function OrderShow({ order, backUrl = '/salesman/orders', backLab
         </AppLayout>
     );
 }
+

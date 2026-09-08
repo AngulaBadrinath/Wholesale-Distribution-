@@ -7,7 +7,9 @@ use App\Enums\CustomerStatus;
 use App\Enums\DeliveryStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\PaymentTransactionStatus;
 use App\Enums\Permission;
 use App\Enums\ProductStatus;
 use App\Enums\UserRole;
@@ -19,8 +21,10 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Services\Auth\PermissionService;
 use App\Services\Order\OrderService;
+use App\Services\Payment\PaymentService;
 use App\Services\Product\ProductImageService;
 use App\Services\Product\ProductService;
 use Carbon\Carbon;
@@ -29,6 +33,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,6 +44,7 @@ class SalesmanOrderController extends Controller
         protected ProductService $productService,
         protected PermissionService $permissionService,
         protected ProductImageService $productImageService,
+        protected PaymentService $paymentService,
     ) {}
 
     /**
@@ -442,10 +448,16 @@ class SalesmanOrderController extends Controller
         $idempotencyKey = $request->input('idempotency_key');
 
         $submittedOrder = $this->orderService->submitDraft($actor, $order, $idempotencyKey, $request->ip());
+        $payment = $this->recordPaymentIfProvided($request, $submittedOrder, $actor);
+
+        $successMsg = "Order {$submittedOrder->order_number} has been submitted successfully.";
+        if ($payment) {
+            $successMsg .= " Payment {$payment->payment_number} ($" . number_format((float) $payment->amount, 2) . ") recorded and queued for verification.";
+        }
 
         return redirect()
             ->route('salesman.orders.show', $submittedOrder->id)
-            ->with('success', "Order {$submittedOrder->order_number} has been submitted successfully.");
+            ->with('success', $successMsg);
     }
 
     /**
@@ -470,10 +482,84 @@ class SalesmanOrderController extends Controller
         $dto = $request->toDTO();
 
         $order = $this->orderService->createOrder($actor, $dto, $request->ip());
+        $payment = $this->recordPaymentIfProvided($request, $order, $actor);
+
+        $successMsg = "Order {$order->order_number} has been placed successfully.";
+        if ($payment) {
+            $successMsg .= " Payment {$payment->payment_number} ($" . number_format((float) $payment->amount, 2) . ") recorded and queued for verification.";
+        }
 
         return redirect()
             ->route('salesman.orders.show', $order->id)
-            ->with('success', "Order {$order->order_number} has been placed successfully.");
+            ->with('success', $successMsg);
+    }
+
+    /**
+     * Helper to record payment if present in order placement or submission request.
+     */
+    protected function recordPaymentIfProvided(Request|CreateOrderRequest $request, Order $order, \App\Models\User $actor): ?Payment
+    {
+        $payload = $request instanceof CreateOrderRequest
+            ? $request->getPaymentPayload()
+            : $this->extractPaymentPayloadFromRequest($request);
+
+        if (! $payload) {
+            return null;
+        }
+
+        $paymentData = array_merge($payload, [
+            'customer_id' => $order->customer_id,
+            'order_id' => $order->id,
+        ]);
+
+        // Authoritative financial validation against actual order grand total
+        if ((float) $paymentData['amount'] > (float) $order->grand_total) {
+            throw ValidationException::withMessages([
+                'payment_amount' => 'Payment amount ($' . number_format((float) $paymentData['amount'], 2) . ') cannot exceed the order grand total ($' . number_format((float) $order->grand_total, 2) . ').',
+            ]);
+        }
+
+        $evidenceFile = $request->file('payment_evidence') ?? $request->file('evidence') ?? $request->file('payment.evidence');
+
+        $method = PaymentMethod::tryFrom($paymentData['method']);
+        if (! $method) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Invalid payment method selected.',
+            ]);
+        }
+
+        return match ($method) {
+            PaymentMethod::CASH => $this->paymentService->recordCashPayment($paymentData, $actor),
+            PaymentMethod::CHEQUE => $this->paymentService->recordChequePayment($paymentData, $evidenceFile, $actor),
+            PaymentMethod::MONEY_ORDER => $this->paymentService->recordMoneyOrderPayment($paymentData, $evidenceFile, $actor),
+        };
+    }
+
+    /**
+     * Extract payment payload from general request.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function extractPaymentPayloadFromRequest(Request $request): ?array
+    {
+        $method = $request->input('payment_method') ?? $request->input('payment.method');
+
+        if (! $method) {
+            return null;
+        }
+
+        return [
+            'method' => strtoupper($method),
+            'amount' => (float) ($request->input('payment_amount') ?? $request->input('payment.amount') ?? 0),
+            'payment_date' => $request->input('payment_date') ?? $request->input('payment.payment_date') ?? now()->toDateString(),
+            'bank_name' => $request->input('bank_name') ?? $request->input('payment.bank_name'),
+            'cheque_number' => $request->input('cheque_number') ?? $request->input('payment.cheque_number'),
+            'cheque_date' => $request->input('cheque_date') ?? $request->input('payment.cheque_date'),
+            'issuer_name' => $request->input('issuer_name') ?? $request->input('payment.issuer_name'),
+            'money_order_number' => $request->input('money_order_number') ?? $request->input('payment.money_order_number'),
+            'receipt_reference' => $request->input('receipt_reference') ?? $request->input('payment.receipt_reference'),
+            'notes' => $request->input('payment_notes') ?? $request->input('payment.notes'),
+        ];
     }
 
     /**
@@ -498,7 +584,13 @@ class SalesmanOrderController extends Controller
             'activeAdjustment.items' => fn ($q) => $q->orderBy('id', 'asc'),
             'items' => fn ($q) => $q->orderBy('id', 'asc'),
             'items.allocations' => fn ($q) => $q->orderBy('id', 'asc'),
+            'payments.recordedBy:id,name',
+            'payments.verifiedBy:id,name',
         ]);
+
+        $verifiedPaymentsSum = (float) $order->payments->where('status', PaymentTransactionStatus::VERIFIED)->sum('amount');
+        $pendingPaymentsSum = (float) $order->payments->where('status', PaymentTransactionStatus::PENDING_VERIFICATION)->sum('amount');
+        $outstandingBalance = max(0.0, (float) $order->grand_total - $verifiedPaymentsSum);
 
         return Inertia::render('Salesman/Orders/Show', [
             'order' => [
@@ -583,6 +675,39 @@ class SalesmanOrderController extends Controller
                     'tax_amount' => (string) $item->tax_amount,
                     'line_total' => (string) $item->line_total,
                 ]),
+                'payments' => $order->payments->map(fn (Payment $p) => [
+                    'id' => $p->id,
+                    'payment_number' => $p->payment_number,
+                    'payment_method' => $p->payment_method->value,
+                    'payment_method_label' => $p->payment_method->label(),
+                    'status' => $p->status->value,
+                    'status_label' => $p->status->label(),
+                    'status_badge_variant' => $p->status->badgeVariant(),
+                    'amount' => (string) $p->amount,
+                    'payment_date' => $p->payment_date?->toDateString() ?: (string) $p->payment_date,
+                    'bank_name' => $p->bank_name,
+                    'cheque_number' => $p->cheque_number,
+                    'cheque_date' => $p->cheque_date?->toDateString() ?: (string) $p->cheque_date,
+                    'issuer_name' => $p->issuer_name,
+                    'money_order_number' => $p->money_order_number,
+                    'receipt_reference' => $p->receipt_reference,
+                    'notes' => $p->notes,
+                    'has_evidence' => ! empty($p->evidence_object_key),
+                    'evidence_original_name' => $p->evidence_original_name,
+                    'evidence_mime_type' => $p->evidence_mime_type,
+                    'recorded_by' => $p->recordedBy?->name,
+                    'verified_by' => $p->verifiedBy?->name,
+                    'created_at' => $p->created_at->toIso8601String(),
+                ]),
+                'financial_summary' => [
+                    'subtotal' => (string) $order->subtotal,
+                    'tax_total' => (string) $order->tax_total,
+                    'adjustment_total' => (string) $order->adjustment_total,
+                    'grand_total' => (string) $order->grand_total,
+                    'verified_payments_total' => number_format($verifiedPaymentsSum, 2, '.', ''),
+                    'pending_payments_total' => number_format($pendingPaymentsSum, 2, '.', ''),
+                    'outstanding_balance' => number_format($outstandingBalance, 2, '.', ''),
+                ],
                 'active_adjustment' => $order->hasActiveAdjustment() && $order->activeAdjustment ? [
                     'id' => $order->activeAdjustment->id,
                     'adjustment_number' => $order->activeAdjustment->adjustment_number,
@@ -724,16 +849,29 @@ class SalesmanOrderController extends Controller
             // 5. Payment Status
             $isPaid = in_array($order->payment_status, [PaymentStatus::PAID, PaymentStatus::OVERPAID], true);
             $isPartialPaid = $order->payment_status === PaymentStatus::PARTIALLY_PAID;
+            $hasPendingPayment = $order->payments->contains(fn ($p) => $p->status === PaymentTransactionStatus::PENDING_VERIFICATION);
+
+            $paymentDescription = $hasPendingPayment && ! $isPaid
+                ? 'Payment recorded during order placement is awaiting verification.'
+                : "Current payment state: {$order->payment_status?->label()}";
+
+            $paymentBadgeLabel = $hasPendingPayment && ! $isPaid
+                ? 'Pending Verification'
+                : $order->payment_status?->label();
+
+            $paymentBadgeVariant = $hasPendingPayment && ! $isPaid
+                ? 'warning'
+                : $order->payment_status?->badgeVariant();
 
             $timeline[] = [
                 'id' => 'payment',
                 'title' => 'Payment Settlement',
-                'description' => "Current payment state: {$order->payment_status?->label()}",
+                'description' => $paymentDescription,
                 'timestamp' => null,
                 'actor_name' => null,
-                'status' => $isPaid ? 'completed' : ($isPartialPaid ? 'current' : 'pending'),
-                'badge_label' => $order->payment_status?->label(),
-                'badge_variant' => $order->payment_status?->badgeVariant(),
+                'status' => $isPaid ? 'completed' : (($isPartialPaid || $hasPendingPayment) ? 'current' : 'pending'),
+                'badge_label' => $paymentBadgeLabel,
+                'badge_variant' => $paymentBadgeVariant,
                 'icon' => 'payment',
             ];
 

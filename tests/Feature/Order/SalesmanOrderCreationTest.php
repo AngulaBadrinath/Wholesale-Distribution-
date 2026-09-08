@@ -8,7 +8,9 @@ use App\Enums\CustomerStatus;
 use App\Enums\DeliveryStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\PaymentTransactionStatus;
 use App\Enums\ProductStatus;
 use App\Enums\TaxProfileStatus;
 use App\Enums\UserRole;
@@ -16,10 +18,13 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\TaxProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -833,4 +838,165 @@ class SalesmanOrderCreationTest extends TestCase
 
         $this->assertTrue(in_array($response->status(), [403, 404], true));
     }
+
+    public function test_salesman_can_record_cash_payment_during_order_placement(): void
+    {
+        $payload = [
+            'customer_id' => $this->activeCustomer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'notes' => 'Payment collected on delivery',
+            'items' => [
+                [
+                    'product_id' => $this->standardProduct->id,
+                    'quantity' => 2,
+                    'unit_price' => '15.00',
+                ],
+            ],
+            'payment_method' => 'CASH',
+            'payment_amount' => '32.48',
+            'payment_date' => now()->toDateString(),
+            'receipt_reference' => 'RCP-12345',
+            'payment_notes' => 'Cash received from store manager',
+        ];
+
+        $response = $this->actingAs($this->salesman)
+            ->post('/salesman/orders', $payload);
+
+        $response->assertRedirect();
+
+        $order = Order::where('customer_id', $this->activeCustomer->id)->latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(OrderStatus::SUBMITTED, $order->status);
+
+        // Verify payment is created and linked
+        $payment = Payment::where('order_id', $order->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals(PaymentMethod::CASH, $payment->payment_method);
+        $this->assertEquals(PaymentTransactionStatus::PENDING_VERIFICATION, $payment->status);
+        $this->assertEquals('32.48', (string) $payment->amount);
+        $this->assertEquals($this->salesman->id, $payment->recorded_by);
+        $this->assertEquals('RCP-12345', $payment->receipt_reference);
+
+        // Verify order show view loads payment and financial summary
+        $showResponse = $this->actingAs($this->salesman)
+            ->get("/salesman/orders/{$order->id}");
+
+        $showResponse->assertOk();
+        $showResponse->assertInertia(fn (Assert $page) => $page
+            ->component('Salesman/Orders/Show')
+            ->where('order.id', $order->id)
+            ->has('order.payments', 1)
+            ->where('order.payments.0.payment_number', $payment->payment_number)
+            ->where('order.payments.0.status', 'PENDING_VERIFICATION')
+            ->where('order.financial_summary.pending_payments_total', '32.48')
+        );
+    }
+
+    public function test_salesman_can_record_cheque_payment_with_jpeg_evidence(): void
+    {
+        Storage::fake('private');
+
+        $evidenceFile = UploadedFile::fake()->image('cheque.jpg', 600, 300);
+
+        $payload = [
+            'customer_id' => $this->activeCustomer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'notes' => 'Cheque collection',
+            'items' => [
+                [
+                    'product_id' => $this->standardProduct->id,
+                    'quantity' => 4,
+                    'unit_price' => '15.00',
+                ],
+            ],
+            'payment_method' => 'CHEQUE',
+            'payment_amount' => '64.95',
+            'payment_date' => now()->toDateString(),
+            'cheque_number' => 'CHQ-998877',
+            'bank_name' => 'First National Bank',
+            'cheque_date' => now()->toDateString(),
+            'payment_evidence' => $evidenceFile,
+        ];
+
+        $response = $this->actingAs($this->salesman)
+            ->post('/salesman/orders', $payload);
+
+        $response->assertRedirect();
+
+        $order = Order::where('customer_id', $this->activeCustomer->id)->latest('id')->first();
+        $this->assertNotNull($order);
+
+        $payment = Payment::where('order_id', $order->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals(PaymentMethod::CHEQUE, $payment->payment_method);
+        $this->assertEquals(PaymentTransactionStatus::PENDING_VERIFICATION, $payment->status);
+        $this->assertEquals('CHQ-998877', $payment->cheque_number);
+        $this->assertEquals('First National Bank', $payment->bank_name);
+        $this->assertNotEmpty($payment->evidence_object_key);
+    }
+
+    public function test_salesman_cannot_record_payment_exceeding_order_grand_total(): void
+    {
+        $payload = [
+            'customer_id' => $this->activeCustomer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [
+                [
+                    'product_id' => $this->standardProduct->id,
+                    'quantity' => 1,
+                    'unit_price' => '15.00',
+                ],
+            ],
+            'payment_method' => 'CASH',
+            'payment_amount' => '999.00', // Exceeds ~16.24 grand total
+            'payment_date' => now()->toDateString(),
+        ];
+
+        $response = $this->actingAs($this->salesman)
+            ->post('/salesman/orders', $payload);
+
+        $response->assertSessionHasErrors(['payment_amount']);
+    }
+
+    public function test_admin_can_verify_salesman_payment_and_maker_checker_is_enforced(): void
+    {
+        $payload = [
+            'customer_id' => $this->activeCustomer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [
+                [
+                    'product_id' => $this->standardProduct->id,
+                    'quantity' => 2,
+                    'unit_price' => '15.00',
+                ],
+            ],
+            'payment_method' => 'CASH',
+            'payment_amount' => '32.48',
+            'payment_date' => now()->toDateString(),
+        ];
+
+        $this->actingAs($this->salesman)->post('/salesman/orders', $payload);
+
+        $order = Order::where('customer_id', $this->activeCustomer->id)->latest('id')->first();
+        $payment = Payment::where('order_id', $order->id)->first();
+
+        // 1. Maker-Checker: Salesman who recorded payment CANNOT verify it
+        $salesmanVerifyResponse = $this->actingAs($this->salesman)
+            ->post("/admin/payments/{$payment->id}/verify");
+        $this->assertTrue(in_array($salesmanVerifyResponse->status(), [403, 404], true));
+
+        // 2. Admin CAN verify the payment in the Admin Payments workspace
+        $adminVerifyResponse = $this->actingAs($this->admin)
+            ->post("/admin/payments/{$payment->id}/verify");
+        $adminVerifyResponse->assertRedirect();
+
+        $payment->refresh();
+        $order->refresh();
+
+        $this->assertEquals(PaymentTransactionStatus::VERIFIED, $payment->status);
+        $this->assertEquals($this->admin->id, $payment->verified_by);
+        $this->assertEquals(PaymentStatus::PAID, $order->payment_status);
+    }
 }
+
+

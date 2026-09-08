@@ -6,7 +6,7 @@ import SalesmanLayout from '@/Layouts/SalesmanLayout';
 import { CustomerSummary, CatalogProduct, CartLineItem, InitialDraftData } from '@/types/order';
 import { CustomerSelectStep } from '@/Components/Salesman/CustomerSelectStep';
 import { ProductCatalogStep } from '@/Components/Salesman/ProductCatalogStep';
-import { OrderReviewStep } from '@/Components/Salesman/OrderReviewStep';
+import { OrderReviewStep, PaymentCollectionState } from '@/Components/Salesman/OrderReviewStep';
 import { CartDrawer } from '@/Components/Salesman/CartDrawer';
 import { DiscardDraftModal } from '@/Components/Salesman/DiscardDraftModal';
 import { Button } from '@/Components/ui/button';
@@ -63,6 +63,22 @@ export default function CreateOrder({
     const [activeDraftId, setActiveDraftId] = useState<number | null>(initialDraft?.id || null);
     const [draftVersion, setDraftVersion] = useState<number>(initialDraft?.version || 1);
     const [draftToken, setDraftToken] = useState<string | null>(initialDraft?.draft_token || null);
+
+    // Salesman Payment Collection State
+    const [paymentForm, setPaymentForm] = useState<PaymentCollectionState>({
+        recordPayment: false,
+        paymentMethod: 'CASH',
+        paymentAmount: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        bankName: '',
+        chequeNumber: '',
+        chequeDate: new Date().toISOString().split('T')[0],
+        issuerName: '',
+        moneyOrderNumber: '',
+        receiptReference: '',
+        paymentNotes: '',
+        evidenceFile: null,
+    });
 
     const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -312,15 +328,77 @@ export default function CreateOrder({
             return;
         }
 
+        // Validate payment if enabled
+        if (paymentForm.recordPayment) {
+            const amount = parseFloat(paymentForm.paymentAmount);
+            if (!amount || isNaN(amount) || amount <= 0) {
+                setErrorMessage('Please specify a valid payment amount greater than zero.');
+                return;
+            }
+
+            if (paymentForm.paymentMethod === 'CHEQUE') {
+                if (!paymentForm.chequeNumber.trim()) {
+                    setErrorMessage('Cheque number is required for cheque payments.');
+                    return;
+                }
+                if (!paymentForm.bankName.trim()) {
+                    setErrorMessage('Bank name is required for cheque payments.');
+                    return;
+                }
+                if (!paymentForm.chequeDate) {
+                    setErrorMessage('Cheque date is required for cheque payments.');
+                    return;
+                }
+                if (!paymentForm.evidenceFile) {
+                    setErrorMessage('Visual JPEG evidence photo/scan is mandatory for cheque payment.');
+                    return;
+                }
+            }
+
+            if (paymentForm.paymentMethod === 'MONEY_ORDER') {
+                if (!paymentForm.moneyOrderNumber.trim()) {
+                    setErrorMessage('Money order number is required for money order payments.');
+                    return;
+                }
+                if (!paymentForm.issuerName.trim()) {
+                    setErrorMessage('Issuer name is required for money order payments.');
+                    return;
+                }
+                if (!paymentForm.evidenceFile) {
+                    setErrorMessage('Visual JPEG evidence photo/scan is mandatory for money order payment.');
+                    return;
+                }
+            }
+        }
+
         setIsSubmitting(true);
         setErrorMessage(null);
         setConflictError(null);
 
+        const paymentPayload = paymentForm.recordPayment ? {
+            payment_method: paymentForm.paymentMethod,
+            payment_amount: paymentForm.paymentAmount,
+            payment_date: paymentForm.paymentDate,
+            bank_name: paymentForm.bankName || null,
+            cheque_number: paymentForm.chequeNumber || null,
+            cheque_date: paymentForm.chequeDate || null,
+            issuer_name: paymentForm.issuerName || null,
+            money_order_number: paymentForm.moneyOrderNumber || null,
+            receipt_reference: paymentForm.receiptReference || null,
+            payment_notes: paymentForm.paymentNotes || null,
+            payment_evidence: paymentForm.evidenceFile || null,
+        } : {};
+
         // If draft exists, submit draft; otherwise direct order submission
         if (activeDraftId) {
+            const payload = {
+                idempotency_key: idempotencyKey,
+                ...paymentPayload,
+            };
+
             router.post(
                 `/salesman/orders/drafts/${activeDraftId}/submit`,
-                { idempotency_key: idempotencyKey },
+                payload,
                 {
                     onSuccess: () => {
                         try {
@@ -349,6 +427,7 @@ export default function CreateOrder({
                     quantity: item.quantity,
                     unit_price: item.unit_price,
                 })),
+                ...paymentPayload,
             };
 
             router.post('/salesman/orders', payload, {
@@ -617,6 +696,8 @@ export default function CreateOrder({
                         onSubmitOrder={handleSubmitOrder}
                         isSubmitting={isSubmitting}
                         errorMessage={errorMessage}
+                        paymentForm={paymentForm}
+                        onPaymentFormChange={setPaymentForm}
                     />
                 )}
             </div>

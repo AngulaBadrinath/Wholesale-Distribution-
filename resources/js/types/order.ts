@@ -190,11 +190,48 @@ export interface OrderDetail {
         email: string;
     };
     items: OrderItemDetail[];
+    payments?: OrderPaymentDetail[];
+    financial_summary?: OrderFinancialSummary;
     timeline?: OrderTimelineEvent[];
     active_adjustment?: ActiveAdjustmentData | null;
     can?: {
         request_adjustment?: boolean;
     };
+}
+
+export interface OrderPaymentDetail {
+    id: number;
+    payment_number: string;
+    payment_method: 'CASH' | 'CHEQUE' | 'MONEY_ORDER';
+    payment_method_label: string;
+    status: string;
+    status_label: string;
+    status_badge_variant: string;
+    amount: string;
+    payment_date: string;
+    bank_name?: string | null;
+    cheque_number?: string | null;
+    cheque_date?: string | null;
+    issuer_name?: string | null;
+    money_order_number?: string | null;
+    receipt_reference?: string | null;
+    notes?: string | null;
+    has_evidence: boolean;
+    evidence_original_name?: string | null;
+    evidence_mime_type?: string | null;
+    recorded_by?: string | null;
+    verified_by?: string | null;
+    created_at: string;
+}
+
+export interface OrderFinancialSummary {
+    subtotal: string;
+    tax_total: string;
+    adjustment_total: string;
+    grand_total: string;
+    verified_payments_total: string;
+    pending_payments_total: string;
+    outstanding_balance: string;
 }
 
 export interface OrderHistoryItem {
