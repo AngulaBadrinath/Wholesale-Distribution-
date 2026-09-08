@@ -417,6 +417,9 @@ export interface OrderFinancialPreview {
     taxTotal: string;
     adjustmentTotal: string;
     grandTotal: string;
+    numericSubtotal: number;
+    numericTaxTotal: number;
+    numericGrandTotal: number;
 }
 
 export interface ReviewWarning {

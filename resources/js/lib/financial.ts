@@ -33,7 +33,11 @@ export interface OrderFinancialPreview {
     taxTotal: string;
     adjustmentTotal: string;
     grandTotal: string;
+    numericSubtotal: number;
+    numericTaxTotal: number;
+    numericGrandTotal: number;
 }
+
 
 /**
  * Format a numeric or string monetary value to standard USD currency string ($X,XXX.XX).
@@ -164,5 +168,8 @@ export function calculateOrderPreview(cart: CartLineItem[]): OrderFinancialPrevi
         taxTotal: (taxTotalCents / 100).toFixed(2),
         adjustmentTotal: '0.00',
         grandTotal: (grandTotalCents / 100).toFixed(2),
+        numericSubtotal: subtotalCents / 100,
+        numericTaxTotal: taxTotalCents / 100,
+        numericGrandTotal: grandTotalCents / 100,
     };
 }

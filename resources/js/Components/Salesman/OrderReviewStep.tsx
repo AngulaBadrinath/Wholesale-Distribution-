@@ -76,10 +76,13 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
     // Non-authoritative client preview calculation (ROUND_HALF_UP parity helper)
     const calculation = useMemo(() => calculateOrderPreview(cart), [cart]);
 
-    // Financial balance preview
+    // Financial balance preview - safely parsed numeric values
+    const parsedGrandTotal = typeof calculation.numericGrandTotal === 'number'
+        ? calculation.numericGrandTotal
+        : (parseFloat(calculation.grandTotal) || 0);
     const parsedPaymentAmount = parseFloat(paymentForm.paymentAmount) || 0;
-    const remainingOutstanding = Math.max(0, calculation.grandTotal - (paymentForm.recordPayment ? parsedPaymentAmount : 0));
-    const isOverpaying = paymentForm.recordPayment && parsedPaymentAmount > calculation.grandTotal;
+    const remainingOutstanding = Math.max(0, parsedGrandTotal - (paymentForm.recordPayment ? parsedPaymentAmount : 0));
+    const isOverpaying = paymentForm.recordPayment && parsedPaymentAmount > parsedGrandTotal;
 
     const handleEvidenceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -111,7 +114,7 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
     const handleSetFullPayment = () => {
         onPaymentFormChange((prev) => ({
             ...prev,
-            paymentAmount: calculation.grandTotal.toFixed(2),
+            paymentAmount: parsedGrandTotal > 0 ? parsedGrandTotal.toFixed(2) : (calculation.grandTotal || '0.00'),
         }));
     };
 
@@ -324,7 +327,9 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
                                             onPaymentFormChange((prev) => ({
                                                 ...prev,
                                                 recordPayment: checked,
-                                                paymentAmount: checked && !prev.paymentAmount ? calculation.grandTotal.toFixed(2) : prev.paymentAmount,
+                                                paymentAmount: checked && !prev.paymentAmount
+                                                    ? (parsedGrandTotal > 0 ? parsedGrandTotal.toFixed(2) : (calculation.grandTotal || ''))
+                                                    : prev.paymentAmount,
                                             }));
                                         }}
                                         disabled={isSubmitting}
@@ -404,7 +409,7 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
                                                 type="number"
                                                 step="0.01"
                                                 min="0.01"
-                                                max={calculation.grandTotal || 999999999}
+                                                max={parsedGrandTotal > 0 ? parsedGrandTotal : 999999999}
                                                 placeholder="0.00"
                                                 value={paymentForm.paymentAmount}
                                                 onChange={(e) => onPaymentFormChange((prev) => ({ ...prev, paymentAmount: e.target.value }))}
@@ -614,7 +619,7 @@ export const OrderReviewStep: React.FC<OrderReviewStepProps> = ({
                                     onClick={() => onPaymentFormChange((prev) => ({
                                         ...prev,
                                         recordPayment: true,
-                                        paymentAmount: calculation.grandTotal.toFixed(2),
+                                        paymentAmount: parsedGrandTotal > 0 ? parsedGrandTotal.toFixed(2) : (calculation.grandTotal || '0.00'),
                                     }))}
                                     className="text-xs h-7"
                                 >
