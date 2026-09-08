@@ -93,6 +93,8 @@ interface Props {
     customer: CustomerInfo;
     aging: AgingData;
     receivable_balance: string;
+    pending_payments?: string;
+    operational_outstanding?: string;
     available_credit: string;
     transactions: PaginatedTransactions;
     filters: {
@@ -104,11 +106,15 @@ export default function ReceivablesShow({
     customer,
     aging,
     receivable_balance,
+    pending_payments = '0.00',
+    operational_outstanding,
     available_credit,
     transactions,
     filters,
 }: Props) {
     const [referenceDate, setReferenceDate] = useState(filters.reference_date || aging.reference_date);
+    const effectiveOperationalOutstanding = operational_outstanding ?? aging.operational_outstanding ?? receivable_balance;
+    const effectivePendingPayments = pending_payments ?? aging.pending_payments ?? '0.00';
 
     const handleDateChange = (newDate: string) => {
         setReferenceDate(newDate);
@@ -208,8 +214,8 @@ export default function ReceivablesShow({
                 </div>
 
                 {/* Balances & Aging Summary */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-2 border-primary/30">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1 border-primary/30">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Receivable</span>
                             <DollarSign className="h-4 w-4 text-primary" />
@@ -217,10 +223,34 @@ export default function ReceivablesShow({
                         <p className="text-2xl font-bold text-foreground">
                             {formatCurrency(receivable_balance)}
                         </p>
-                        <span className="text-xs text-muted-foreground">Current total customer debt</span>
+                        <span className="text-xs text-muted-foreground">Verified customer debt</span>
                     </div>
 
-                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1 col-span-2 sm:col-span-2 lg:col-span-2 bg-muted/20">
+                    {parseFloat(effectivePendingPayments) > 0 && (
+                        <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1 border-amber-500/30 bg-amber-500/5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending</span>
+                                <Clock className="h-4 w-4 text-amber-500" />
+                            </div>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                {formatCurrency(effectivePendingPayments)}
+                            </p>
+                            <span className="text-xs text-muted-foreground">Awaiting verification</span>
+                        </div>
+                    )}
+
+                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Operational Due</span>
+                            <Receipt className="h-4 w-4 text-foreground" />
+                        </div>
+                        <p className="text-2xl font-bold text-foreground">
+                            {formatCurrency(effectiveOperationalOutstanding)}
+                        </p>
+                        <span className="text-xs text-muted-foreground">After pending payments</span>
+                    </div>
+
+                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1 bg-muted/20">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Available Credit</span>
                             <CreditCard className="h-4 w-4 text-indigo-500" />
@@ -228,7 +258,7 @@ export default function ReceivablesShow({
                         <p className="text-2xl font-bold text-foreground">
                             {formatCurrency(available_credit)}
                         </p>
-                        <span className="text-xs text-muted-foreground">Refundable / unapplied credits</span>
+                        <span className="text-xs text-muted-foreground">Refundable credits</span>
                     </div>
 
                     <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1">
@@ -239,31 +269,20 @@ export default function ReceivablesShow({
                         <p className="text-lg font-bold text-foreground">
                             {formatCurrency(aging.current)}
                         </p>
-                        <span className="text-xs text-muted-foreground">0 days</span>
+                        <span className="text-xs text-muted-foreground">0 days / not due</span>
                     </div>
 
                     <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">1–30 Days</span>
-                            <Clock className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <p className="text-lg font-bold text-foreground">
-                            {formatCurrency(aging.days_1_30)}
-                        </p>
-                        <span className="text-xs text-muted-foreground">Past due</span>
-                    </div>
-
-                    <div className="bg-card border rounded-lg p-4 shadow-sm space-y-1">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">31+ Days</span>
+                            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Overdue</span>
                             <AlertTriangle className="h-4 w-4 text-rose-500" />
                         </div>
                         <p className="text-lg font-bold text-foreground">
                             {formatCurrency(
-                                (parseFloat(aging.days_31_60) + parseFloat(aging.days_61_90) + parseFloat(aging.days_91_plus)).toFixed(2)
+                                (parseFloat(aging.days_1_30) + parseFloat(aging.days_31_60) + parseFloat(aging.days_61_90) + parseFloat(aging.days_91_plus)).toFixed(2)
                             )}
                         </p>
-                        <span className="text-xs text-muted-foreground">Overdue total</span>
+                        <span className="text-xs text-muted-foreground">Past due sum</span>
                     </div>
                 </div>
 

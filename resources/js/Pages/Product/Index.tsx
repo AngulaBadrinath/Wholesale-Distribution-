@@ -136,7 +136,7 @@ export default function ProductIndex({
                     <div>
                         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">
                             <Package className="h-3.5 w-3.5 text-primary" />
-                            <span>Master Data / Epic 06</span>
+                            <span>Master Data Catalog</span>
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
                             Product Master Catalog

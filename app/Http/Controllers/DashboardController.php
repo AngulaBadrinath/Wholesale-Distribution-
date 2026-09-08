@@ -95,13 +95,15 @@ class DashboardController extends Controller
             ->limit(8)
             ->get()
             ->map(function (Order $order) {
+                $statusVal = $order->status instanceof OrderStatus ? $order->status->value : (string) ($order->status ?? 'UNKNOWN');
+
                 return [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
                     'customer_name' => $order->customer?->name ?? 'Unknown Customer',
                     'salesman_name' => $order->salesman?->name ?? 'Direct / Admin',
-                    'status' => $order->status->value,
-                    'grand_total' => $order->grand_total,
+                    'status' => $statusVal,
+                    'grand_total' => (string) ($order->grand_total ?? '0.00'),
                     'created_at' => $order->created_at?->toIso8601String(),
                 ];
             });

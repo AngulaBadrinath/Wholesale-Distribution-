@@ -6,11 +6,13 @@ namespace App\Services\Receivable;
 
 use App\Enums\CreditNoteStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\OrderStatus;
 use App\Enums\PaymentTransactionStatus;
 use App\Enums\ReceivableTransactionType;
 use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Order;
 use App\Models\Payment;
 use App\Models\ReceivableTransaction;
 use App\Models\User;
@@ -276,20 +278,103 @@ class ReceivableLedgerService
     }
 
     /**
+     * Authoritative financial summary derived from active business transactions
+     * (Invoices, Un-invoiced Orders, Verified Payments, Pending Payments, Credit Notes).
+     *
+     * @return array{
+     *     total_debits: string,
+     *     verified_credits: string,
+     *     pending_payments: string,
+     *     net_receivable: string,
+     *     operational_outstanding: string,
+     *     credit_limit: string,
+     *     available_credit: string
+     * }
+     */
+    public function getCustomerFinancialSummary(Customer|int $customer): array
+    {
+        $customerModel = $customer instanceof Customer ? $customer : Customer::findOrFail($customer);
+        $customerId = $customerModel->id;
+
+        // 1. Invoices (debited)
+        $invoiceDebits = Invoice::where('customer_id', $customerId)
+            ->whereNotIn('status', [InvoiceStatus::VOID->value])
+            ->sum('grand_total');
+
+        // 2. Active Orders without invoices (debited)
+        $uninvoicedOrderDebits = Order::where('customer_id', $customerId)
+            ->whereIn('status', [
+                OrderStatus::APPROVED->value,
+                OrderStatus::PROCESSING->value,
+                OrderStatus::COMPLETED->value,
+            ])
+            ->whereDoesntHave('invoices')
+            ->sum('grand_total');
+
+        $totalDebits = bcadd((string) $invoiceDebits, (string) $uninvoicedOrderDebits, 2);
+
+        // 3. Verified Payments (credited)
+        $verifiedPayments = Payment::where('customer_id', $customerId)
+            ->where('status', PaymentTransactionStatus::VERIFIED->value)
+            ->sum('amount');
+
+        // 4. Issued Credit Notes (credited)
+        $creditNotes = CreditNote::where('customer_id', $customerId)
+            ->whereIn('status', [
+                CreditNoteStatus::ISSUED->value,
+                CreditNoteStatus::APPLIED->value,
+                CreditNoteStatus::PARTIALLY_REFUNDED->value,
+            ])
+            ->sum('total_amount');
+
+        $totalVerifiedCredits = bcadd((string) $verifiedPayments, (string) $creditNotes, 2);
+
+        // 5. Pending Payments (operational credit offset)
+        $pendingPayments = Payment::where('customer_id', $customerId)
+            ->where('status', PaymentTransactionStatus::PENDING_VERIFICATION->value)
+            ->sum('amount');
+
+        // Verified Accounting AR = max(0, Debits - Verified Credits)
+        $netVerifiedReceivable = bcsub($totalDebits, $totalVerifiedCredits, 2);
+        if (bccomp($netVerifiedReceivable, '0.00', 2) < 0) {
+            $netVerifiedReceivable = '0.00';
+        }
+
+        // Operational Outstanding = max(0, Verified AR - Pending Payments)
+        $operationalOutstanding = bcsub($netVerifiedReceivable, (string) $pendingPayments, 2);
+        if (bccomp($operationalOutstanding, '0.00', 2) < 0) {
+            $operationalOutstanding = '0.00';
+        }
+
+        $creditLimit = (string) ($customerModel->credit_limit ?? '0.00');
+        $unappliedCredit = $this->getCustomerCreditBalance($customerModel);
+
+        // Available Credit = max(0, Credit Limit - Operational Outstanding) + Unapplied Credit
+        $remainingCreditLimit = bcsub($creditLimit, $operationalOutstanding, 2);
+        if (bccomp($remainingCreditLimit, '0.00', 2) < 0) {
+            $remainingCreditLimit = '0.00';
+        }
+        $totalAvailableCredit = bcadd($remainingCreditLimit, $unappliedCredit, 2);
+
+        return [
+            'total_debits' => $totalDebits,
+            'verified_credits' => $totalVerifiedCredits,
+            'pending_payments' => number_format((float) $pendingPayments, 2, '.', ''),
+            'net_receivable' => $netVerifiedReceivable,
+            'operational_outstanding' => $operationalOutstanding,
+            'credit_limit' => $creditLimit,
+            'available_credit' => $totalAvailableCredit,
+        ];
+    }
+
+    /**
      * Get authoritative net receivable balance for a customer (Total Debits - Total Credits).
      */
     public function getCustomerReceivableBalance(Customer|int $customer): string
     {
-        $customerId = $customer instanceof Customer ? $customer->id : $customer;
+        $summary = $this->getCustomerFinancialSummary($customer);
 
-        $result = ReceivableTransaction::where('customer_id', $customerId)
-            ->selectRaw('COALESCE(SUM(debit_amount), 0) as total_debits, COALESCE(SUM(credit_amount), 0) as total_credits')
-            ->first();
-
-        $debits = $result ? (string) $result->total_debits : '0.00';
-        $credits = $result ? (string) $result->total_credits : '0.00';
-
-        return bcsub($debits, $credits, 2);
+        return $summary['net_receivable'];
     }
 
     /**

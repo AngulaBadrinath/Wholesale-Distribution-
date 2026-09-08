@@ -81,8 +81,11 @@ class AdminReceivableController extends Controller
         $referenceDate = $referenceDateStr ? Carbon::parse($referenceDateStr) : Carbon::now();
 
         $aging = $this->agingService->getAgingForCustomer($customer, $referenceDate);
-        $receivableBalance = $this->ledgerService->getCustomerReceivableBalance($customer);
-        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
+        $financialSummary = $this->ledgerService->getCustomerFinancialSummary($customer);
+        $receivableBalance = $financialSummary['net_receivable'];
+        $pendingPayments = $financialSummary['pending_payments'];
+        $operationalOutstanding = $financialSummary['operational_outstanding'];
+        $availableCredit = $financialSummary['available_credit'];
 
         $transactions = ReceivableTransaction::query()
             ->where('customer_id', $customer->id)
@@ -95,7 +98,10 @@ class AdminReceivableController extends Controller
         $payload = [
             'customer' => $customer,
             'aging' => $aging,
+            'financial_summary' => $financialSummary,
             'receivable_balance' => $receivableBalance,
+            'pending_payments' => $pendingPayments,
+            'operational_outstanding' => $operationalOutstanding,
             'available_credit' => $availableCredit,
             'transactions' => $transactions,
             'filters' => [

@@ -184,7 +184,7 @@ export default function OrderDetailOperationalCards({
                     <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/20 p-2 rounded border border-border/30">
                         <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                         <div>
-                            <span className="font-semibold text-foreground">Adjustment Framework:</span> Non-destructive post-submission adjustments, warehouse exceptions, and supervisor approvals are scheduled for Epic 11.
+                            <span className="font-semibold text-foreground">Adjustment Framework:</span> Non-destructive post-submission adjustments, warehouse exceptions, and supervisor approvals are managed in the Adjustments Workspace.
                         </div>
                     </div>
                 </CardContent>

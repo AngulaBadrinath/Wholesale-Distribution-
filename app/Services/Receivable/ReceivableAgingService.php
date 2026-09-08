@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Receivable;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentTransactionStatus;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +36,8 @@ class ReceivableAgingService
      *     days_61_90: string,
      *     days_91_plus: string,
      *     total_receivable: string,
+     *     pending_payments: string,
+     *     operational_outstanding: string,
      *     available_credit: string,
      *     invoices: array<int, array<string, mixed>>
      * }
@@ -45,10 +51,14 @@ class ReceivableAgingService
 
         $refDate = ($referenceDate ?? Carbon::now())->startOfDay();
 
-        // 1. Fetch all open invoices for this customer (amount_due > 0 and status is ISSUED)
+        // 0. Ensure ledger sync
+        $this->ledgerService->syncUnpostedHistoricalEvents();
+        $financialSummary = $this->ledgerService->getCustomerFinancialSummary($customer);
+
+        // 1. Fetch all open invoices for this customer (amount_due > 0 and not VOID)
         $invoices = Invoice::query()
             ->where('customer_id', $customer->id)
-            ->where('status', InvoiceStatus::ISSUED->value)
+            ->whereNotIn('status', [InvoiceStatus::VOID->value])
             ->where('amount_due', '>', 0)
             ->orderBy('due_date', 'asc')
             ->orderBy('id', 'asc')
@@ -106,7 +116,62 @@ class ReceivableAgingService
             ];
         }
 
-        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
+        // 2. Also check active un-invoiced orders
+        $uninvoicedOrders = Order::query()
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', [
+                OrderStatus::APPROVED->value,
+                OrderStatus::PROCESSING->value,
+                OrderStatus::COMPLETED->value,
+            ])
+            ->whereDoesntHave('invoices')
+            ->get();
+
+        foreach ($uninvoicedOrders as $order) {
+            $orderGrandTotal = number_format((float) $order->grand_total, 2, '.', '');
+            if (bccomp($orderGrandTotal, '0.00', 2) <= 0) {
+                continue;
+            }
+
+            $totalReceivable = bcadd($totalReceivable, $orderGrandTotal, 2);
+            $orderDate = $order->created_at ? Carbon::parse($order->created_at)->startOfDay() : $refDate;
+            $daysOverdue = $orderDate->isAfter($refDate) ? 0 : (int) $orderDate->diffInDays($refDate);
+
+            $bucket = match (true) {
+                $daysOverdue <= 0 => 'current',
+                $daysOverdue <= 30 => 'days_1_30',
+                $daysOverdue <= 60 => 'days_31_60',
+                $daysOverdue <= 90 => 'days_61_90',
+                default => 'days_91_plus',
+            };
+
+            match ($bucket) {
+                'current' => $current = bcadd($current, $orderGrandTotal, 2),
+                'days_1_30' => $days1To30 = bcadd($days1To30, $orderGrandTotal, 2),
+                'days_31_60' => $days31To60 = bcadd($days31To60, $orderGrandTotal, 2),
+                'days_61_90' => $days61To90 = bcadd($days61To90, $orderGrandTotal, 2),
+                'days_91_plus' => $days91Plus = bcadd($days91Plus, $orderGrandTotal, 2),
+            };
+
+            $invoiceDetails[] = [
+                'id' => $order->id,
+                'invoice_number' => "ORD-{$order->order_number} (Unbilled)",
+                'invoice_date' => $order->created_at?->toDateString(),
+                'due_date' => $order->created_at?->toDateString(),
+                'grand_total' => $orderGrandTotal,
+                'amount_paid' => '0.00',
+                'amount_due' => $orderGrandTotal,
+                'days_overdue' => $daysOverdue,
+                'bucket' => $bucket,
+                'status' => 'PENDING_INVOICE',
+            ];
+        }
+
+        // Align total receivable with authoritative net receivable if invoices exist
+        if (bccomp($financialSummary['net_receivable'], '0.00', 2) > 0 && bccomp($totalReceivable, '0.00', 2) === 0) {
+            $totalReceivable = $financialSummary['net_receivable'];
+            $current = $financialSummary['net_receivable'];
+        }
 
         return [
             'customer_id' => $customer->id,
@@ -119,7 +184,9 @@ class ReceivableAgingService
             'days_61_90' => $days61To90,
             'days_91_plus' => $days91Plus,
             'total_receivable' => $totalReceivable,
-            'available_credit' => $availableCredit,
+            'pending_payments' => $financialSummary['pending_payments'],
+            'operational_outstanding' => $financialSummary['operational_outstanding'],
+            'available_credit' => $financialSummary['available_credit'],
             'invoices' => $invoiceDetails,
         ];
     }
@@ -136,6 +203,8 @@ class ReceivableAgingService
      *         days_61_90: string,
      *         days_91_plus: string,
      *         total_receivable: string,
+     *         total_pending_payments: string,
+     *         total_operational_outstanding: string,
      *         total_available_credit: string
      *     },
      *     customers: array<int, array<string, mixed>>
@@ -167,6 +236,8 @@ class ReceivableAgingService
         $totalDays61To90 = '0.00';
         $totalDays91Plus = '0.00';
         $totalReceivable = '0.00';
+        $totalPendingPayments = '0.00';
+        $totalOperationalOutstanding = '0.00';
         $totalAvailableCredit = '0.00';
 
         $customerRows = [];
@@ -174,13 +245,14 @@ class ReceivableAgingService
         foreach ($customers as $customer) {
             $aging = $this->getAgingForCustomer($customer, $refDate);
 
-            // If customer has no receivables and no credits, we can omit from aging table if requested or keep
             $totalCurrent = bcadd($totalCurrent, $aging['current'], 2);
             $totalDays1To30 = bcadd($totalDays1To30, $aging['days_1_30'], 2);
             $totalDays31To60 = bcadd($totalDays31To60, $aging['days_31_60'], 2);
             $totalDays61To90 = bcadd($totalDays61To90, $aging['days_61_90'], 2);
             $totalDays91Plus = bcadd($totalDays91Plus, $aging['days_91_plus'], 2);
             $totalReceivable = bcadd($totalReceivable, $aging['total_receivable'], 2);
+            $totalPendingPayments = bcadd($totalPendingPayments, $aging['pending_payments'], 2);
+            $totalOperationalOutstanding = bcadd($totalOperationalOutstanding, $aging['operational_outstanding'], 2);
             $totalAvailableCredit = bcadd($totalAvailableCredit, $aging['available_credit'], 2);
 
             $customerRows[] = $aging;
@@ -195,6 +267,8 @@ class ReceivableAgingService
                 'days_61_90' => $totalDays61To90,
                 'days_91_plus' => $totalDays91Plus,
                 'total_receivable' => $totalReceivable,
+                'total_pending_payments' => $totalPendingPayments,
+                'total_operational_outstanding' => $totalOperationalOutstanding,
                 'total_available_credit' => $totalAvailableCredit,
             ],
             'customers' => $customerRows,

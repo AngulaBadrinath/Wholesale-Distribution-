@@ -49,6 +49,9 @@ class CustomerStatementService
         $start = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::now()->startOfMonth()->startOfDay();
         $end = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::now()->endOfDay();
 
+        // 0. Ensure immutable event ledger is synchronized with authoritative transactions
+        $this->ledgerService->syncUnpostedHistoricalEvents();
+
         // 1. Calculate Opening Balance: Sum of all debits minus sum of all credits before $start
         $openingData = ReceivableTransaction::query()
             ->where('customer_id', $customer->id)
@@ -85,11 +88,14 @@ class CustomerStatementService
             $runningBalance = bcadd($runningBalance, $debit, 2);
             $runningBalance = bcsub($runningBalance, $credit, 2);
 
+            $txnDateStr = $txn->transaction_date ? Carbon::parse($txn->transaction_date)->toDateString() : Carbon::now()->toDateString();
+            $postingDateStr = $txn->posting_date ? Carbon::parse($txn->posting_date)->toDateString() : Carbon::now()->toDateString();
+
             $transactionRows[] = [
                 'id' => $txn->id,
                 'transaction_number' => $txn->transaction_number,
-                'transaction_date' => $txn->transaction_date->toDateString(),
-                'posting_date' => $txn->posting_date->toDateString(),
+                'transaction_date' => $txnDateStr,
+                'posting_date' => $postingDateStr,
                 'type' => $txn->type->value,
                 'type_label' => $txn->type->label(),
                 'source_type' => $txn->source_type,
@@ -106,8 +112,11 @@ class CustomerStatementService
         $closingBalance = bcadd($openingBalance, $totalPeriodDebits, 2);
         $closingBalance = bcsub($closingBalance, $totalPeriodCredits, 2);
 
-        // 4. Available Customer Credit (Credit Note Balance)
-        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
+        // 4. Pending payments and operational position
+        $financialSummary = $this->ledgerService->getCustomerFinancialSummary($customer);
+        $availableCredit = $financialSummary['available_credit'];
+        $pendingPayments = $financialSummary['pending_payments'];
+        $operationalBalance = $financialSummary['operational_outstanding'];
 
         // 5. Company Info Snapshot
         $company = $this->companyInformationService->get();
@@ -141,6 +150,8 @@ class CustomerStatementService
             'total_debits' => $totalPeriodDebits,
             'total_credits' => $totalPeriodCredits,
             'closing_balance' => $closingBalance,
+            'pending_payments' => $pendingPayments,
+            'operational_balance' => $operationalBalance,
             'available_credit' => $availableCredit,
             'transactions' => $transactionRows,
         ];

@@ -28,6 +28,8 @@ interface CustomerAgingRow {
     days_61_90: string;
     days_91_plus: string;
     total_receivable: string;
+    pending_payments?: string;
+    operational_outstanding?: string;
     available_credit: string;
 }
 
@@ -38,6 +40,8 @@ interface AgingSummary {
     days_61_90: string;
     days_91_plus: string;
     total_receivable: string;
+    total_pending_payments?: string;
+    total_operational_outstanding?: string;
     total_available_credit: string;
 }
 

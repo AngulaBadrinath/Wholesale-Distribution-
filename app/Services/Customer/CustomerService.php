@@ -12,6 +12,8 @@ use App\Models\Customer;
 use App\Models\User;
 use App\Services\Auth\PermissionService;
 use Illuminate\Auth\Access\AuthorizationException;
+use App\Services\Receivable\ReceivableAgingService;
+use App\Services\Receivable\ReceivableLedgerService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +23,9 @@ use Illuminate\Validation\ValidationException;
 class CustomerService
 {
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected ReceivableLedgerService $receivableLedgerService,
+        protected ReceivableAgingService $agingService
     ) {}
 
     /**
@@ -128,22 +132,32 @@ class CustomerService
             'status_badge_variant' => $customer->status instanceof CustomerStatus ? $customer->status->badgeVariant() : 'secondary',
             'can_order' => $customer->canPlaceOrders(),
             'notes' => $customer->notes,
-            'financial_summary' => [
-                'status' => 'DEFERRED',
-                'is_authoritative' => false,
-                'credit_limit' => $creditLimit,
-                'outstanding_balance' => null,
-                'available_credit' => null,
-                'credit_utilization_pct' => null,
-                'aging' => [
-                    'current' => null,
-                    'days_1_30' => null,
-                    'days_31_60' => null,
-                    'days_61_90' => null,
-                    'days_90_plus' => null,
-                ],
-                'source_notice' => 'Financial balances and aging will be calculated from authoritative transaction data once Orders, Payments, and Receivables are implemented.',
-            ],
+            'financial_summary' => (function () use ($customer, $creditLimit) {
+                $summary = $this->receivableLedgerService->getCustomerFinancialSummary($customer);
+                $aging = $this->agingService->getAgingForCustomer($customer);
+                $creditLimitNum = (float) $creditLimit;
+                $outstandingNum = (float) $summary['operational_outstanding'];
+                $utilizationPct = $creditLimitNum > 0 ? round(($outstandingNum / $creditLimitNum) * 100, 1) : 0.0;
+
+                return [
+                    'status' => 'ACTIVE',
+                    'is_authoritative' => true,
+                    'credit_limit' => $creditLimit,
+                    'outstanding_balance' => $summary['operational_outstanding'],
+                    'verified_receivable' => $summary['net_receivable'],
+                    'pending_payments' => $summary['pending_payments'],
+                    'available_credit' => $summary['available_credit'],
+                    'credit_utilization_pct' => $utilizationPct,
+                    'aging' => [
+                        'current' => $aging['current'],
+                        'days_1_30' => $aging['days_1_30'],
+                        'days_31_60' => $aging['days_31_60'],
+                        'days_61_90' => $aging['days_61_90'],
+                        'days_90_plus' => $aging['days_91_plus'],
+                    ],
+                    'source_notice' => 'Authoritative live calculation from transaction ledgers (invoices, active orders, verified & pending payments).',
+                ];
+            })(),
             'created_at' => $customer->created_at?->toIso8601String(),
             'updated_at' => $customer->updated_at?->toIso8601String(),
         ];

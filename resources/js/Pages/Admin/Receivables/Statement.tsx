@@ -64,6 +64,8 @@ interface StatementData {
     total_debits: string;
     total_credits: string;
     closing_balance: string;
+    pending_payments?: string;
+    operational_balance?: string;
     available_credit: string;
     transactions: StatementTransaction[];
 }
