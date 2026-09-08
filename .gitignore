@@ -26,5 +26,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /artifacts/browser
+/artifacts/browser-audit
 /playwright-report
 /test-results

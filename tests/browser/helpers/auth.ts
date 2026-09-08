@@ -7,8 +7,10 @@ export type UserRole =
     | 'ADMIN'
     | 'ACCOUNTANT'
     | 'SALESMAN'
+    | 'SALESMAN_B'
     | 'WAREHOUSE_MANAGER'
-    | 'DELIVERY_PARTNER';
+    | 'DELIVERY_PARTNER'
+    | 'SUSPENDED';
 
 export interface UserCredential {
     email: string;
@@ -40,7 +42,13 @@ export const QA_USER_CREDENTIALS: Record<UserRole, UserCredential> = {
         email: 'salesman.a@example.test',
         password: 'Password123!',
         expectedDashboardRoute: '/dashboard',
-        label: 'Sales Representative',
+        label: 'Sales Representative North',
+    },
+    SALESMAN_B: {
+        email: 'salesman.b@example.test',
+        password: 'Password123!',
+        expectedDashboardRoute: '/dashboard',
+        label: 'Sales Representative South',
     },
     WAREHOUSE_MANAGER: {
         email: 'warehouse.qa@example.test',
@@ -53,6 +61,12 @@ export const QA_USER_CREDENTIALS: Record<UserRole, UserCredential> = {
         password: 'Password123!',
         expectedDashboardRoute: '/delivery',
         label: 'Logistics Driver',
+    },
+    SUSPENDED: {
+        email: 'suspended.qa@example.test',
+        password: 'Password123!',
+        expectedDashboardRoute: '/login',
+        label: 'Suspended Staff',
     },
 };
 
@@ -79,8 +93,22 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
         throw new Error(`[AuthHelper] Unknown user role: "${role}"`);
     }
 
-    await page.goto('/login');
-    await page.waitForLoadState('domcontentloaded');
+    if (!page.url().includes('/login')) {
+        let gotoAttempts = 0;
+        while (gotoAttempts < 4) {
+            try {
+                await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 20000 });
+                break;
+            } catch (err: any) {
+                gotoAttempts++;
+                if (gotoAttempts >= 4) throw err;
+                await page.waitForTimeout(1000);
+            }
+        }
+    }
+
+    await page.locator('input[type="email"]').waitFor({ state: 'visible' });
+    await page.waitForTimeout(300);
 
     // Fill credentials
     const emailInput = page.locator('input[type="email"], input[name="email"]');
@@ -88,13 +116,19 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
 
     await emailInput.fill(creds.email);
     await passwordInput.fill(creds.password);
+    await page.waitForTimeout(100);
 
     // Click Sign In
     const submitBtn = page.locator('button[type="submit"]');
     await submitBtn.click();
 
-    // Wait until login form navigates away from /login
-    await page.waitForURL((url) => url.pathname !== '/login', { timeout: 15000 });
+    // Wait until login form navigates away from /login or throws validation error
+    try {
+        await page.waitForURL((url) => url.pathname !== '/login', { timeout: 8000 });
+    } catch (e) {
+        const alertText = await page.locator('[role="alert"], .text-destructive').first().textContent().catch(() => '');
+        throw new Error(`[AuthHelper] Login failed for ${role} (${creds.email}). Still on ${page.url()}. Page alert: "${alertText?.trim()}"`);
+    }
 
     const currentUrl = page.url();
 
@@ -153,8 +187,8 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
 export async function logout(page: Page): Promise<void> {
     try {
         await page.context().clearCookies();
-        await page.goto('/login');
-        await page.waitForLoadState('domcontentloaded');
+        await page.waitForTimeout(400);
+        await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 15000 });
     } catch {
         // Fallback
     }

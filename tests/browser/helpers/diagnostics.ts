@@ -157,3 +157,47 @@ export function attachDiagnosticsCollector(page: Page): {
         saveDiagnostics,
     };
 }
+
+export class DiagnosticsCollector {
+    private collector: ReturnType<typeof attachDiagnosticsCollector>;
+
+    constructor(private page: Page) {
+        this.collector = attachDiagnosticsCollector(page);
+    }
+
+    getDiagnostics(): BrowserDiagnostics {
+        return this.collector.getDiagnostics();
+    }
+
+    getErrors(): string[] {
+        return this.collector.getDiagnostics().consoleErrors.map((e) => e.text);
+    }
+
+    async saveDiagnostics(testName: string, captureScreenshot = true, fullPage = false): Promise<string> {
+        return this.collector.saveDiagnostics(testName, captureScreenshot, fullPage);
+    }
+
+    async captureNamedScreenshot(page: Page, name: string, dir: string): Promise<string> {
+        fs.mkdirSync(dir, { recursive: true });
+        const filePath = path.join(dir, `${name}.png`);
+        try {
+            await page.screenshot({ path: filePath, fullPage: true });
+        } catch {
+            // In case page was redirected or closed
+        }
+        return filePath;
+    }
+}
+
+export async function safeGoto(page: Page, url: string, maxAttempts = 3) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            return resp;
+        } catch (err: any) {
+            if (attempt === maxAttempts) throw err;
+            await page.waitForTimeout(800 * attempt);
+        }
+    }
+    return null;
+}
