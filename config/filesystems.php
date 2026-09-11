@@ -56,8 +56,22 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            'throw' => env('AWS_THROW', false),
             'report' => false,
+            'http' => [
+                'verify' => env('AWS_CA_BUNDLE', env('AWS_HTTP_VERIFY', (function () {
+                    if (ini_get('curl.cainfo') || ini_get('openssl.cafile')) {
+                        return true;
+                    }
+                    if (PHP_OS_FAMILY === 'Windows') {
+                        $gitCert = 'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\cert.pem';
+                        if (file_exists($gitCert)) {
+                            return $gitCert;
+                        }
+                    }
+                    return true;
+                })())),
+            ],
         ],
 
     ],
