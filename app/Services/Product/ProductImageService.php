@@ -32,7 +32,8 @@ class ProductImageService
     ];
 
     public function __construct(
-        protected PermissionService $permissionService
+        protected PermissionService $permissionService,
+        protected \App\Services\Storage\StorageManagerService $storageManager
     ) {}
 
     /**
@@ -63,7 +64,7 @@ class ProductImageService
         $objectKey = "{$directory}/{$filename}";
 
         // 3. Stage file to private cloud object storage
-        $storedPath = Storage::disk('s3')->putFileAs($directory, $file, $filename, 'private');
+        $storedPath = $this->storageManager->putFileAs($directory, $file, $filename, 's3');
 
         if (! $storedPath) {
             throw ValidationException::withMessages([
@@ -133,14 +134,7 @@ class ProductImageService
             });
         } catch (Exception $e) {
             // Compensating transaction: remove S3 object to prevent orphaned storage
-            try {
-                Storage::disk('s3')->delete($objectKey);
-            } catch (Exception $cleanupEx) {
-                Log::error('Failed to cleanup S3 object after DB rollback', [
-                    'object_key' => $objectKey,
-                    'error' => $cleanupEx->getMessage(),
-                ]);
-            }
+            $this->storageManager->compensateDelete($objectKey, 's3');
 
             throw $e;
         }
@@ -219,16 +213,7 @@ class ProductImageService
         });
 
         // Remove from private S3 object storage
-        try {
-            Storage::disk('s3')->delete($objectKey);
-        } catch (Exception $e) {
-            Log::error('Failed to delete S3 object for deleted product image', [
-                'product_id' => $product->id,
-                'image_id' => $imageId,
-                'object_key' => $objectKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        $this->storageManager->delete($objectKey, 's3');
 
         Log::info('Product image deleted', [
             'event' => 'audit.product_image_event',
@@ -255,19 +240,7 @@ class ProductImageService
             return null;
         }
 
-        try {
-            return Storage::disk('s3')->temporaryUrl(
-                $image->object_key,
-                now()->addMinutes($expirationMinutes)
-            );
-        } catch (Exception $e) {
-            // Fallback for disks/drivers (such as local fake) without temporaryUrl driver method
-            try {
-                return Storage::disk('s3')->url($image->object_key);
-            } catch (Exception) {
-                return null;
-            }
-        }
+        return $this->storageManager->temporaryUrl($image->object_key, $expirationMinutes, 's3');
     }
 
     /**

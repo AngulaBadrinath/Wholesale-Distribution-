@@ -6,9 +6,9 @@ use App\Enums\Permission;
 use App\Enums\UserRole;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Storage\StorageManagerService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +29,10 @@ class PaymentEvidenceService
      */
     public const PREVIEW_URL_EXPIRATION_MINUTES = 15;
 
+    public function __construct(
+        protected StorageManagerService $storageManager
+    ) {}
+
     /**
      * Validate and store visual payment evidence into private storage.
      *
@@ -46,7 +50,7 @@ class PaymentEvidenceService
             ]);
         }
 
-        // 2. Enforce file size limit
+        // 2. Enforce file size limit (5MB)
         if ($file->getSize() > self::MAX_SIZE_BYTES) {
             throw ValidationException::withMessages([
                 'evidence' => 'The payment evidence file exceeds the maximum permitted size of 5 MB.',
@@ -111,10 +115,10 @@ class PaymentEvidenceService
         $uuid = (string) Str::uuid();
         $objectKey = "payments/{$year}/{$month}/{$uuid}.jpg";
 
-        // 8. Store privately
+        // 8. Store privately via StorageManagerService
         $disk = $this->getDisk();
         $contents = file_get_contents($realPath);
-        $stored = Storage::disk($disk)->put($objectKey, $contents, 'private');
+        $stored = $this->storageManager->put($objectKey, $contents, $disk);
 
         if (! $stored) {
             throw ValidationException::withMessages([
@@ -166,7 +170,7 @@ class PaymentEvidenceService
         $objectKey = $payment->evidence_object_key;
 
         // 4. Verify object exists in storage
-        if (! Storage::disk($disk)->exists($objectKey)) {
+        if (! $this->storageManager->exists($objectKey, $disk)) {
             throw ValidationException::withMessages([
                 'payment' => 'The payment evidence file was not found in secure storage.',
             ]);
@@ -176,10 +180,19 @@ class PaymentEvidenceService
         $driver = config("filesystems.disks.{$disk}.driver", 'local');
 
         if ($driver === 's3') {
-            return Storage::disk($disk)->temporaryUrl(
+            $temporaryUrl = $this->storageManager->temporaryUrl(
                 $objectKey,
-                now()->addMinutes($expirationMinutes)
+                $expirationMinutes,
+                [
+                    'ResponseContentType' => 'image/jpeg',
+                    'ResponseContentDisposition' => sprintf('inline; filename="%s"', $payment->evidence_original_name ?? 'evidence.jpg'),
+                ],
+                $disk
             );
+
+            if ($temporaryUrl) {
+                return $temporaryUrl;
+            }
         }
 
         // Local / Test driver fallback: Route to authenticated evidence stream endpoint
@@ -197,3 +210,4 @@ class PaymentEvidenceService
         return config('filesystems.payment_evidence_disk', env('FILESYSTEM_DISK', 'local'));
     }
 }
+

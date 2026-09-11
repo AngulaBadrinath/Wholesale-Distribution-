@@ -2,16 +2,26 @@
 
 namespace App\Services\Delivery;
 
+use App\Services\Storage\StorageManagerService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class DeliveryEvidenceService
 {
-    public const DISK = 'local';
-    public const DIRECTORY = 'private/delivery_evidence';
     public const MAX_BYTES = 5242880; // 5MB
+
+    public function __construct(
+        protected StorageManagerService $storageManager
+    ) {}
+
+    /**
+     * Get the configured storage disk for delivery evidence.
+     */
+    public function getDisk(): string
+    {
+        return config('filesystems.delivery_evidence_disk', env('FILESYSTEM_DISK', 'local'));
+    }
 
     /**
      * Store and validate an uploaded Proof of Delivery (POD) photo/document.
@@ -49,10 +59,17 @@ class DeliveryEvidenceService
         }
 
         $extension = $isJpeg ? 'jpg' : 'png';
-        $filename = sprintf('delivery_%d_pod_%s.%s', $deliveryId, Str::random(24), $extension);
-        $path = self::DIRECTORY . '/' . $filename;
+        $uuid = (string) Str::uuid();
+        $path = "deliveries/{$deliveryId}/pod/{$uuid}.{$extension}";
 
-        Storage::disk(self::DISK)->put($path, file_get_contents($realPath));
+        $disk = $this->getDisk();
+        $stored = $this->storageManager->put($path, file_get_contents($realPath), $disk);
+
+        if (! $stored) {
+            throw ValidationException::withMessages([
+                'pod_evidence' => 'Failed to persist POD evidence to secure storage.',
+            ]);
+        }
 
         return $path;
     }
@@ -71,6 +88,12 @@ class DeliveryEvidenceService
         }
 
         $realPath = $file->getRealPath();
+        if (! $realPath || ! file_exists($realPath)) {
+            throw ValidationException::withMessages([
+                'recipient_signature' => 'Unable to read signature file.',
+            ]);
+        }
+
         $handle = fopen($realPath, 'rb');
         $header = fread($handle, 8);
         fclose($handle);
@@ -85,11 +108,36 @@ class DeliveryEvidenceService
         }
 
         $extension = $isJpeg ? 'jpg' : 'png';
-        $filename = sprintf('delivery_%d_sig_%s.%s', $deliveryId, Str::random(24), $extension);
-        $path = self::DIRECTORY . '/signatures/' . $filename;
+        $uuid = (string) Str::uuid();
+        $path = "deliveries/{$deliveryId}/signatures/{$uuid}.{$extension}";
 
-        Storage::disk(self::DISK)->put($path, file_get_contents($realPath));
+        $disk = $this->getDisk();
+        $stored = $this->storageManager->put($path, file_get_contents($realPath), $disk);
+
+        if (! $stored) {
+            throw ValidationException::withMessages([
+                'recipient_signature' => 'Failed to persist delivery signature to secure storage.',
+            ]);
+        }
 
         return $path;
     }
+
+    /**
+     * Generate temporary signed URL for viewing POD or signature evidence.
+     */
+    public function getTemporaryUrl(?string $path, int $expirationMinutes = 15): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        $disk = $this->getDisk();
+        if (! $this->storageManager->exists($path, $disk)) {
+            return null;
+        }
+
+        return $this->storageManager->temporaryUrl($path, $expirationMinutes, [], $disk);
+    }
 }
+

@@ -3,6 +3,7 @@
 namespace App\Services\Invoices;
 
 use App\Models\Invoice;
+use App\Services\Storage\StorageManagerService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,10 @@ use RuntimeException;
 
 class InvoicePdfService
 {
+    public function __construct(
+        protected StorageManagerService $storageManager
+    ) {}
+
     /**
      * Generate or retrieve the cached PDF for the given invoice.
      *
@@ -65,6 +70,14 @@ class InvoicePdfService
             if (! File::exists($pdfPath) || ! $this->isValidPdf($pdfPath)) {
                 throw new RuntimeException('Generated PDF file is missing or contains an invalid header.');
             }
+
+            // Canonical S3 archival key: invoices/{year}/{month}/{invoice_number}.pdf
+            $year = Carbon::now()->format('Y');
+            $month = Carbon::now()->format('m');
+            $s3ObjectKey = "invoices/{$year}/{$month}/{$pdfFilename}";
+
+            // Archive to S3 storage
+            $this->storageManager->put($s3ObjectKey, File::get($pdfPath), 's3');
 
             // Record PDF cache metadata
             $invoice->update([

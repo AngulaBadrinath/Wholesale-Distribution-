@@ -2,16 +2,26 @@
 
 namespace App\Services\Return;
 
+use App\Services\Storage\StorageManagerService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ReturnEvidenceService
 {
-    public const DISK = 'local';
-    public const DIRECTORY = 'private/return_evidence';
     public const MAX_BYTES = 5242880; // 5MB
+
+    public function __construct(
+        protected StorageManagerService $storageManager
+    ) {}
+
+    /**
+     * Get the configured storage disk for return evidence.
+     */
+    public function getDisk(): string
+    {
+        return config('filesystems.return_evidence_disk', env('FILESYSTEM_DISK', 'local'));
+    }
 
     /**
      * Store and validate an uploaded return condition photo/evidence.
@@ -49,11 +59,36 @@ class ReturnEvidenceService
         }
 
         $extension = $isJpeg ? 'jpg' : 'png';
-        $filename = sprintf('return_%d_photo_%s.%s', $returnRequestId, Str::random(24), $extension);
-        $path = self::DIRECTORY . '/' . $filename;
+        $uuid = (string) Str::uuid();
+        $path = "returns/{$returnRequestId}/evidence/{$uuid}.{$extension}";
 
-        Storage::disk(self::DISK)->put($path, file_get_contents($realPath));
+        $disk = $this->getDisk();
+        $stored = $this->storageManager->put($path, file_get_contents($realPath), $disk);
+
+        if (! $stored) {
+            throw ValidationException::withMessages([
+                'evidence_photos' => 'Failed to persist return evidence to secure storage.',
+            ]);
+        }
 
         return $path;
     }
+
+    /**
+     * Generate temporary signed URL for viewing return condition evidence.
+     */
+    public function getTemporaryUrl(?string $path, int $expirationMinutes = 15): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        $disk = $this->getDisk();
+        if (! $this->storageManager->exists($path, $disk)) {
+            return null;
+        }
+
+        return $this->storageManager->temporaryUrl($path, $expirationMinutes, [], $disk);
+    }
 }
+
