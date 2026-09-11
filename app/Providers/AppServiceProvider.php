@@ -44,8 +44,12 @@ use App\Policies\SupplierPaymentPolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\UserPolicy;
 use App\Services\Auth\PermissionService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -105,6 +109,71 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return null;
+        });
+
+        RateLimiter::for('login', function (Request $request) {
+            $email = $request->input('email');
+            $key = $email ? Str::transliterate(Str::lower(trim((string) $email))).'|'.$request->ip() : $request->ip();
+
+            return Limit::perMinute(5)->by($key);
+        });
+
+        RateLimiter::for('mfa', function (Request $request) {
+            $challenge = $request->session()->get('mfa.challenge');
+            $userId = is_array($challenge) && ! empty($challenge['user_id'])
+                ? (string) $challenge['user_id']
+                : 'anon';
+
+            return Limit::perMinute(5)->by('mfa:'.$userId.'|'.$request->ip());
+        });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            $email = $request->input('email');
+            $key = $email ? strtolower(trim((string) $email)).'|'.$request->ip() : $request->ip();
+
+            return Limit::perMinutes(10, 3)->by($key);
+        });
+
+        RateLimiter::for('orders', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(30)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('payments', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(20)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('payment-verification', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(30)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('inventory', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(20)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('deliveries', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(15)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('invoice-pdf', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(15)->by($userId ? (string) $userId : $request->ip());
+        });
+
+        RateLimiter::for('reports', function (Request $request) {
+            $userId = optional($request->user())->id;
+
+            return Limit::perMinute(30)->by($userId ? (string) $userId : $request->ip());
         });
     }
 }
