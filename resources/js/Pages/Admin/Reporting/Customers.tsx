@@ -103,9 +103,6 @@ export default function CustomerReport({ report, filters }: Props) {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">Customer Balances, Aging & Cadence</h1>
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs py-0.5">
-                                FEAT-REP-002
-                            </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Receivables aging analysis consuming AR ledger truth, purchase frequency cadence, and customer spend metrics.

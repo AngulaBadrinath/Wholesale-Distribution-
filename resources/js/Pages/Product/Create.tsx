@@ -85,7 +85,7 @@ export default function ProductCreate({
                 <div>
                     <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">
                         <Package className="h-3.5 w-3.5 text-primary" />
-                        <span>Master Data Creation / FEAT-PRD-001</span>
+                        <span>Master Data Creation</span>
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">
                         Create Master Product

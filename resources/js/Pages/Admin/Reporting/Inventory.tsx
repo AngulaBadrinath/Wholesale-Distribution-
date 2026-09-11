@@ -167,9 +167,6 @@ export default function InventoryReport({
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">Inventory Valuation & Movement Reports</h1>
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs py-0.5">
-                                FEAT-REP-004
-                            </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Physical inventory balance valuations, immutable movement audit trails, and reorder alerts.

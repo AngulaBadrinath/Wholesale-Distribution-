@@ -134,7 +134,7 @@ export default function ReviewActionHeader({
                             Review Blockers Detected
                         </div>
                         <p className="text-muted-foreground leading-relaxed">
-                            This order has one or more critical blocking conditions (e.g. customer account on hold or deactivated catalog products). These blockers must be resolved before this order can proceed to approval in FEAT-ORD-012.
+                            This order has one or more critical blocking conditions (e.g. customer account on hold or deactivated catalog products). These blockers must be resolved before this order can proceed to approval.
                         </p>
                     </div>
                 </div>
@@ -146,7 +146,7 @@ export default function ReviewActionHeader({
                             Ready for Operational Review
                         </div>
                         <p className="text-muted-foreground leading-relaxed">
-                            Order details, immutable pricing, and line-item tax breakdowns are ready for evaluation. Formal approval and rejection actions are isolated to the downstream FEAT-ORD-012 workflow.
+                            Order details, immutable pricing, and line-item tax breakdowns are ready for evaluation. Formal approval and rejection actions are handled in the approval workflow.
                         </p>
                     </div>
                 </div>

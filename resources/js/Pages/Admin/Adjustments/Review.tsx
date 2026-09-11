@@ -712,7 +712,7 @@ export default function AdjustmentReview({
                     <div className="flex items-center gap-2">
                         <History className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span>
-                            Inspection complete. Formal approval, rejection, and atomic ledger execution are governed by FEAT-ADJ-003 and FEAT-ADJ-004.
+                            Inspection complete. Formal approval, rejection, and atomic ledger execution are governed by the adjustment workflow.
                         </span>
                     </div>
 

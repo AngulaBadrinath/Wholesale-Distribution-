@@ -188,7 +188,7 @@ export default function ApproveAdjustmentModal({
                                         <span className="font-bold font-mono text-foreground">
                                             {totalAffectedAllocationQuantity}
                                         </span>{' '}
-                                        units. Upon application (FEAT-ADJ-004), allocated quantities will be released/de-allocated.
+                                        units. Upon application, allocated quantities will be released/de-allocated.
                                     </p>
                                 </div>
                             </div>
@@ -242,7 +242,7 @@ export default function ApproveAdjustmentModal({
                     {/* Informational Decision Boundary Note */}
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
                         <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                        <span>Approval authorizes the request. Order quantities and inventory are preserved until FEAT-ADJ-004 application.</span>
+                        <span>Approval authorizes the request. Order quantities and inventory are preserved until adjustment application.</span>
                     </div>
 
                     {/* Modal Actions */}

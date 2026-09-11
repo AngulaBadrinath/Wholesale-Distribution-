@@ -90,9 +90,6 @@ export default function SalesmanReport({ report, filters }: Props) {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">Sales Representative Performance</h1>
-                            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs py-0.5">
-                                FEAT-REP-003
-                            </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Sales representative volumes, order conversions, customer activity, price override monitoring, and historical attribution.

@@ -108,7 +108,7 @@ export default function TaxProfileIndex({
                     <div>
                         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">
                             <Receipt className="h-3.5 w-3.5 text-primary" />
-                            <span>Financial Engine / FEAT-TAX-001</span>
+                            <span>Financial Engine</span>
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
                             Tax Profiles & Rates

@@ -124,9 +124,6 @@ export default function DeliveryReport({
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">Delivery Performance & Logistics Turnaround</h1>
-                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20 text-xs py-0.5">
-                                FEAT-REP-005
-                            </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Dispatch speeds, lifecycle milestones, partner success rates, and delivery failure root cause analytics.

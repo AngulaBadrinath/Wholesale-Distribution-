@@ -143,9 +143,6 @@ export default function SalesReport({
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold tracking-tight">Sales & Commercial Reports</h1>
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs py-0.5">
-                                FEAT-REP-001
-                            </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             Authoritative sales analysis from approved orders, line allocations, taxes, and customer revenue.

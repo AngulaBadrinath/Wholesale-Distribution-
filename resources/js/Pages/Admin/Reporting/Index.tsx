@@ -140,7 +140,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                                         <TrendingUp className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-001</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Sales Reports</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -164,7 +163,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
                                         <Building2 className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-002</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Customer Reports</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -188,7 +186,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
                                         <Users className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-003</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Salesman Performance</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -212,7 +209,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
                                         <Boxes className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-004</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Inventory Reports</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -236,7 +232,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
                                         <Truck className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-005</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Delivery Reports</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -260,7 +255,6 @@ export default function ReportingIndex({ salesSummary, deliverySummary, canViewC
                                     <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                                         <FileSpreadsheet className="h-5 w-5" />
                                     </div>
-                                    <Badge variant="outline" className="text-[11px] font-mono">FEAT-REP-006</Badge>
                                 </div>
                                 <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Financial Reports</h3>
                                 <p className="text-xs text-muted-foreground leading-relaxed">
