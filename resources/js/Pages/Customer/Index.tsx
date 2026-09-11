@@ -138,7 +138,7 @@ export default function CustomerIndex({ customers, filters, statuses, eligibleSa
                     </div>
 
                     {canCreateCustomer && (
-                        <Link href="/customers-create">
+                        <Link href="/customers/create">
                             <Button className="w-full sm:w-auto font-medium">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Customer

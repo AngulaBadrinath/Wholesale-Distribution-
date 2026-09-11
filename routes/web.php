@@ -22,13 +22,19 @@ Route::get('/health', HealthCheckController::class)->name('health');
 // Guest authentication routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:login')
+        ->name('login.store');
 
     Route::get('/login/mfa', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'create'])->name('mfa.challenge');
-    Route::post('/login/mfa', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'store'])->name('mfa.challenge.store');
+    Route::post('/login/mfa', [\App\Http\Controllers\Auth\MfaChallengeController::class, 'store'])
+        ->middleware('throttle:mfa')
+        ->name('mfa.challenge.store');
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
 
     Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
@@ -38,12 +44,13 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'account.active'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)->name('dashboard');
-    Route::get('/foundation', function () {
-        return Inertia::render('Welcome', [
-            'phpVersion' => PHP_VERSION,
-            'laravelVersion' => app()->version(),
-        ]);
-    })->name('foundation');
+
+    // Backward compatibility redirects for legacy create routes (DEAD-002)
+    Route::redirect('/customers-create', '/customers/create', 301);
+    Route::redirect('/salesmen-create', '/salesmen/create', 301);
+    Route::redirect('/products-create', '/products/create', 301);
+    Route::redirect('/categories-create', '/categories/create', 301);
+    Route::redirect('/tax-profiles-create', '/tax-profiles/create', 301);
 
     // Active session tracking and revocation
     Route::get('/security/sessions', [SessionManagementController::class, 'index'])->name('sessions.index');
@@ -71,42 +78,42 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     // Customer Management
     Route::middleware('permission:customer.view')->group(function () {
         Route::get('/customers', [\App\Http\Controllers\Customer\CustomerController::class, 'index'])->name('customers.index');
-        Route::get('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'show'])->name('customers.show');
+        Route::get('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'show'])->whereNumber('customer')->name('customers.show');
     });
 
     Route::middleware('permission:customer.create')->group(function () {
-        Route::get('/customers-create', [\App\Http\Controllers\Customer\CustomerController::class, 'create'])->name('customers.create');
+        Route::get('/customers/create', [\App\Http\Controllers\Customer\CustomerController::class, 'create'])->name('customers.create');
         Route::post('/customers', [\App\Http\Controllers\Customer\CustomerController::class, 'store'])->name('customers.store');
     });
 
     Route::middleware('permission:customer.update')->group(function () {
-        Route::get('/customers/{customer}/edit', [\App\Http\Controllers\Customer\CustomerController::class, 'edit'])->name('customers.edit');
-        Route::put('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'update'])->name('customers.update');
-        Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Customer\CustomerController::class, 'updateStatus'])->name('customers.status');
-        Route::patch('/customers/{customer}/assign', [\App\Http\Controllers\Customer\CustomerController::class, 'assignSalesman'])->name('customers.assign');
+        Route::get('/customers/{customer}/edit', [\App\Http\Controllers\Customer\CustomerController::class, 'edit'])->whereNumber('customer')->name('customers.edit');
+        Route::put('/customers/{customer}', [\App\Http\Controllers\Customer\CustomerController::class, 'update'])->whereNumber('customer')->name('customers.update');
+        Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Customer\CustomerController::class, 'updateStatus'])->whereNumber('customer')->name('customers.status');
+        Route::patch('/customers/{customer}/assign', [\App\Http\Controllers\Customer\CustomerController::class, 'assignSalesman'])->whereNumber('customer')->name('customers.assign');
     });
 
     // Salesman Management
     Route::middleware('permission:user.view')->group(function () {
         Route::get('/salesmen', [\App\Http\Controllers\Salesman\SalesmanController::class, 'index'])->name('salesmen.index');
-        Route::get('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'show'])->name('salesmen.show');
+        Route::get('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'show'])->whereNumber('salesman')->name('salesmen.show');
     });
 
     Route::middleware('permission:user.create')->group(function () {
-        Route::get('/salesmen-create', [\App\Http\Controllers\Salesman\SalesmanController::class, 'create'])->name('salesmen.create');
+        Route::get('/salesmen/create', [\App\Http\Controllers\Salesman\SalesmanController::class, 'create'])->name('salesmen.create');
         Route::post('/salesmen', [\App\Http\Controllers\Salesman\SalesmanController::class, 'store'])->name('salesmen.store');
     });
 
     Route::middleware('permission:user.update')->group(function () {
-        Route::get('/salesmen/{salesman}/edit', [\App\Http\Controllers\Salesman\SalesmanController::class, 'edit'])->name('salesmen.edit');
-        Route::put('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'update'])->name('salesmen.update');
-        Route::patch('/salesmen/{salesman}/status', [\App\Http\Controllers\Salesman\SalesmanController::class, 'updateStatus'])->name('salesmen.status');
+        Route::get('/salesmen/{salesman}/edit', [\App\Http\Controllers\Salesman\SalesmanController::class, 'edit'])->whereNumber('salesman')->name('salesmen.edit');
+        Route::put('/salesmen/{salesman}', [\App\Http\Controllers\Salesman\SalesmanController::class, 'update'])->whereNumber('salesman')->name('salesmen.update');
+        Route::patch('/salesmen/{salesman}/status', [\App\Http\Controllers\Salesman\SalesmanController::class, 'updateStatus'])->whereNumber('salesman')->name('salesmen.status');
     });
 
     // Product Management
     Route::middleware('permission:product.view')->group(function () {
         Route::get('/products', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
-        Route::get('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->name('products.show');
+        Route::get('/products/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->whereNumber('product')->name('products.show');
 
         // Category Viewing
         Route::get('/categories', [\App\Http\Controllers\Category\CategoryController::class, 'index'])->name('categories.index');
@@ -114,12 +121,11 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     Route::middleware('permission:product.create')->group(function () {
-        Route::get('/products-create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
+        Route::get('/products/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
 
         // Category Creation
         Route::get('/categories/create', [\App\Http\Controllers\Category\CategoryController::class, 'create'])->name('categories.create');
-        Route::get('/categories-create', [\App\Http\Controllers\Category\CategoryController::class, 'create']);
         Route::post('/categories', [\App\Http\Controllers\Category\CategoryController::class, 'store'])->name('categories.store');
     });
 
@@ -144,7 +150,6 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::middleware('permission:product.tax.update')->group(function () {
         Route::get('/tax-profiles', [\App\Http\Controllers\Tax\TaxProfileController::class, 'index'])->name('tax-profiles.index');
         Route::get('/tax-profiles/create', [\App\Http\Controllers\Tax\TaxProfileController::class, 'create'])->name('tax-profiles.create');
-        Route::get('/tax-profiles-create', [\App\Http\Controllers\Tax\TaxProfileController::class, 'create']);
         Route::post('/tax-profiles', [\App\Http\Controllers\Tax\TaxProfileController::class, 'store'])->name('tax-profiles.store');
         Route::get('/tax-profiles/{tax_profile}/edit', [\App\Http\Controllers\Tax\TaxProfileController::class, 'edit'])->whereNumber('tax_profile')->name('tax-profiles.edit');
         Route::put('/tax-profiles/{tax_profile}', [\App\Http\Controllers\Tax\TaxProfileController::class, 'update'])->whereNumber('tax_profile')->name('tax-profiles.update');
@@ -154,15 +159,17 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     // Salesman Ordering & Drafts
     Route::middleware('permission:order.create')->group(function () {
         Route::get('/salesman/orders/create', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'create'])->name('salesman.orders.create');
-        Route::post('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'store'])->name('salesman.orders.store');
-
-        // Draft Management
         Route::get('/salesman/orders/drafts', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'drafts'])->name('salesman.orders.drafts');
-        Route::post('/salesman/orders/drafts', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->name('salesman.orders.drafts.store');
-        Route::put('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->whereNumber('order')->name('salesman.orders.drafts.update');
         Route::get('/salesman/orders/drafts/{order}/edit', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'editDraft'])->whereNumber('order')->name('salesman.orders.drafts.edit');
-        Route::post('/salesman/orders/drafts/{order}/submit', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'submitDraft'])->whereNumber('order')->name('salesman.orders.drafts.submit');
-        Route::delete('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'discardDraft'])->whereNumber('order')->name('salesman.orders.drafts.destroy');
+
+        // Order & Draft Mutations (Throttled per SEC-002)
+        Route::middleware('throttle:orders')->group(function () {
+            Route::post('/salesman/orders', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'store'])->name('salesman.orders.store');
+            Route::post('/salesman/orders/drafts', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->name('salesman.orders.drafts.store');
+            Route::put('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'saveDraft'])->whereNumber('order')->name('salesman.orders.drafts.update');
+            Route::post('/salesman/orders/drafts/{order}/submit', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'submitDraft'])->whereNumber('order')->name('salesman.orders.drafts.submit');
+            Route::delete('/salesman/orders/drafts/{order}', [\App\Http\Controllers\Salesman\SalesmanOrderController::class, 'discardDraft'])->whereNumber('order')->name('salesman.orders.drafts.destroy');
+        });
     });
 
     Route::middleware('permission:order.view')->group(function () {
@@ -177,21 +184,21 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Authoritative Admin Order Approval Workflow
-    Route::middleware('permission:order.approve')->group(function () {
+    Route::middleware(['permission:order.approve', 'throttle:orders'])->group(function () {
         Route::post('/admin/orders/{order}/approve', [\App\Http\Controllers\Admin\AdminOrderController::class, 'approve'])
             ->whereNumber('order')
             ->name('admin.orders.approve');
     });
 
     // Authoritative Admin Order Rejection Workflow
-    Route::middleware('permission:order.reject')->group(function () {
+    Route::middleware(['permission:order.reject', 'throttle:orders'])->group(function () {
         Route::post('/admin/orders/{order}/reject', [\App\Http\Controllers\Admin\AdminOrderController::class, 'reject'])
             ->whereNumber('order')
             ->name('admin.orders.reject');
     });
 
     // Authoritative Order Adjustment Request & Withdrawal Workflows (FEAT-ADJ-001)
-    Route::middleware('permission:order.adjust.request')->group(function () {
+    Route::middleware(['permission:order.adjust.request', 'throttle:orders'])->group(function () {
         Route::post('/orders/{order}/adjustments', [\App\Http\Controllers\Order\OrderAdjustmentRequestController::class, 'store'])
             ->whereNumber('order')
             ->name('orders.adjustments.store');
@@ -214,7 +221,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Administrative Adjustment Approval & Rejection Engine (FEAT-ADJ-003)
-    Route::middleware('permission:order.adjust.approve')->group(function () {
+    Route::middleware(['permission:order.adjust.approve', 'throttle:orders'])->group(function () {
         Route::post('/admin/orders/{order}/adjustments/{adjustment}/approve', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'approve'])
             ->whereNumber('order')
             ->whereNumber('adjustment')
@@ -227,7 +234,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Authoritative Order Adjustment Application Engine (FEAT-ADJ-004)
-    Route::middleware('permission:order.adjust.apply')->group(function () {
+    Route::middleware(['permission:order.adjust.apply', 'throttle:orders'])->group(function () {
         Route::post('/admin/orders/{order}/adjustments/{adjustment}/apply', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'apply'])
             ->whereNumber('order')
             ->whereNumber('adjustment')
@@ -235,7 +242,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Authoritative Order Adjustment Reversal Engine (FEAT-ADJ-005)
-    Route::middleware('permission:order.adjust.reverse')->group(function () {
+    Route::middleware(['permission:order.adjust.reverse', 'throttle:orders'])->group(function () {
         Route::post('/admin/orders/{order}/adjustments/{adjustment}/reverse', [\App\Http\Controllers\Admin\AdminOrderAdjustmentController::class, 'reverse'])
             ->whereNumber('order')
             ->whereNumber('adjustment')
@@ -254,13 +261,13 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Warehouse Stock Exception Reporting & Damage Quarantine (FEAT-INV-005)
-    Route::middleware('permission:inventory.exception.report,inventory.adjust')->group(function () {
+    Route::middleware(['permission:inventory.exception.report,inventory.adjust', 'throttle:inventory'])->group(function () {
         Route::post('/admin/inventory-exceptions', [\App\Http\Controllers\Admin\AdminStockExceptionController::class, 'store'])
             ->name('admin.inventory.exceptions.store');
     });
 
     // Direct Physical Inventory Adjustments & Exception Resolution (FEAT-INV-005 / FEAT-INV-006)
-    Route::middleware('permission:inventory.adjust')->group(function () {
+    Route::middleware(['permission:inventory.adjust', 'throttle:inventory'])->group(function () {
         Route::post('/admin/inventory-adjustments', [\App\Http\Controllers\Admin\AdminInventoryAdjustmentController::class, 'store'])
             ->name('admin.inventory.adjustments.store');
 
@@ -288,7 +295,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Payment Entry Routes (FEAT-PAY-002, FEAT-PAY-003, FEAT-PAY-004)
-    Route::middleware('permission:payment.create')->group(function () {
+    Route::middleware(['permission:payment.create', 'throttle:payments'])->group(function () {
         // Cash Payment Entry (FEAT-PAY-002)
         Route::post('/admin/payments/cash', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'storeCash'])
             ->name('admin.payments.cash.store');
@@ -317,7 +324,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Payment Verification & Rejection Engine (FEAT-PAY-007 / FEAT-PAY-008)
-    Route::middleware('permission:payment.verify')->group(function () {
+    Route::middleware(['permission:payment.verify', 'throttle:payment-verification'])->group(function () {
         Route::post('/admin/payments/{payment}/verify', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'verify'])
             ->whereNumber('payment')
             ->name('admin.payments.verify');
@@ -328,7 +335,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Payment Reversal & Bounced Cheque Engine (FEAT-PAY-009)
-    Route::middleware('permission:payment.reverse')->group(function () {
+    Route::middleware(['permission:payment.reverse', 'throttle:payments'])->group(function () {
         Route::post('/admin/payments/{payment}/reverse', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'reverse'])
             ->whereNumber('payment')
             ->name('admin.payments.reverse');
@@ -358,7 +365,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.orders.delivery.assign');
     });
 
-    Route::middleware('permission:delivery.update')->group(function () {
+    Route::middleware(['permission:delivery.update', 'throttle:deliveries'])->group(function () {
         Route::post('/delivery/{delivery}/pickup', [\App\Http\Controllers\Delivery\DeliveryPartnerController::class, 'pickup'])
             ->whereNumber('delivery')
             ->name('delivery.pickup');
@@ -395,7 +402,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('salesman.invoices.show');
     });
 
-    Route::middleware('permission:order.approve')->group(function () {
+    Route::middleware(['permission:order.approve', 'throttle:invoice-pdf'])->group(function () {
         Route::post('/admin/orders/{order}/invoice', [\App\Http\Controllers\Admin\AdminInvoiceController::class, 'generate'])
             ->whereNumber('order')
             ->name('admin.orders.invoice.generate');
@@ -407,7 +414,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('invoices.print');
     });
 
-    Route::middleware('permission:invoice.download')->group(function () {
+    Route::middleware(['permission:invoice.download', 'throttle:invoice-pdf'])->group(function () {
         Route::get('/invoices/{invoice}/pdf', [\App\Http\Controllers\Invoices\InvoicePdfController::class, 'download'])
             ->whereNumber('invoice')
             ->name('invoices.pdf');
@@ -458,27 +465,31 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->name('admin.returns.reject');
     });
 
-    // Credit Note Routes
-    Route::get('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'index'])
-        ->name('admin.credits.index');
-    Route::get('/admin/credits/{id}', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'show'])
-        ->whereNumber('id')
-        ->name('admin.credits.show');
-    Route::get('/admin/returns/{returnRequest}/credit-eligibility', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'calculateEligibility'])
-        ->whereNumber('returnRequest')
-        ->name('admin.returns.credit-eligibility');
+    // Credit Note Routes (SEC-001 Defense-in-Depth)
+    Route::middleware('permission:credit.view')->group(function () {
+        Route::get('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'index'])
+            ->name('admin.credits.index');
+        Route::get('/admin/credits/{id}', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'show'])
+            ->whereNumber('id')
+            ->name('admin.credits.show');
+        Route::get('/admin/returns/{returnRequest}/credit-eligibility', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'calculateEligibility'])
+            ->whereNumber('returnRequest')
+            ->name('admin.returns.credit-eligibility');
+    });
 
     Route::middleware('permission:credit.create')->group(function () {
         Route::post('/admin/credits', [\App\Http\Controllers\Admin\AdminCreditNoteController::class, 'store'])
             ->name('admin.credits.store');
     });
 
-    // Refund Routes
-    Route::get('/admin/refunds', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'index'])
-        ->name('admin.refunds.index');
-    Route::get('/admin/refunds/{id}', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'show'])
-        ->whereNumber('id')
-        ->name('admin.refunds.show');
+    // Refund Routes (SEC-001 Defense-in-Depth)
+    Route::middleware('permission:refund.view')->group(function () {
+        Route::get('/admin/refunds', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'index'])
+            ->name('admin.refunds.index');
+        Route::get('/admin/refunds/{id}', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'show'])
+            ->whereNumber('id')
+            ->name('admin.refunds.show');
+    });
 
     Route::middleware('permission:refund.request')->group(function () {
         Route::post('/admin/refunds', [\App\Http\Controllers\Admin\AdminRefundRequestController::class, 'store'])
@@ -592,35 +603,37 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     });
 
     // Reporting & Analytics (FEAT-REP-001 through FEAT-REP-006)
-    Route::get('/admin/reports', [\App\Http\Controllers\Admin\AdminReportingController::class, 'index'])
-        ->name('admin.reports.index');
+    Route::middleware('throttle:reports')->group(function () {
+        Route::get('/admin/reports', [\App\Http\Controllers\Admin\AdminReportingController::class, 'index'])
+            ->name('admin.reports.index');
 
-    Route::middleware('permission:order.view')->group(function () {
-        Route::get('/admin/reports/sales', [\App\Http\Controllers\Admin\AdminReportingController::class, 'sales'])
-            ->name('admin.reports.sales');
-    });
+        Route::middleware('permission:order.view')->group(function () {
+            Route::get('/admin/reports/sales', [\App\Http\Controllers\Admin\AdminReportingController::class, 'sales'])
+                ->name('admin.reports.sales');
+        });
 
-    Route::middleware('permission:customer.view')->group(function () {
-        Route::get('/admin/reports/customers', [\App\Http\Controllers\Admin\AdminReportingController::class, 'customers'])
-            ->name('admin.reports.customers');
-    });
+        Route::middleware('permission:customer.view')->group(function () {
+            Route::get('/admin/reports/customers', [\App\Http\Controllers\Admin\AdminReportingController::class, 'customers'])
+                ->name('admin.reports.customers');
+        });
 
-    Route::get('/admin/reports/salesmen', [\App\Http\Controllers\Admin\AdminReportingController::class, 'salesmen'])
-        ->name('admin.reports.salesmen');
+        Route::get('/admin/reports/salesmen', [\App\Http\Controllers\Admin\AdminReportingController::class, 'salesmen'])
+            ->name('admin.reports.salesmen');
 
-    Route::middleware('permission:inventory.view')->group(function () {
-        Route::get('/admin/reports/inventory', [\App\Http\Controllers\Admin\AdminReportingController::class, 'inventory'])
-            ->name('admin.reports.inventory');
-    });
+        Route::middleware('permission:inventory.view')->group(function () {
+            Route::get('/admin/reports/inventory', [\App\Http\Controllers\Admin\AdminReportingController::class, 'inventory'])
+                ->name('admin.reports.inventory');
+        });
 
-    Route::middleware('permission:delivery.view')->group(function () {
-        Route::get('/admin/reports/delivery', [\App\Http\Controllers\Admin\AdminReportingController::class, 'delivery'])
-            ->name('admin.reports.delivery');
-    });
+        Route::middleware('permission:delivery.view')->group(function () {
+            Route::get('/admin/reports/delivery', [\App\Http\Controllers\Admin\AdminReportingController::class, 'delivery'])
+                ->name('admin.reports.delivery');
+        });
 
-    Route::middleware('permission:accounting.view')->group(function () {
-        Route::get('/admin/reports/financial', [\App\Http\Controllers\Admin\AdminReportingController::class, 'financial'])
-            ->name('admin.reports.financial');
+        Route::middleware('permission:accounting.view')->group(function () {
+            Route::get('/admin/reports/financial', [\App\Http\Controllers\Admin\AdminReportingController::class, 'financial'])
+                ->name('admin.reports.financial');
+        });
     });
 
     // In-App Operational Notifications (User-scoped)

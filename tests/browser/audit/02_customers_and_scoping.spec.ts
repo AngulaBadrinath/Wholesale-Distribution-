@@ -34,7 +34,7 @@ test.describe('Audit Phase 3: Customer Domain & Salesman Scoping', () => {
         }
 
         // Open Customer Creation Page
-        const createResp = await safeGoto(page, '/customers-create');
+        const createResp = await safeGoto(page, '/customers/create');
         expect(createResp?.status()).toBe(200);
         await diagnostics.captureNamedScreenshot(page, '02_admin_customer_create_form', evidenceDir);
 
@@ -68,7 +68,7 @@ test.describe('Audit Phase 3: Customer Domain & Salesman Scoping', () => {
         await diagnostics.captureNamedScreenshot(page, '02_salesman_a_idor_blocked_customer_34', evidenceDir);
 
         // Salesman A attempts to access customer creation (Admin-only feature)
-        const salesmanCreateResp = await safeGoto(page, '/customers-create');
+        const salesmanCreateResp = await safeGoto(page, '/customers/create');
         expect([403, 404]).toContain(salesmanCreateResp?.status());
 
         await logout(page);

@@ -154,7 +154,7 @@ export default function SalesmanIndex({ salesmen, filters, statuses }: SalesmanI
                     {canCreate && (
                         <div className="flex items-center gap-3">
                             <Link
-                                href="/salesmen-create"
+                                href="/salesmen/create"
                                 className={cn(buttonVariants({ variant: 'default', size: 'default' }), 'gap-2 shadow-xs')}
                             >
                                 <Plus className="h-4 w-4" />
@@ -315,7 +315,7 @@ export default function SalesmanIndex({ salesmen, filters, statuses }: SalesmanI
                                                 </p>
                                                 {canCreate && !filters.search && !filters.status && (
                                                     <Link
-                                                        href="/salesmen-create"
+                                                        href="/salesmen/create"
                                                         className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'mt-2')}
                                                     >
                                                         <Plus className="h-3.5 w-3.5 mr-1" />

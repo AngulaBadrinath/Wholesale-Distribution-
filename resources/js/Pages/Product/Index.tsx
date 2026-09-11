@@ -147,7 +147,7 @@ export default function ProductIndex({
                     </div>
 
                     {can.create && (
-                        <Link href="/products-create">
+                        <Link href="/products/create">
                             <Button className="w-full sm:w-auto shadow-xs gap-2">
                                 <Plus className="h-4 w-4" />
                                 Add New Product
@@ -330,7 +330,7 @@ export default function ProductIndex({
                                                     No product records match your current filter parameters or the catalog is empty.
                                                 </p>
                                                 {can.create && (
-                                                    <Link href="/products-create" className="mt-2">
+                                                    <Link href="/products/create" className="mt-2">
                                                         <Button size="sm" variant="outline" className="gap-1 text-xs">
                                                             <Plus className="h-3.5 w-3.5" />
                                                             Create First Product

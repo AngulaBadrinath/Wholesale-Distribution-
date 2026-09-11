@@ -63,9 +63,9 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const currentUrl = typeof window !== 'undefined' ? window.location.pathname : '';
 
-    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
-    const displayCompany = company?.display_name || identity?.company_name || 'Wholesale Distribution';
-    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
+    const displayName = identity?.name || appName || 'Unique Distributors';
+    const displayCompany = company?.display_name || identity?.company_name || 'Unique Distributors';
+    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'UD';
 
     const toggleSidebarCollapse = () => {
         const next = !sidebarCollapsed;
@@ -213,7 +213,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                                 )}
                                 <nav className="space-y-0.5">
                                     {renderNavLink('/customers', <Users className="h-4 w-4" />, 'Customer Master')}
-                                    {hasCustomerCreate && renderNavLink('/customers-create', <PlusCircle className="h-4 w-4" />, 'Onboard Customer')}
+                                    {hasCustomerCreate && renderNavLink('/customers/create', <PlusCircle className="h-4 w-4" />, 'Onboard Customer')}
                                 </nav>
                             </div>
                         )}
