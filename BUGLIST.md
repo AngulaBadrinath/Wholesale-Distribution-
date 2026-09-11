@@ -13,17 +13,17 @@
 | Priority | Classification | Open Count | Remediated & Verified | Description |
 |---|---|:---:|:---:|---|
 | **P0** | Blocker / Catastrophic | 0 | 0 | Severe security breach, data corruption, financial integrity failure. |
-| **P1** | High / Core Workflow | 0 | 3 | Core business workflow failure, critical role unable to perform action, or auth leakage. |
+| **P1** | High / Core Workflow | 0 | 7 | Core business workflow failure, critical role unable to perform action, or auth leakage. |
 | **P2** | Medium / Important | 0 | 0 | Important functional defect, responsive breakdown, or scoping issue. |
 | **P3** | Low / Polish | 0 | 1 | Minor route alias, wording, non-blocking usability issue. |
 | **P4** | Enhancement / Deferred | 0 | 0 | Approved roadmap enhancement or optional polish. |
-| **Total** | | **0** | **4** | **100% of discovered defects successfully remediated and verified.** |
+| **Total** | | **0** | **8** | **100% of discovered defects successfully remediated and verified.** |
 
 ### Domain Breakdown
 - **Security & Authorization (IDOR):** 0 Open (BUG-013 Verified Fixed)
-- **Financial & Accounts Receivable:** 0 Open (BUG-011 Verified Fixed)
+- **Financial & Accounts Receivable:** 0 Open (BUG-011, BUG-016 Verified Fixed)
 - **Credits, Refunds & Reverse Logistics:** 0 Open (BUG-012 Verified Fixed)
-- **Logistics & Navigation:** 0 Open (BUG-014 Verified Fixed)
+- **Logistics & Delivery:** 0 Open (BUG-014, BUG-015 Verified Fixed)
 - **Inventory & Allocation:** 0 Open (Verified sound, zero negative stock or over-allocation)
 - **Order Processing & Workflows:** 0 Open (Adjustments, queue, approvals functional)
 - **Payments & Evidence:** 0 Open (Cash/Cheque/Money Order verification and validation operational)
@@ -230,6 +230,90 @@
 
 ---
 
+### [BUG-015] Stale Column Eager-Loading in Delivery Controllers Crashes Driver Dashboard and Admin Delivery Views with HTTP 500
+
+- **Bug ID:** BUG-015
+- **Priority:** P1 (High)
+- **Severity:** Major
+- **Domain:** Logistics & Delivery
+- **Role:** Delivery Partner, Admin, Warehouse
+- **Impacted Routes:**
+  - `GET /delivery` (Driver Dashboard)
+  - `GET /delivery?tab=active` (Active Deliveries)
+  - `GET /delivery/{id}` (Delivery Run Details)
+  - `GET /admin/deliveries` (Admin Deliveries Workspace)
+- **Precondition:** Authenticated Delivery Partner or Admin visits the delivery workspace.
+- **Reproduction Steps:**
+  1. Login as Delivery Partner (`driver.qa@example.test`) or Admin (`admin.qa@example.test`).
+  2. Navigate to `http://localhost:8000/delivery?tab=active`.
+  3. Observe immediate HTTP 500 Internal Server Error.
+- **Observed Behavior:**
+  PostgreSQL throws `QueryException: column customers.customer_code does not exist` and `column customers.city does not exist` when executing eager loading on `order.customer`.
+- **Expected Behavior:**
+  The delivery workspace renders assigned delivery runs, destination customer addresses, contact details, driver assignments, and line allocations without query errors.
+- **Root Cause Analysis:**
+  1. `DeliveryPartnerController::index()` and `show()` eager-loaded `order.customer:id,name,customer_code,city,state,postal_code` and `driver:id,name,email,phone` and `items.orderItemAllocation`.
+  2. The `customers` schema defines `code`, `billing_city`, `billing_state`, `billing_postal_code` (and shipping equivalents) instead of generic `customer_code`, `city`, `state`, `postal_code`.
+  3. The `users` schema defines `id, name, email` (no `phone` column).
+  4. The `DeliveryItem` model relationship is `allocation`, not `orderItemAllocation`.
+  5. `AdminDeliveryController::index()` similarly referenced `order.customer:id,name,customer_code,city,state` and `driver:id,name,email,phone`.
+- **Resolution:**
+  1. Added canonical `customer_code` accessor and appended it to `App\Models\Customer` for full backward compatibility across UI/API payloads.
+  2. Updated `DeliveryPartnerController.php` eager load definitions in `index()` and `show()` to select `code`, `billing_city`, `billing_state`, `billing_postal_code`, `shipping_city`, `shipping_state`, `shipping_postal_code`, driver `id,name,email`, and `items.allocation`.
+  3. Updated `AdminDeliveryController.php` eager load definitions in `index()` to select canonical fields.
+- **Verification Outcome:**
+  - `GET /delivery?tab=active` returns HTTP 200 OK with real stop and customer data.
+  - `GET /admin/deliveries` returns HTTP 200 OK.
+  - All 61 feature tests in `tests/Feature/Delivery/` pass with zero failures.
+- **Status:** VERIFIED (Fixed on `fix/delivery-ar-zero-balance-integrity-20260911`)
+
+---
+
+### [BUG-016] Incomplete Receivable Aging Derivation Renders Accounts Receivable Balances as $0.00 Across Dashboards and Statements
+
+- **Bug ID:** BUG-016
+- **Priority:** P1 (High)
+- **Severity:** Major
+- **Domain:** Accounts Receivable / Financial Integrity
+- **Role:** Admin, Accountant
+- **Impacted Routes:**
+  - `GET /admin/receivables` (AR Dashboard)
+  - `GET /admin/receivables/{customer}` (Customer AR Ledger)
+  - `GET /admin/receivables/{customer}/statement` (Customer Statement)
+- **Precondition:** System contains customers with active approved/processing orders, credit balances, or invoice charges.
+- **Reproduction Steps:**
+  1. Login as Admin (`admin.qa@example.test`) or Accountant (`accountant.qa@example.test`).
+  2. Navigate to `/admin/receivables`.
+  3. Observe Total AR and Aging Buckets showing $0.00 across all customer rows despite active orders and exposure.
+- **Observed Behavior:**
+  AR Dashboard, Customer Ledgers, and Customer Statements displayed $0.00 balances because aging was evaluated exclusively against `Invoice` records. Uninvoiced active orders were omitted, and `available_credit` was populated from unapplied credit notes rather than authoritative customer credit limits.
+- **Expected Behavior:**
+  AR balances and aging buckets must authoritatively derive from both issued open invoices and active un-invoiced orders (`APPROVED`, `PROCESSING`, `COMPLETED`), accounting for verified payments and unapplied credit note offsets. Available credit must accurately reflect customer credit limit minus total exposure.
+- **Root Cause Analysis:**
+  1. `ReceivableAgingService::getAgingForCustomer()` and `getAgingReport()` calculated aging solely over `Invoice::where('status', '!=', 'PAID')`. Customers with active approved/processing orders with credit terms had zero invoice records, causing their aging buckets and total receivable to return 0.
+  2. `available_credit` in `getAgingForCustomer()` was set to `$customer->creditNotes()->where('status', 'APPROVED')->sum('remaining_balance')`, which represents unapplied credit notes rather than authoritative credit limit headroom.
+  3. `getAgingReport()` failed to integrate unapplied credit note balances when reporting customer credit positions.
+- **Resolution:**
+  1. Updated `ReceivableAgingService::getAgingForCustomer()` and `getAgingReport()` to evaluate all open receivables:
+     - Open issued invoices (aged by invoice `due_date` and `amount_due`).
+     - Active un-invoiced orders (`APPROVED`, `PROCESSING`, `COMPLETED` without invoice), calculating effective due date from `approved_at` + customer payment terms grace period, deducting verified payments and applying credit balances.
+  2. Reconciled `available_credit` with `ReceivableLedgerService::getCustomerFinancialSummary()['available_credit']`.
+  3. Preserved non-mutating read execution on all AR GET paths.
+  4. Preserved operational AR policy where pending verification payments reduce operational outstanding without posting to GL.
+- **Verification Outcome:**
+  - Real-database transaction reconciliation:
+    - **Apex Supermarket Group:** Total AR = $802.50, Available Credit = $49,757.39, Pending Payments = $559.89, Operational Outstanding = $242.61
+    - **Beacon Gourmet & Deli:** Total AR = $421.10, Available Credit = $14,658.90, Pending Payments = $80.00, Operational Outstanding = $341.10
+    - **Postgres Test Customer:** Total AR = $0.00, Available Credit = $550.00 (from 5 credit notes @ $110)
+    - **Summary Aggregate:** Total AR = $1,223.60, Current (0–30) = $1,223.60, Credit Balance / Available Credit = $154,966.29
+  - All unit & feature tests pass:
+    - `ReceivableAgingTest.php` (4 passed, 14 assertions)
+    - `CustomerReceivableLedgerTest.php` (8 passed, 22 assertions)
+    - `CustomerProfileTest.php` (23 passed, 247 assertions)
+- **Status:** VERIFIED (Fixed on `fix/delivery-ar-zero-balance-integrity-20260911`)
+
+---
+
 ## 3. Root-Cause Clusters
 
 | Cluster ID | Shared Root Cause | Affected Defects | Impacted Subsystems |
@@ -238,6 +322,8 @@
 | **RC-02** | **Missing Enum Option Serialization Method**<br>`RefundStatus` enum lacks static `options()` method expected by controller. | **BUG-012** | Refund Requests Queue |
 | **RC-03** | **Incomplete Role Guard in Shared-Permission Controller**<br>`AdminOrderController::index` blacklists `SALESMAN` but omits `DELIVERY_PARTNER`. | **BUG-013** | Admin Order Queue Security Scoping |
 | **RC-04** | **Route Alias Omission**<br>`/delivery/today` referenced in documentation is unmapped in `routes/web.php`. | **BUG-014** | Logistics Dashboard Navigation |
+| **RC-05** | **Stale Column Selection in Eloquent Eager Loading**<br>Queries selected non-existent `customer_code`, `city`, `phone`, `orderItemAllocation`. | **BUG-015** | Delivery Partner Workspace, Admin Deliveries |
+| **RC-06** | **Incomplete AR Aging Scope and Credit Headroom Derivation**<br>Aging excluded un-invoiced orders and misinterpreted credit note balance as credit limit. | **BUG-016** | AR Dashboard, Customer Ledgers, Customer Statements |
 
 ---
 
@@ -245,9 +331,12 @@
 
 | Backlog Item | Description | Audit Verification Result | Status |
 |---|---|---|---|
+| **Delivery Workspace & Driver Dashboard** | Fix stale column selections and restore driver active deliveries tab. | Verified in Phase 14 (`BUG-015`). `/delivery?tab=active` returns HTTP 200, 61 delivery tests passing. | **VERIFIED CLEAN** |
+| **Accounts Receivable Aging & Balances** | Include active uninvoiced orders, reconcile customer available credit and summary metrics. | Verified in Phase 14 (`BUG-016`). Real transaction reconciliation: Apex ($802.50), Beacon ($421.10), Summary ($1,223.60). | **VERIFIED CLEAN** |
 | **Salesman Dashboard** | Ensure Salesman lands on Overview Dashboard without stale "Phase 00" text. | Verified in Phase 14 (`13_regression_e2e_financial.spec.ts`). Lands on `/dashboard`, renders "Field Sales Dashboard", zero stale phase text. | **VERIFIED CLEAN** |
 | **Payment Collection** | Payment recording during New Sales Order creation. | Verified in Phase 5 (`04_salesman_new_order.spec.ts`). Validated method data, evidence requirements, and review calculation stability. | **VERIFIED CLEAN** |
 | **Payment Verification** | Admin payment hub and maker-checker validation. | Verified in Phase 7 (`06_payments_verification.spec.ts`). Admin hub displays pending/verified tabs, Salesman POST unauthorized. | **VERIFIED CLEAN** |
 | **Adjustments Schema & Concurrency** | Fix `order_items.status` column query error and false 409 status mismatch. | Verified in Phase 6 (`05_admin_orders_adjustments_inventory.spec.ts`). `/admin/adjustments` loads with 200, zero schema errors. | **VERIFIED CLEAN** |
 | **PostgreSQL 25P02 Transaction Aborts** | Ensure no queries execute inside aborted transaction blocks. | Verified in Phase 8 & 14. No `SQLSTATE[25P02]` or transaction aborts found in logs during operations. | **VERIFIED CLEAN** |
 | **Invoice Image Invariant** | Enforce RULE-DOC-001: Zero product images on formal invoices. | Verified in Phase 11 (`10_invoices_reports_notifications.spec.ts`). Markup inspected; exactly 0 images rendered in invoice table. | **VERIFIED INVARIANT** |
+

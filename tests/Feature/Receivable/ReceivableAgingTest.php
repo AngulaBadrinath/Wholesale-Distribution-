@@ -83,7 +83,7 @@ class ReceivableAgingTest extends TestCase
             'salesman_id' => $this->salesman->id,
             'created_by' => $this->salesman->id,
             'warehouse_id' => $this->warehouse->id,
-            'status' => OrderStatus::APPROVED,
+            'status' => OrderStatus::DRAFT,
             'fulfillment_status' => FulfillmentStatus::UNALLOCATED,
             'payment_status' => PaymentStatus::UNPAID,
             'subtotal' => '1000.00',
@@ -218,6 +218,8 @@ class ReceivableAgingTest extends TestCase
     public function test_customer_credit_balance_is_kept_separate_and_not_in_negative_aging_buckets(): void
     {
         $refDate = Carbon::parse('2026-09-30');
+
+        $this->customer->update(['credit_limit' => '0.00']);
 
         // Invoice of $500 in 1-30 days
         $this->createInvoice('500.00', '0.00', '2026-09-15');

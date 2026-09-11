@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Receivable;
 
+use App\Enums\CreditNoteStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentTerms;
 use App\Enums\PaymentTransactionStatus;
+use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -51,7 +54,7 @@ class ReceivableAgingService
 
         $refDate = ($referenceDate ?? Carbon::now())->startOfDay();
 
-        // 0. Authoritative financial summary
+        // 0. Authoritative financial summary derived from ledger service
         $financialSummary = $this->ledgerService->getCustomerFinancialSummary($customer);
 
         // 1. Fetch all open invoices for this customer (amount_due > 0 and not VOID)
@@ -60,6 +63,20 @@ class ReceivableAgingService
             ->whereNotIn('status', [InvoiceStatus::VOID->value])
             ->where('amount_due', '>', 0)
             ->orderBy('due_date', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        // 2. Fetch active uninvoiced orders (APPROVED, PROCESSING, COMPLETED without an invoice)
+        $uninvoicedOrders = Order::query()
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', [
+                OrderStatus::APPROVED->value,
+                OrderStatus::PROCESSING->value,
+                OrderStatus::COMPLETED->value,
+            ])
+            ->whereDoesntHave('invoice')
+            ->with(['payments' => fn ($q) => $q->where('status', PaymentTransactionStatus::VERIFIED->value)])
+            ->orderBy('approved_at', 'asc')
             ->orderBy('id', 'asc')
             ->get();
 
@@ -72,17 +89,14 @@ class ReceivableAgingService
 
         $invoiceDetails = [];
 
+        // Ingest open invoices (authoritative invoice amount_due)
         foreach ($invoices as $invoice) {
-            $amountDue = number_format((float) $invoice->amount_due, 2, '.', '');
-            if (bccomp($amountDue, '0.00', 2) <= 0) {
+            $amountDueStr = number_format((float) $invoice->amount_due, 2, '.', '');
+            if (bccomp($amountDueStr, '0.00', 2) <= 0) {
                 continue;
             }
 
-            $totalReceivable = bcadd($totalReceivable, $amountDue, 2);
-
             $dueDate = $invoice->due_date ? Carbon::parse($invoice->due_date)->startOfDay() : $refDate;
-            
-            // Days overdue = reference date - due date
             $daysOverdue = $dueDate->isAfter($refDate) ? 0 : (int) $dueDate->diffInDays($refDate);
 
             $bucket = match (true) {
@@ -93,12 +107,14 @@ class ReceivableAgingService
                 default => 'days_91_plus',
             };
 
+            $totalReceivable = bcadd($totalReceivable, $amountDueStr, 2);
+
             match ($bucket) {
-                'current' => $current = bcadd($current, $amountDue, 2),
-                'days_1_30' => $days1To30 = bcadd($days1To30, $amountDue, 2),
-                'days_31_60' => $days31To60 = bcadd($days31To60, $amountDue, 2),
-                'days_61_90' => $days61To90 = bcadd($days61To90, $amountDue, 2),
-                'days_91_plus' => $days91Plus = bcadd($days91Plus, $amountDue, 2),
+                'current' => $current = bcadd($current, $amountDueStr, 2),
+                'days_1_30' => $days1To30 = bcadd($days1To30, $amountDueStr, 2),
+                'days_31_60' => $days31To60 = bcadd($days31To60, $amountDueStr, 2),
+                'days_61_90' => $days61To90 = bcadd($days61To90, $amountDueStr, 2),
+                'days_91_plus' => $days91Plus = bcadd($days91Plus, $amountDueStr, 2),
             };
 
             $invoiceDetails[] = [
@@ -108,14 +124,85 @@ class ReceivableAgingService
                 'due_date' => $invoice->due_date?->toDateString(),
                 'grand_total' => (string) $invoice->grand_total,
                 'amount_paid' => (string) $invoice->amount_paid,
-                'amount_due' => $amountDue,
+                'amount_due' => $amountDueStr,
                 'days_overdue' => $daysOverdue,
                 'bucket' => $bucket,
                 'status' => $invoice->status->value,
             ];
         }
 
-        $availableCredit = $this->ledgerService->getCustomerCreditBalance($customer);
+        // Customer unapplied credit notes (applicable against uninvoiced orders)
+        $unappliedCreditNotes = (float) CreditNote::where('customer_id', $customer->id)
+            ->whereIn('status', [
+                CreditNoteStatus::ISSUED->value,
+                CreditNoteStatus::APPLIED->value,
+                CreditNoteStatus::PARTIALLY_REFUNDED->value,
+            ])
+            ->sum('remaining_balance');
+
+        $remainingOrderCredit = $unappliedCreditNotes;
+
+        // Ingest active uninvoiced orders
+        foreach ($uninvoicedOrders as $order) {
+            $verifiedPaidTotal = (float) $order->payments->sum('amount');
+            $grandTotalNum = (float) $order->grand_total;
+            $amountDueNum = max(0.00, round($grandTotalNum - $verifiedPaidTotal, 2));
+
+            // Apply unapplied credit notes against uninvoiced order balances
+            if ($remainingOrderCredit > 0.0 && $amountDueNum > 0.0) {
+                $creditDeduct = min($remainingOrderCredit, $amountDueNum);
+                $amountDueNum -= $creditDeduct;
+                $remainingOrderCredit -= $creditDeduct;
+            }
+
+            if ($amountDueNum <= 0.0) {
+                continue;
+            }
+
+            $amountDueStr = number_format($amountDueNum, 2, '.', '');
+
+            $paymentTerms = $customer->payment_terms instanceof PaymentTerms
+                ? $customer->payment_terms
+                : PaymentTerms::tryFrom((string) $customer->payment_terms) ?? PaymentTerms::NET_30;
+
+            $orderDate = $order->approved_at ?? $order->submitted_at ?? $order->created_at;
+            $dueDate = $orderDate ? Carbon::parse($orderDate)->startOfDay()->addDays($paymentTerms->gracePeriodDays()) : $refDate;
+            $daysOverdue = $dueDate->isAfter($refDate) ? 0 : (int) $dueDate->diffInDays($refDate);
+
+            $bucket = match (true) {
+                $daysOverdue <= 0 => 'current',
+                $daysOverdue <= 30 => 'days_1_30',
+                $daysOverdue <= 60 => 'days_31_60',
+                $daysOverdue <= 90 => 'days_61_90',
+                default => 'days_91_plus',
+            };
+
+            $totalReceivable = bcadd($totalReceivable, $amountDueStr, 2);
+
+            match ($bucket) {
+                'current' => $current = bcadd($current, $amountDueStr, 2),
+                'days_1_30' => $days1To30 = bcadd($days1To30, $amountDueStr, 2),
+                'days_31_60' => $days31To60 = bcadd($days31To60, $amountDueStr, 2),
+                'days_61_90' => $days61To90 = bcadd($days61To90, $amountDueStr, 2),
+                'days_91_plus' => $days91Plus = bcadd($days91Plus, $amountDueStr, 2),
+            };
+
+            $invoiceDetails[] = [
+                'id' => $order->id,
+                'invoice_number' => $order->order_number,
+                'invoice_date' => $orderDate ? Carbon::parse($orderDate)->toDateString() : null,
+                'due_date' => $dueDate->toDateString(),
+                'grand_total' => (string) $order->grand_total,
+                'amount_paid' => number_format($verifiedPaidTotal, 2, '.', ''),
+                'amount_due' => $amountDueStr,
+                'days_overdue' => $daysOverdue,
+                'bucket' => $bucket,
+                'status' => 'UNINVOICED',
+            ];
+        }
+
+        // Available credit entitlement
+        $availableCredit = $financialSummary['available_credit'];
 
         return [
             'customer_id' => $customer->id,

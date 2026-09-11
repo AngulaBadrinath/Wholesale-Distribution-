@@ -72,8 +72,8 @@ class AdminDeliveryController extends Controller
         $query = Delivery::query()
             ->with([
                 'order:id,order_number,status,fulfillment_status,grand_total',
-                'customer:id,name,customer_code,phone,city,state',
-                'driver:id,name,email,phone',
+                'customer:id,name,code,phone,billing_city,billing_state,shipping_city,shipping_state',
+                'driver:id,name,email',
                 'items.product:id,name,sku',
             ]);
 
@@ -126,7 +126,7 @@ class AdminDeliveryController extends Controller
         // Get available active delivery drivers for assignment dropdown
         $availableDrivers = User::where('role', UserRole::DELIVERY_PARTNER)
             ->where('status', \App\Enums\AccountStatus::ACTIVE)
-            ->select('id', 'name', 'email', 'phone')
+            ->select('id', 'name', 'email')
             ->orderBy('name', 'asc')
             ->get();
 

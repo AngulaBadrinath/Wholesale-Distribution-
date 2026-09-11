@@ -34,7 +34,7 @@ class DeliveryPartnerController extends Controller
         $query = Delivery::query()
             ->with([
                 'order:id,order_number,status,fulfillment_status,grand_total',
-                'customer:id,name,customer_code,phone,city,state',
+                'customer:id,name,code,phone,billing_city,billing_state,shipping_city,shipping_state',
                 'items.product:id,name,sku',
             ]);
 
@@ -116,10 +116,10 @@ class DeliveryPartnerController extends Controller
 
         $delivery->load([
             'order:id,order_number,status,fulfillment_status,delivery_status,grand_total,created_at',
-            'customer:id,name,customer_code,contact_name,phone,email,billing_address_line1,shipping_address_line1,city,state,postal_code',
-            'driver:id,name,email,phone',
+            'customer:id,name,code,contact_name,phone,email,billing_address_line1,billing_address_line2,billing_city,billing_state,billing_postal_code,shipping_address_line1,shipping_address_line2,shipping_city,shipping_state,shipping_postal_code',
+            'driver:id,name,email',
             'items.product:id,name,sku,unit',
-            'items.orderItemAllocation',
+            'items.allocation',
             'events' => fn ($q) => $q->with('actor:id,name,role')->orderBy('created_at', 'desc'),
             'failures' => fn ($q) => $q->with('reporter:id,name')->orderBy('reported_at', 'desc'),
         ]);

@@ -57,6 +57,15 @@ class Customer extends Model
     ];
 
     /**
+     * The accessors to append to the model's array and JSON representation.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'customer_code',
+    ];
+
+    /**
      * Get the salesman assigned to this customer.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\User, $this>
@@ -290,6 +299,14 @@ class Customer extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'customer_id')->orderBy('payment_date', 'desc');
+    }
+
+    /**
+     * Canonical accessor for customer code to guarantee API/UI backward compatibility.
+     */
+    public function getCustomerCodeAttribute(): string
+    {
+        return $this->code ?? '';
     }
 
     /**
