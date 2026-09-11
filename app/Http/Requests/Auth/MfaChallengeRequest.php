@@ -52,10 +52,15 @@ class MfaChallengeRequest extends FormRequest
     }
 
     /**
-     * Get the throttle key for the challenge request based on client IP.
+     * Get the throttle key for the challenge request based on session challenge user identity and client IP.
      */
     public function throttleKey(): string
     {
-        return 'mfa-challenge:' . Str::transliterate($this->ip());
+        $challenge = $this->session()->get('mfa.challenge');
+        $userId = is_array($challenge) && ! empty($challenge['user_id'])
+            ? (string) $challenge['user_id']
+            : 'anon';
+
+        return 'mfa-challenge:' . Str::transliterate($userId . '|' . $this->ip());
     }
 }
