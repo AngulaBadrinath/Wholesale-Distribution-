@@ -39,8 +39,8 @@ class CompanyInformationService
 
         if (! $instance) {
             $instance = CompanyInformation::create([
-                'legal_name' => 'Wholesale Distribution Inc.',
-                'dba_name' => 'Apex Wholesale Distribution',
+                'legal_name' => 'Unique Distributors Inc.',
+                'dba_name' => 'Unique Distributors',
                 'address_line1' => '100 Distribution Blvd',
                 'address_line2' => 'Suite 400',
                 'city' => 'Atlanta',

@@ -6,14 +6,14 @@ use App\DTOs\System\ApplicationIdentity;
 
 class ApplicationIdentityService
 {
-    public const DEFAULT_NAME = 'Wholesale Distribution Management System';
-    public const DEFAULT_COMPANY_NAME = 'Wholesale Distribution Inc.';
+    public const DEFAULT_NAME = 'Unique Distributors';
+    public const DEFAULT_COMPANY_NAME = 'Unique Distributors Inc.';
     public const DEFAULT_TAGLINE = 'B2B Wholesale Commerce & Distribution Platform';
-    public const DEFAULT_SUPPORT_EMAIL = 'support@wdms.local';
+    public const DEFAULT_SUPPORT_EMAIL = 'support@uniquedistributors.local';
     public const DEFAULT_SUPPORT_PHONE = '+1 (555) 019-2834';
     public const DEFAULT_LOGO_PATH = '/images/brand/logo.svg';
     public const DEFAULT_FAVICON_PATH = '/favicon.ico';
-    public const DEFAULT_FOOTER_TEXT = 'Wholesale Distribution Management System';
+    public const DEFAULT_FOOTER_TEXT = 'Unique Distributors';
 
     /**
      * Resolve the authoritative application identity value object.

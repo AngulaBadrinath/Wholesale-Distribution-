@@ -117,8 +117,7 @@ class AuthenticationTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('email');
-        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+        $response->assertStatus(429);
 
         // JSON request should return HTTP 429
         $jsonResponse = $this->postJson('/login', [
@@ -152,8 +151,7 @@ class AuthenticationTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors('email');
-        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+        $response->assertStatus(429);
     }
 
     /**
@@ -281,7 +279,7 @@ class AuthenticationTest extends TestCase
             'status' => AccountStatus::ACTIVE,
         ]);
 
-        $response = $this->actingAs($user)->get('/foundation');
+        $response = $this->actingAs($user)->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page

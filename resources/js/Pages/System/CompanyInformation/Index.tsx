@@ -129,7 +129,7 @@ export default function CompanyInformationIndex({ company, status }: CompanyInfo
                                         type="text"
                                         value={data.legal_name}
                                         onChange={(e) => setData('legal_name', e.target.value)}
-                                        placeholder="e.g. Wholesale Distribution LLC"
+                                        placeholder="e.g. Unique Distributors Inc."
                                         required
                                         disabled={processing}
                                         className={errors.legal_name ? 'border-destructive' : ''}

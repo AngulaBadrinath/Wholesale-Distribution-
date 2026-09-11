@@ -466,7 +466,7 @@ export default function CreateOrder({
 
     return (
         <LayoutComponent title={activeDraftId ? 'Edit Draft Order' : 'New Sales Order'}>
-            <Head title={`${activeDraftId ? 'Edit Draft' : 'New Sales Order'} — Wholesale Distribution`} />
+            <Head title={`${activeDraftId ? 'Edit Draft' : 'New Sales Order'} — Unique Distributors`} />
 
             <div className="max-w-7xl mx-auto space-y-6 pb-28 sm:pb-24">
                 {/* Top Action Bar & Status */}

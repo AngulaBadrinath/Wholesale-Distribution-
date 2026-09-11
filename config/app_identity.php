@@ -10,7 +10,7 @@ return [
     | The user-facing name of the software product or platform.
     |
     */
-    'name' => env('APP_NAME', 'Wholesale Distribution Management System'),
+    'name' => env('APP_NAME', 'Unique Distributors'),
 
     /*
     |--------------------------------------------------------------------------
@@ -20,7 +20,7 @@ return [
     | The formal name of the company or operating business entity.
     |
     */
-    'company_name' => env('COMPANY_NAME', 'Wholesale Distribution Inc.'),
+    'company_name' => env('COMPANY_NAME', 'Unique Distributors Inc.'),
 
     /*
     |--------------------------------------------------------------------------
@@ -40,7 +40,7 @@ return [
     | Public support contact channels for users and field representatives.
     |
     */
-    'support_email' => env('SUPPORT_EMAIL', 'support@wdms.local'),
+    'support_email' => env('SUPPORT_EMAIL', 'support@uniquedistributors.local'),
     'support_phone' => env('SUPPORT_PHONE', '+1 (555) 019-2834'),
 
     /*
@@ -62,6 +62,6 @@ return [
     | Authoritative copyright or footer text displayed across application shells.
     |
     */
-    'footer_text' => env('APP_FOOTER_TEXT', 'Wholesale Distribution Management System'),
+    'footer_text' => env('APP_FOOTER_TEXT', 'Unique Distributors'),
 
 ];

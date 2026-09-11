@@ -130,7 +130,7 @@ class QA001AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
-        $response->assertSessionHasErrors('email');
+        $response->assertStatus(429);
     }
 
     /**

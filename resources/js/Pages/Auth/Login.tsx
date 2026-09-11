@@ -14,8 +14,8 @@ interface LoginProps {
 export default function Login({ status }: LoginProps) {
     const { appName, identity } = usePage<PageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
-    const displayName = identity?.name || appName || 'Wholesale Distribution Management System';
-    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'WD';
+    const displayName = identity?.name || appName || 'Unique Distributors';
+    const initials = displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'UD';
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -208,7 +208,6 @@ export default function Login({ status }: LoginProps) {
                             <Shield className="h-3.5 w-3.5 text-primary" />
                             <span>Encrypted Session &bull; Server-Side Abuse Protection</span>
                         </div>
-                        <span className="font-mono text-[10px]">AUTH-001</span>
                     </CardFooter>
                 </Card>
 

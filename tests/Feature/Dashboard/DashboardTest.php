@@ -91,7 +91,7 @@ class DashboardTest extends TestCase
         $response->assertRedirect(route('delivery.index'));
     }
 
-    public function test_foundation_route_renders_welcome_infrastructure_showcase(): void
+    public function test_foundation_route_is_removed(): void
     {
         $admin = User::factory()->create([
             'role' => UserRole::ADMIN,
@@ -99,11 +99,6 @@ class DashboardTest extends TestCase
 
         $response = $this->actingAs($admin)->get('/foundation');
 
-        $response->assertOk();
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('Welcome')
-            ->has('phpVersion')
-            ->has('laravelVersion')
-        );
+        $response->assertNotFound();
     }
 }
