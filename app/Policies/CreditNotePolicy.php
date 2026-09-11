@@ -22,7 +22,8 @@ class CreditNotePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->permissionService->has($user, Permission::CREDIT_CREATE)
+        return $this->permissionService->has($user, Permission::CREDIT_VIEW)
+            || $this->permissionService->has($user, Permission::CREDIT_CREATE)
             || $this->permissionService->has($user, Permission::ACCOUNTING_VIEW)
             || $this->permissionService->has($user, Permission::CUSTOMER_VIEW);
     }

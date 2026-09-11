@@ -359,12 +359,16 @@ class CreditNoteTest extends TestCase
         $service = app(CreditNoteService::class);
         $creditNote = $service->generateCreditNote($this->approvedReturn, $this->admin);
 
-        // Assigned salesman can access their customer's credit note
+        // SEC-001 defense-in-depth: salesman is blocked with 403 on admin credit routes
         $response = $this->actingAs($this->salesman)->getJson("/admin/credits/{$creditNote->id}");
-        $response->assertOk();
+        $response->assertForbidden();
 
-        // Other salesman cannot access foreign credit note (fails closed 404)
+        // Other salesman is also blocked with 403
         $response = $this->actingAs($this->otherSalesman)->getJson("/admin/credits/{$creditNote->id}");
-        $response->assertNotFound();
+        $response->assertForbidden();
+
+        // Authorized admin can access credit note
+        $response = $this->actingAs($this->admin)->getJson("/admin/credits/{$creditNote->id}");
+        $response->assertOk();
     }
 }

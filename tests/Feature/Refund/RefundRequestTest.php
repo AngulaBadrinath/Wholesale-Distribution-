@@ -332,12 +332,16 @@ class RefundRequestTest extends TestCase
             'reason' => 'Petty cash disbursement.',
         ]);
 
-        // Assigned salesman can view
+        // SEC-001 defense-in-depth: salesman is blocked with 403 on admin refund routes
         $response = $this->actingAs($this->salesman)->getJson("/admin/refunds/{$refund->id}");
-        $response->assertOk();
+        $response->assertForbidden();
 
-        // Foreign salesman cannot access foreign customer's refund (fails closed 404)
+        // Foreign salesman is also blocked with 403
         $response = $this->actingAs($this->otherSalesman)->getJson("/admin/refunds/{$refund->id}");
-        $response->assertNotFound();
+        $response->assertForbidden();
+
+        // Authorized admin can access refund
+        $response = $this->actingAs($this->admin)->getJson("/admin/refunds/{$refund->id}");
+        $response->assertOk();
     }
 }

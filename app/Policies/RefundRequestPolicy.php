@@ -23,7 +23,8 @@ class RefundRequestPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->permissionService->has($user, Permission::REFUND_REQUEST)
+        return $this->permissionService->has($user, Permission::REFUND_VIEW)
+            || $this->permissionService->has($user, Permission::REFUND_REQUEST)
             || $this->permissionService->has($user, Permission::REFUND_APPROVE)
             || $this->permissionService->has($user, Permission::ACCOUNTING_VIEW);
     }

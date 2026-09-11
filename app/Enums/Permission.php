@@ -56,9 +56,11 @@ enum Permission: string
     case RETURN_APPROVE = 'return.approve';
 
     // Credit
+    case CREDIT_VIEW = 'credit.view';
     case CREDIT_CREATE = 'credit.create';
 
     // Refund
+    case REFUND_VIEW = 'refund.view';
     case REFUND_REQUEST = 'refund.request';
     case REFUND_APPROVE = 'refund.approve';
 
@@ -143,8 +145,10 @@ enum Permission: string
             self::RETURN_REVIEW => 'Review Returns',
             self::RETURN_APPROVE => 'Approve Returns',
 
+            self::CREDIT_VIEW => 'View Credit Notes',
             self::CREDIT_CREATE => 'Create Credit Notes',
 
+            self::REFUND_VIEW => 'View Refunds',
             self::REFUND_REQUEST => 'Request Refunds',
             self::REFUND_APPROVE => 'Approve Refunds',
 
@@ -222,8 +226,10 @@ enum Permission: string
             self::RETURN_REVIEW => 'Inspect returned items and verify reported physical condition.',
             self::RETURN_APPROVE => 'Authorize inspected product returns for inventory or credit processing.',
 
+            self::CREDIT_VIEW => 'Access and browse customer credit notes, line calculations, and adjustments.',
             self::CREDIT_CREATE => 'Issue authoritative customer credit notes for returns or billing corrections.',
 
+            self::REFUND_VIEW => 'Access and browse customer refund requests and processing lifecycles.',
             self::REFUND_REQUEST => 'Submit formal refund requests for customer overpayments or returned balances.',
             self::REFUND_APPROVE => 'Review and authoritatively disburse approved customer refunds.',
 

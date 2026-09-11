@@ -224,7 +224,9 @@ class PermissionService
                 Permission::RETURN_APPROVE,
 
                 // Credit & Refund
+                Permission::CREDIT_VIEW,
                 Permission::CREDIT_CREATE,
+                Permission::REFUND_VIEW,
                 Permission::REFUND_REQUEST,
                 Permission::REFUND_APPROVE,
 
@@ -257,7 +259,7 @@ class PermissionService
                 Permission::ROLE_MANAGE,
             ],
 
-            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (20 permissions)
+            // ACCOUNTANT: Financial, ledger, payment verification, and credit operations (22 permissions)
             UserRole::ACCOUNTANT->value => [
                 Permission::CUSTOMER_VIEW,
                 Permission::ORDER_VIEW,
@@ -267,7 +269,9 @@ class PermissionService
                 Permission::PAYMENT_CREATE,
                 Permission::PAYMENT_VERIFY,
                 Permission::PAYMENT_REVERSE,
+                Permission::CREDIT_VIEW,
                 Permission::CREDIT_CREATE,
+                Permission::REFUND_VIEW,
                 Permission::REFUND_REQUEST,
                 Permission::REFUND_APPROVE,
                 Permission::INVOICE_VIEW,
