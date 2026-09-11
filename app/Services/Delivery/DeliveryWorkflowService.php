@@ -19,6 +19,7 @@ use App\Models\InventoryBalance;
 use App\Models\Order;
 use App\Models\OrderItemAllocation;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Auth\PermissionService;
 use App\Services\Inventory\InventoryMovementService;
 use App\Services\Inventory\InventoryService;
@@ -37,6 +38,7 @@ class DeliveryWorkflowService
         protected PermissionService $permissionService,
         protected DeliveryEvidenceService $evidenceService,
         protected InventoryMovementService $movementService,
+        protected JournalMappingService $journalMappingService,
     ) {}
 
     /**
@@ -388,6 +390,9 @@ class DeliveryWorkflowService
             $lockedOrder->fulfillment_status = FulfillmentStatus::DELIVERED;
             $lockedOrder->delivery_status = DeliveryStatus::DELIVERED;
             $lockedOrder->save();
+
+            // Post authoritative COGS to General Ledger
+            $this->journalMappingService->postOrderDeliveredCogs($lockedOrder, $actor);
 
             Log::info('logistics.delivery_complete', [
                 'delivery_id' => $lockedDelivery->id,

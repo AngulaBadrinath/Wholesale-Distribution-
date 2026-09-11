@@ -347,5 +347,61 @@
 | **Branding Unification (`UI-002`)** | Unify default application branding to "Unique Distributors" and "Unique Distributors Inc." | Verified across app title, layout, and auth screens in Playwright browser tests. | **VERIFIED CLEAN** |
 | **Scaffold Route Deprecation (`DEAD-001`)** | Remove legacy `/foundation` route and `Welcome.tsx` component. | Verified in Playwright browser tests. `/foundation` returns 404 Not Found. Authenticated routes unaffected. | **VERIFIED CLEAN** |
 | **Canonical Route Normalization (`DEAD-002`)** | Standardize `/create` navigation and add 301 redirects for legacy `-create` aliases. | Verified in Playwright browser tests. Create pages render with 200; legacy aliases redirect cleanly. | **VERIFIED CLEAN** |
+| **Profit & Loss Statement Reconciliation (`BUG-017`)** | Restore double-entry GL journal synchronization and P&L financial statement reconciliation. | Verified in `ProfitLossReconciliationTest.php` and DB reconciliation. Operating Revenue ($2,314.50), Net Revenue ($1,814.50), COGS ($420.00), Net Income ($1,394.50), Trial Balance ($5,015.44 Balanced), Balance Sheet ($1,541.55 Balanced). | **VERIFIED CLEAN** |
+
+---
+
+### [BUG-017] Profit & Loss Statement Shows $0.00 Due to Disconnected Operational-to-GL Journal Mapping and Enum Mismatches
+
+- **Bug ID:** BUG-017
+- **Priority:** P1 (High)
+- **Severity:** Major / Financial Reporting Integrity
+- **Domain:** Accounting / Financial Reporting / General Ledger
+- **Role:** Accountant, Admin, Super Admin
+- **Impacted Routes:**
+  - `GET /admin/accounting/profit-loss` (Profit & Loss Statement)
+- **Precondition:** Authenticated user with permission `accounting.view` views the Profit & Loss statement for an accounting period containing live orders, payments, credits, or supplier bills.
+- **Observed Behavior:**
+  The statement rendered $0.00 for all figures (Operating Revenue, Contra-Revenue, Net Revenue, COGS, Expenses, Gross Profit, Net Income).
+- **Root Cause Analysis:**
+  1. `JournalMappingService.php:666` referenced non-existent `CreditNoteStatus::VOID` enum, throwing a fatal crash when synchronizing historical business events.
+  2. Operational workflow services (`InvoiceGeneratorService`, `PaymentVerificationService`, `PaymentReversalService`, `DeliveryWorkflowService`, `CreditNoteService`, `RefundWorkflowService`, `PayableLedgerService`, `InventoryAdjustmentService`) recorded sub-ledger transactions but did not dispatch authoritative GL journal postings via `JournalMappingService`.
+  3. `JournalMappingService::postOrderDeliveredCogs` used `Carbon::now()` rather than authentic delivery/order completion dates.
+  4. `JournalMappingService::postInventoryAdjustment` checked non-existent `InventoryAdjustmentType::INCREASE` instead of `INCREASE_ON_HAND`.
+  5. `ProfitLoss.tsx` lacked zero-safe contra-revenue formatting, rendering `-$0.00`.
+- **Correction Applied:**
+  1. Injected `JournalMappingService` into all authoritative transactional domain services to post balanced double-entry journals upon invoice issuance, payment verification/reversal, delivery completion, credit note issuance, refund processing, supplier bills/payments, and inventory adjustments.
+  2. Corrected enum references across `JournalMappingService` (`CreditNoteStatus`, `InventoryAdjustmentType::INCREASE_ON_HAND`, `PaymentMethod`, `SupplierPaymentMethod`).
+  3. Formatted currency display in `ProfitLoss.tsx` with zero-safe formatting.
+  4. Added `syncUnpostedHistoricalEvents` in `ManualTestingSeeder.php`.
+- **Reconciliation Evidence (Period 2026-01-01 through 2026-09-11):**
+  - **Profit & Loss Statement:**
+    - Wholesale Sales Revenue (4010): $2,314.50
+    - Delivery & Shipping Revenue (4030): $0.00
+    - Total Operating Revenue: $2,314.50
+    - Less Sales Discounts & Allowances (4020): -$500.00
+    - **Net Sales Revenue:** $1,814.50
+    - Cost of Goods Sold (5010): $420.00
+    - **Gross Profit:** $1,394.50
+    - Total Operating Expenses: $0.00
+    - **Net Operating Income:** $1,394.50
+  - **Trial Balance:**
+    - Total Debits: $5,015.44
+    - Total Credits: $5,015.44
+    - Total Net Debits: $2,881.55
+    - Total Net Credits: $2,881.55
+    - **Status: 100% Balanced ($\Delta = \$0.00$)**
+  - **Balance Sheet:**
+    - Total Assets: $1,541.55
+    - Total Liabilities: $147.05
+    - Total Equity: $1,394.50 (Current Period Earnings from P&L: $1,394.50)
+    - Total Liabilities & Equity: $1,541.55
+    - **Status: 100% Balanced ($\Delta = \$0.00$)**
+- **Targeted Test Results:**
+  - `tests/Feature/Accounting/ProfitLossReconciliationTest.php`: 3 passed, 42 assertions.
+  - `tests/Feature/Accounting/`: 47 passed, 207 assertions.
+  - Domain test suite: 350 passed, 1789 assertions.
+- **Status:** VERIFIED CLEAN (Fixed on `fix/profit-loss-accounting-integrity`)
+
 
 

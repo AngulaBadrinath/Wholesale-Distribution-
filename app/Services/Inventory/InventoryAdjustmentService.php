@@ -10,6 +10,7 @@ use App\Enums\Permission;
 use App\Models\InventoryAdjustment;
 use App\Models\InventoryBalance;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Auth\PermissionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,6 +25,7 @@ class InventoryAdjustmentService
         protected PermissionService $permissionService,
         protected InventoryService $inventoryService,
         protected InventoryMovementService $movementService,
+        protected JournalMappingService $journalMappingService,
     ) {}
 
     /**
@@ -219,6 +221,9 @@ class InventoryAdjustmentService
                 'notes' => $notes,
                 'actor_id' => $actor->id,
             ]);
+
+            // Post authoritative inventory adjustment / shrinkage to General Ledger
+            $this->journalMappingService->postInventoryAdjustment($adjustment, $actor);
 
             return $adjustment;
         }, 3);

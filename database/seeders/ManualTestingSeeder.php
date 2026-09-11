@@ -605,6 +605,11 @@ class ManualTestingSeeder extends Seeder
             ]
         );
 
+        // Ensure Invoice exists for Order 1
+        if (! \App\Models\Invoice::where('order_id', $orderCompleted->id)->exists()) {
+            app(\App\Services\Invoices\InvoiceGeneratorService::class)->generateInvoiceForOrder($orderCompleted, $accountant);
+        }
+
         // Seed Payment for Order 1
         Payment::updateOrCreate(
             ['payment_number' => 'PAY-2026-0001'],
@@ -772,5 +777,8 @@ class ManualTestingSeeder extends Seeder
                 'line_total' => 113.85,
             ]
         );
+
+        // Authoritatively synchronize all seeded demo business events with General Ledger
+        app(\App\Services\Accounting\JournalMappingService::class)->syncUnpostedHistoricalEvents($superAdmin);
     }
 }

@@ -10,6 +10,7 @@ use App\Models\CreditNoteItem;
 use App\Models\ReturnRequest;
 use App\Models\ReturnRequestEvent;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Credit\CreditEligibilityService;
 use App\Services\Credit\CreditNoteNumberGenerator;
 use App\Services\Receivable\ReceivableLedgerService;
@@ -24,7 +25,8 @@ class CreditNoteService
         protected CreditEligibilityService $eligibilityService,
         protected CreditNoteNumberGenerator $numberGenerator,
         protected CompanyInformationService $companyInformationService,
-        protected ReceivableLedgerService $receivableLedgerService
+        protected ReceivableLedgerService $receivableLedgerService,
+        protected JournalMappingService $journalMappingService,
     ) {}
 
     /**
@@ -182,6 +184,9 @@ class CreditNoteService
 
             // Post authoritative credit note to customer accounts receivable ledger
             $this->receivableLedgerService->recordCreditNote($creditNote, $issuer);
+
+            // Post authoritative credit note to General Ledger
+            $this->journalMappingService->postCreditNoteIssued($creditNote, $issuer);
 
             return $creditNote->fresh(['items', 'customer', 'order', 'returnRequest', 'issuer']);
         });

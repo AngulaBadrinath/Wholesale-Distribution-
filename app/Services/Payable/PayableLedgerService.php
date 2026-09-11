@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Models\SupplierBill;
 use App\Models\SupplierPayment;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,6 +28,7 @@ class PayableLedgerService
         protected SupplierBillNumberGenerator $billNumberGenerator,
         protected SupplierPaymentNumberGenerator $paymentNumberGenerator,
         protected PayableTransactionNumberGenerator $transactionNumberGenerator,
+        protected JournalMappingService $journalMappingService,
     ) {}
 
     /**
@@ -179,6 +181,9 @@ class PayableLedgerService
 
             $this->recalculateRunningBalances($bill->supplier_id);
 
+            // Post authoritative supplier bill expense to General Ledger
+            $this->journalMappingService->postSupplierBillPosted($bill, $actor);
+
             return $transaction;
         });
     }
@@ -288,6 +293,9 @@ class PayableLedgerService
 
             $this->recalculateRunningBalances($supplier->id);
 
+            // Post authoritative supplier payment disbursement to General Ledger
+            $this->journalMappingService->postSupplierPaymentCompleted($payment, $actor);
+
             return $payment;
         });
     }
@@ -352,6 +360,9 @@ class PayableLedgerService
             ]);
 
             $this->recalculateRunningBalances($payment->supplier_id);
+
+            // Post authoritative supplier payment reversal to General Ledger
+            $this->journalMappingService->postSupplierPaymentReversed($payment, $actor);
 
             return $transaction;
         });

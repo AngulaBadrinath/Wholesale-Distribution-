@@ -283,7 +283,7 @@ class JournalMappingService
 
         $cashAccountCode = match ($refundTxn->payment_method) {
             PaymentMethod::CASH => '1010',
-            PaymentMethod::BANK_TRANSFER, PaymentMethod::CHEQUE, PaymentMethod::MONEY_ORDER => '1030',
+            PaymentMethod::CHEQUE, PaymentMethod::MONEY_ORDER => '1030',
             default => '1010',
         };
 
@@ -412,7 +412,7 @@ class JournalMappingService
     public function postSupplierPaymentReversed(SupplierPayment $payment, ?User $actor = null): JournalEntry
     {
         $apAccount = $this->accountService->resolveAccount('2010');
-        $cashAccountCode = $payment->payment_method === PaymentMethod::CASH ? '1010' : '1030';
+        $cashAccountCode = ($payment->payment_method === SupplierPaymentMethod::CASH || $payment->payment_method?->value === 'CASH') ? '1010' : '1030';
         $cashAccount = $this->accountService->resolveAccount($cashAccountCode);
 
         $amount = number_format((float) $payment->amount, 2, '.', '');
@@ -496,6 +496,11 @@ class JournalMappingService
             ],
         ];
 
+        $accountingDate = $order->deliveries()->where('status', 'DELIVERED')->value('delivered_at')
+            ?? $order->approved_at
+            ?? $order->submitted_at
+            ?? $order->created_at;
+
         $header = [
             'entry_type' => JournalEntryType::SYSTEM,
             'source_type' => 'order',
@@ -503,7 +508,7 @@ class JournalMappingService
             'source_number' => $order->order_number,
             'source_event' => 'ORDER_DELIVERED_COGS',
             'posting_date' => Carbon::now()->toDateString(),
-            'accounting_date' => Carbon::now()->toDateString(),
+            'accounting_date' => $accountingDate ? Carbon::parse($accountingDate)->toDateString() : Carbon::now()->toDateString(),
             'description' => "Order #{$order->order_number} COGS & inventory fulfillment",
         ];
 
@@ -542,7 +547,7 @@ class JournalMappingService
         $shrinkageAccount = $this->accountService->resolveAccount('5020');
         $inventoryAccount = $this->accountService->resolveAccount('1200');
 
-        $isIncrease = $adjustment->adjustment_type === InventoryAdjustmentType::INCREASE;
+        $isIncrease = $adjustment->adjustment_type === InventoryAdjustmentType::INCREASE_ON_HAND;
 
         if ($isIncrease) {
             $lines = [
@@ -576,6 +581,8 @@ class JournalMappingService
             ];
         }
 
+        $accountingDate = $adjustment->created_at ? Carbon::parse($adjustment->created_at)->toDateString() : Carbon::now()->toDateString();
+
         $header = [
             'entry_type' => JournalEntryType::SYSTEM,
             'source_type' => 'inventory_adjustment',
@@ -583,7 +590,7 @@ class JournalMappingService
             'source_number' => $adjustment->adjustment_number,
             'source_event' => 'STOCK_ADJUSTMENT',
             'posting_date' => Carbon::now()->toDateString(),
-            'accounting_date' => Carbon::now()->toDateString(),
+            'accounting_date' => $accountingDate,
             'description' => "Inventory Adjustment #{$adjustment->adjustment_number} valuation adjustment",
         ];
 
@@ -663,7 +670,7 @@ class JournalMappingService
         }
 
         // 3. Credit Notes
-        $creditNotes = CreditNote::whereNotIn('status', [CreditNoteStatus::VOID])->get();
+        $creditNotes = CreditNote::all();
         foreach ($creditNotes as $cn) {
             $exists = JournalEntry::where('source_type', 'credit_note')
                 ->where('source_id', $cn->id)

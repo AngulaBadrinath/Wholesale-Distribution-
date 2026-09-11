@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Auth\PermissionService;
 use App\Services\Receivable\ReceivableLedgerService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -21,7 +22,8 @@ class PaymentReversalService
     public function __construct(
         protected PermissionService $permissionService,
         protected PaymentVerificationService $verificationService,
-        protected ReceivableLedgerService $receivableLedgerService
+        protected ReceivableLedgerService $receivableLedgerService,
+        protected JournalMappingService $journalMappingService
     ) {}
 
     /**
@@ -86,6 +88,9 @@ class PaymentReversalService
 
             // Post compensating debit to customer accounts receivable ledger
             $this->receivableLedgerService->recordPaymentReversal($lockedPayment, $actor);
+
+            // Post compensating entry to General Ledger
+            $this->journalMappingService->postPaymentReversed($lockedPayment, $actor);
 
             Log::warning('Payment reversed and bounced', [
                 'payment_id' => $lockedPayment->id,

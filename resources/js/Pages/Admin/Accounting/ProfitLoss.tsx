@@ -69,6 +69,18 @@ export default function ProfitLossPage({ report, filters }: Props) {
 
     const isNetIncomePositive = parseFloat(report.net_income) >= 0;
 
+    const formatCurrency = (val: string | number, isContra: boolean = false) => {
+        const num = parseFloat(String(val || 0));
+        if (Math.abs(num) < 0.001) {
+            return '$0.00';
+        }
+        const formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (isContra || num < 0) {
+            return `-$${formatted}`;
+        }
+        return `$${formatted}`;
+    };
+
     return (
         <AppLayout title="Profit & Loss Statement">
             <Head title="Profit & Loss (Income Statement)" />
@@ -87,7 +99,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                         : 'bg-red-500/10 text-red-600 border-red-500/20 text-xs py-0.5'
                                 }
                             >
-                                {isNetIncomePositive ? 'Net Profit' : 'Net Loss'}: ${report.net_income}
+                                {isNetIncomePositive ? 'Net Profit' : 'Net Loss'}: {formatCurrency(report.net_income)}
                             </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -149,7 +161,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                         <span className="text-foreground font-medium">
                                             {row.account_code} — {row.name}
                                         </span>
-                                        <span className="font-mono">${row.amount}</span>
+                                        <span className="font-mono">{formatCurrency(row.amount)}</span>
                                     </div>
                                 ))}
 
@@ -159,7 +171,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                         {report.contra_revenue.rows.map((row) => (
                                             <div key={row.account_id} className="flex justify-between py-1 pl-4 border-b border-border/40 text-red-600">
                                                 <span>{row.account_code} — {row.name}</span>
-                                                <span className="font-mono">-${row.amount}</span>
+                                                <span className="font-mono">{formatCurrency(row.amount, true)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -167,7 +179,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
 
                                 <div className="flex justify-between pt-2 font-bold text-sm border-t border-border">
                                     <span>Net Sales Revenue:</span>
-                                    <span className="font-mono text-emerald-600">${report.net_revenue}</span>
+                                    <span className="font-mono text-emerald-600">{formatCurrency(report.net_revenue)}</span>
                                 </div>
                             </div>
                         </div>
@@ -183,13 +195,13 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                         <span className="text-foreground font-medium">
                                             {row.account_code} — {row.name}
                                         </span>
-                                        <span className="font-mono">${row.amount}</span>
+                                        <span className="font-mono">{formatCurrency(row.amount)}</span>
                                     </div>
                                 ))}
 
                                 <div className="flex justify-between pt-2 font-bold text-sm border-t border-border">
                                     <span>Total Cost of Goods Sold:</span>
-                                    <span className="font-mono text-blue-600">${report.cost_of_goods_sold.total}</span>
+                                    <span className="font-mono text-blue-600">{formatCurrency(report.cost_of_goods_sold.total)}</span>
                                 </div>
                             </div>
                         </div>
@@ -197,7 +209,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
                         {/* 3. Gross Profit */}
                         <div className="p-4 rounded-lg bg-muted/40 border flex justify-between items-center text-sm font-bold">
                             <span className="text-base">Gross Profit (Net Revenue - COGS):</span>
-                            <span className="font-mono text-lg text-emerald-600">${report.gross_profit}</span>
+                            <span className="font-mono text-lg text-emerald-600">{formatCurrency(report.gross_profit)}</span>
                         </div>
 
                         {/* 4. Operating Expenses */}
@@ -211,13 +223,13 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                         <span className="text-foreground font-medium">
                                             {row.account_code} — {row.name}
                                         </span>
-                                        <span className="font-mono">${row.amount}</span>
+                                        <span className="font-mono">{formatCurrency(row.amount)}</span>
                                     </div>
                                 ))}
 
                                 <div className="flex justify-between pt-2 font-bold text-sm border-t border-border">
                                     <span>Total Operating Expenses:</span>
-                                    <span className="font-mono text-red-600">${report.total_operating_expenses}</span>
+                                    <span className="font-mono text-red-600">{formatCurrency(report.total_operating_expenses)}</span>
                                 </div>
                             </div>
                         </div>
@@ -232,7 +244,7 @@ export default function ProfitLossPage({ report, filters }: Props) {
                                 <TrendingUp className="w-5 h-5" />
                                 <span>Net Operating Income (Loss):</span>
                             </div>
-                            <span className="font-mono text-xl">${report.net_income}</span>
+                            <span className="font-mono text-xl">{formatCurrency(report.net_income)}</span>
                         </div>
                     </div>
                 </div>

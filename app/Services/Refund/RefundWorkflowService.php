@@ -15,6 +15,7 @@ use App\Models\RefundRequest;
 use App\Models\RefundRequestEvent;
 use App\Models\RefundTransaction;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,8 @@ class RefundWorkflowService
 {
     public function __construct(
         protected RefundNumberGenerator $refundNumberGenerator,
-        protected RefundTransactionNumberGenerator $txnNumberGenerator
+        protected RefundTransactionNumberGenerator $txnNumberGenerator,
+        protected JournalMappingService $journalMappingService,
     ) {}
 
     /**
@@ -521,6 +523,9 @@ class RefundWorkflowService
                 ],
                 'created_at' => $now,
             ]);
+
+            // Post authoritative refund disbursement to General Ledger
+            $this->journalMappingService->postRefundProcessed($transaction, $processor);
 
             return $transaction->fresh(['refundRequest', 'creditNote', 'customer', 'processor']);
         });

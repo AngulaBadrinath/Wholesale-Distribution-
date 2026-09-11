@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Auth\PermissionService;
 use App\Services\Receivable\ReceivableLedgerService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,8 +23,11 @@ class PaymentVerificationService
 {
     public function __construct(
         protected PermissionService $permissionService,
-        protected ReceivableLedgerService $receivableLedgerService
-    ) {}
+        protected ReceivableLedgerService $receivableLedgerService,
+        protected ?JournalMappingService $journalMappingService = null
+    ) {
+        $this->journalMappingService ??= app(JournalMappingService::class);
+    }
 
     /**
      * Authoritatively verify and reconcile a pending payment.
@@ -75,6 +79,11 @@ class PaymentVerificationService
 
             // Post authoritative payment credit to customer accounts receivable ledger
             $this->receivableLedgerService->recordPaymentCredit($lockedPayment, $actor);
+
+            // Post authoritative payment receipt to General Ledger
+            if ($this->journalMappingService) {
+                $this->journalMappingService->postPaymentVerified($lockedPayment, $actor);
+            }
 
             Log::info('Payment verified successfully', [
                 'payment_id' => $lockedPayment->id,

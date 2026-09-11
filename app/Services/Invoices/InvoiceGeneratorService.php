@@ -12,6 +12,7 @@ use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Accounting\JournalMappingService;
 use App\Services\Receivable\ReceivableLedgerService;
 use App\Services\System\CompanyInformationService;
 use Illuminate\Support\Carbon;
@@ -23,8 +24,11 @@ class InvoiceGeneratorService
     public function __construct(
         protected InvoiceNumberGenerator $numberGenerator,
         protected CompanyInformationService $companyInformationService,
-        protected ReceivableLedgerService $receivableLedgerService
-    ) {}
+        protected ReceivableLedgerService $receivableLedgerService,
+        protected ?JournalMappingService $journalMappingService = null
+    ) {
+        $this->journalMappingService ??= app(JournalMappingService::class);
+    }
 
     /**
      * Generate an authoritative, immutable invoice for an approved or completed order.
@@ -207,6 +211,11 @@ class InvoiceGeneratorService
 
             // 9. Post authoritative invoice charge to customer accounts receivable ledger
             $this->receivableLedgerService->recordInvoiceCharge($invoice, $actor);
+
+            // 10. Post authoritative invoice revenue & receivable recognition to General Ledger
+            if ($this->journalMappingService) {
+                $this->journalMappingService->postInvoiceIssued($invoice, $actor);
+            }
 
             return $invoice->load(['items', 'order', 'customer', 'creator']);
         });
