@@ -11,9 +11,9 @@ class FoundationTest extends TestCase
 {
     use RefreshDatabase;
     /**
-     * Test that the application boots and renders the Inertia root page.
+     * Test that obsolete foundation scaffold route is removed and returns 404.
      */
-    public function test_application_boots_and_renders_inertia_welcome_view(): void
+    public function test_obsolete_foundation_route_is_removed(): void
     {
         $admin = \App\Models\User::factory()->create([
             'role' => \App\Enums\UserRole::ADMIN,
@@ -21,12 +21,7 @@ class FoundationTest extends TestCase
 
         $response = $this->actingAs($admin)->get('/foundation');
 
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('Welcome')
-            ->has('phpVersion')
-            ->has('laravelVersion')
-        );
+        $response->assertStatus(404);
     }
 
     /**
@@ -76,6 +71,6 @@ class FoundationTest extends TestCase
         $appName = config('app.name');
 
         $this->assertNotEmpty($appName);
-        $this->assertStringContainsString('Wholesale Distribution', $appName);
+        $this->assertStringContainsString('Unique Distributors', $appName);
     }
 }
