@@ -4,7 +4,9 @@ namespace Tests\Feature\Document;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentTerms;
+use App\Enums\PaymentTransactionStatus;
 use App\Enums\UserRole;
 use App\Models\CompanyInformation;
 use App\Models\Customer;
@@ -12,6 +14,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\TaxProfile;
 use App\Models\User;
@@ -319,6 +322,75 @@ class InvoicePrintTest extends TestCase
         $response->assertSee('$216.00'); // Grand total
         $response->assertSee('Net 30 Days');
         $response->assertSee('Thank you for your business. Remit within agreed terms.');
+    }
+
+    public function test_printable_invoice_lists_multiple_verified_payments_using_payment_date(): void
+    {
+        $firstPayment = Payment::factory()->create([
+            'payment_number' => 'PAY-PRINT-001',
+            'customer_id' => $this->customer1->id,
+            'order_id' => $this->invoice1->order_id,
+            'payment_method' => PaymentMethod::CASH,
+            'status' => PaymentTransactionStatus::VERIFIED,
+            'amount' => 100.00,
+            'payment_date' => '2026-09-06',
+            'recorded_by' => $this->salesman1->id,
+            'verified_by' => $this->accountant->id,
+            'verified_at' => now(),
+        ]);
+
+        $secondPayment = Payment::factory()->cheque()->create([
+            'payment_number' => 'PAY-PRINT-002',
+            'customer_id' => $this->customer1->id,
+            'order_id' => $this->invoice1->order_id,
+            'payment_method' => PaymentMethod::CHEQUE,
+            'status' => PaymentTransactionStatus::VERIFIED,
+            'amount' => 50.00,
+            'payment_date' => '2026-09-07',
+            'recorded_by' => $this->salesman1->id,
+            'verified_by' => $this->accountant->id,
+            'verified_at' => now(),
+        ]);
+
+        Payment::factory()->create([
+            'payment_number' => 'PAY-PRINT-PENDING',
+            'customer_id' => $this->customer1->id,
+            'order_id' => $this->invoice1->order_id,
+            'payment_method' => PaymentMethod::CASH,
+            'status' => PaymentTransactionStatus::PENDING_VERIFICATION,
+            'amount' => 25.00,
+            'payment_date' => '2026-09-08',
+            'recorded_by' => $this->salesman1->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('invoices.print', $this->invoice1));
+
+        $response->assertOk();
+        $response->assertSee('Verified Payments Received');
+        $response->assertSee($firstPayment->payment_number);
+        $response->assertSee($secondPayment->payment_number);
+        $response->assertSee('$100.00');
+        $response->assertSee('$50.00');
+        $response->assertSee('Sep 06, 2026');
+        $response->assertSee('Sep 07, 2026');
+        $response->assertDontSee('PAY-PRINT-PENDING');
+    }
+
+    public function test_invoice_template_safely_labels_a_legacy_verified_payment_without_a_payment_date(): void
+    {
+        $legacyPayment = new Payment([
+            'payment_number' => 'PAY-LEGACY-DATELESS',
+            'payment_method' => PaymentMethod::CASH,
+            'status' => PaymentTransactionStatus::VERIFIED,
+            'amount' => 10.00,
+        ]);
+
+        $invoice = $this->invoice1->load(['items.product', 'order.payments', 'customer', 'creator']);
+        $invoice->order->setRelation('payments', collect([$legacyPayment]));
+
+        $html = view('documents.invoice', ['invoice' => $invoice])->render();
+
+        $this->assertStringContainsString('Payment date unavailable', $html);
     }
 
     public function test_printable_invoice_has_dedicated_print_css_and_hidden_chrome(): void

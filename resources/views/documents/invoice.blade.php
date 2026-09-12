@@ -533,7 +533,7 @@
                     <h3>Verified Payments Received</h3>
                     @foreach($invoice->order->payments->where('status', \App\Enums\PaymentTransactionStatus::VERIFIED) as $payment)
                         <div style="font-size: 11px; margin-bottom: 2px;">
-                            &bull; <strong>{{ $payment->payment_number }}</strong>: {{ $payment->payment_method->label() }} &mdash; ${{ number_format($payment->amount, 2) }} ({{ $payment->transaction_date->format('M d, Y') }})
+                            &bull; <strong>{{ $payment->payment_number }}</strong>: {{ $payment->payment_method->label() }} &mdash; ${{ number_format($payment->amount, 2) }} ({{ $payment->payment_date?->format('M d, Y') ?? 'Payment date unavailable' }})
                         </div>
                     @endforeach
                 </div>
