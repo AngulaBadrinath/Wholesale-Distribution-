@@ -27,7 +27,7 @@ export default function DeliveryLayout({
     backUrl = '/delivery'
 }: DeliveryLayoutProps) {
     const { auth, flash } = usePage<PageProps>().props;
-    const currentUrl = window.location.pathname;
+    const currentUrl = typeof window !== 'undefined' ? window.location.pathname : '';
 
     const handleLogout = () => {
         router.post('/logout');

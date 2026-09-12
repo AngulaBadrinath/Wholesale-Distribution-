@@ -282,7 +282,7 @@ export default function ReceivablesStatement({ statement, filters }: Props) {
                         <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                             Statement Activity
                         </h4>
-                        <div className="border rounded-lg overflow-hidden">
+                        <div className="border rounded-lg overflow-x-auto">
                             <table className="w-full text-xs text-left">
                                 <thead className="text-2xs uppercase bg-muted/60 text-muted-foreground border-b font-semibold">
                                     <tr>

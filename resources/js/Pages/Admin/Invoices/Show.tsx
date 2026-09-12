@@ -291,7 +291,8 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
 
                     {/* Line Items Table (RULE-DOC-001: STRICTLY ZERO PRODUCT IMAGES) */}
                     <div className="border border-border rounded-lg overflow-hidden">
-                        <table className="w-full text-left text-xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
                             <thead className="bg-muted/50 border-b border-border text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">
                                 <tr>
                                     <th className="px-3 py-2.5 text-center w-10">#</th>
@@ -329,6 +330,7 @@ export default function InvoiceShow({ invoice, isSalesmanView = false }: Props) 
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     {/* Summary and Financial Totals */}

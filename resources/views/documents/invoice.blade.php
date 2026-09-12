@@ -362,6 +362,49 @@
             }
         }
 
+        @media screen and (max-width: 640px) {
+            body {
+                padding-top: 80px;
+            }
+            .invoice-container {
+                padding: 16px;
+                margin: 8px auto;
+            }
+            .invoice-header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .document-title {
+                text-align: left;
+            }
+            .document-meta-table {
+                margin-left: 0;
+            }
+            .address-grid {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .summary-grid {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .totals-card {
+                width: 100%;
+            }
+            .no-print-bar {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .no-print-bar .title {
+                font-size: 11px;
+            }
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
         @media print {
             .no-print-bar {
                 display: none !important;
@@ -488,36 +531,38 @@
         </section>
 
         <!-- Line Items Table (RULE-DOC-001: STRICTLY ZERO PRODUCT IMAGES) -->
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="width: 32px;" class="text-center">#</th>
-                    <th style="width: 110px;">SKU</th>
-                    <th>Description</th>
-                    <th style="width: 60px;" class="text-center">Unit</th>
-                    <th style="width: 50px;" class="text-right">Qty</th>
-                    <th style="width: 80px;" class="text-right">Unit Price</th>
-                    <th style="width: 85px;" class="text-right">Tax Rate</th>
-                    <th style="width: 80px;" class="text-right">Tax</th>
-                    <th style="width: 90px;" class="text-right">Line Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($invoice->items as $index => $item)
-                <tr>
-                    <td class="text-center mono">{{ $index + 1 }}</td>
-                    <td class="mono item-sku">{{ $item->sku_snapshot }}</td>
-                    <td class="item-name">{{ $item->product_name_snapshot }}</td>
-                    <td class="text-center">{{ $item->unit_snapshot }}</td>
-                    <td class="text-right mono">{{ $item->quantity }}</td>
-                    <td class="text-right mono">${{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right mono">{{ number_format($item->tax_rate_snapshot * 100, 2) }}%</td>
-                    <td class="text-right mono">${{ number_format($item->tax_amount, 2) }}</td>
-                    <td class="text-right mono" style="font-weight: 700;">${{ number_format($item->line_total, 2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 32px;" class="text-center">#</th>
+                        <th style="width: 110px;">SKU</th>
+                        <th>Description</th>
+                        <th style="width: 60px;" class="text-center">Unit</th>
+                        <th style="width: 50px;" class="text-right">Qty</th>
+                        <th style="width: 80px;" class="text-right">Unit Price</th>
+                        <th style="width: 85px;" class="text-right">Tax Rate</th>
+                        <th style="width: 80px;" class="text-right">Tax</th>
+                        <th style="width: 90px;" class="text-right">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($invoice->items as $index => $item)
+                    <tr>
+                        <td class="text-center mono">{{ $index + 1 }}</td>
+                        <td class="mono item-sku">{{ $item->sku_snapshot }}</td>
+                        <td class="item-name">{{ $item->product_name_snapshot }}</td>
+                        <td class="text-center">{{ $item->unit_snapshot }}</td>
+                        <td class="text-right mono">{{ $item->quantity }}</td>
+                        <td class="text-right mono">${{ number_format($item->unit_price, 2) }}</td>
+                        <td class="text-right mono">{{ number_format($item->tax_rate_snapshot * 100, 2) }}%</td>
+                        <td class="text-right mono">${{ number_format($item->tax_amount, 2) }}</td>
+                        <td class="text-right mono" style="font-weight: 700;">${{ number_format($item->line_total, 2) }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
         <!-- Summary and Totals -->
         <section class="summary-grid">

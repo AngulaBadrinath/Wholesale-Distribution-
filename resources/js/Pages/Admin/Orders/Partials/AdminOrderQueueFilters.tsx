@@ -233,24 +233,28 @@ export default function AdminOrderQueueFiltersBar({
             <div className={`pt-2 border-t border-border/60 ${mobileFiltersOpen ? 'block' : 'hidden lg:flex'} lg:items-center lg:justify-between gap-3 text-xs`}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-2.5 flex-wrap">
                     {/* Date Range Inputs */}
-                    <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground text-[11px] font-medium">Submitted:</span>
-                        <Input
-                            type="date"
-                            value={filters.date_from || ''}
-                            onChange={(e) => onFilterChange({ date_from: e.target.value })}
-                            className="h-8 text-xs w-32 px-2"
-                            aria-label="Submitted Date From"
-                        />
-                        <span className="text-muted-foreground text-[11px]">to</span>
-                        <Input
-                            type="date"
-                            value={filters.date_to || ''}
-                            onChange={(e) => onFilterChange({ date_to: e.target.value })}
-                            className="h-8 text-xs w-32 px-2"
-                            aria-label="Submitted Date To"
-                        />
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground text-[11px] font-medium">Submitted:</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-1 min-w-[220px]">
+                            <Input
+                                type="date"
+                                value={filters.date_from || ''}
+                                onChange={(e) => onFilterChange({ date_from: e.target.value })}
+                                className="h-8 text-xs flex-1 min-w-[100px] px-2"
+                                aria-label="Submitted Date From"
+                            />
+                            <span className="text-muted-foreground text-[11px] shrink-0">to</span>
+                            <Input
+                                type="date"
+                                value={filters.date_to || ''}
+                                onChange={(e) => onFilterChange({ date_to: e.target.value })}
+                                className="h-8 text-xs flex-1 min-w-[100px] px-2"
+                                aria-label="Submitted Date To"
+                            />
+                        </div>
                     </div>
 
                     {/* Mobile Only Selects */}

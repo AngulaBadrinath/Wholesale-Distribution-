@@ -96,14 +96,14 @@ export default function CustomerCreate({ suggestedCode, statuses, paymentTerms, 
 
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center gap-3 pb-2 border-b border-border">
-                    <Link href="/customers">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 pb-2 border-b border-border">
+                    <Link href="/customers" className="shrink-0">
                         <Button variant="outline" size="sm" className="h-8 px-2">
                             <ArrowLeft className="h-4 w-4 mr-1" />
                             Back to Directory
                         </Button>
                     </Link>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-xl font-bold tracking-tight text-foreground">
                             Register Customer Account
                         </h1>

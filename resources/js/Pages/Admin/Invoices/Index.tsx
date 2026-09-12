@@ -277,7 +277,8 @@ export default function InvoiceIndex({
 
                 {/* Invoices Table (Desktop) */}
                 <div className="hidden lg:block bg-card rounded-xl border border-border shadow-xs overflow-hidden">
-                    <table className="w-full text-left text-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
                         <thead className="bg-muted/50 border-b border-border text-[11px] uppercase font-semibold text-muted-foreground tracking-wider">
                             <tr>
                                 <th className="px-4 py-3">Invoice Number</th>
@@ -399,6 +400,7 @@ export default function InvoiceIndex({
                             )}
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 {/* Card View (Mobile / Tablet) */}

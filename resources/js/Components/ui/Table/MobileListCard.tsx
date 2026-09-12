@@ -131,7 +131,7 @@ export function MobileListCard({
                 </div>
                 {actions && (
                     <div
-                        className="flex items-center gap-1.5 shrink-0"
+                        className="flex flex-wrap items-center justify-end gap-1.5 flex-1 min-w-0"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {actions}

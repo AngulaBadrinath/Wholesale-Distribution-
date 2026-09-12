@@ -261,8 +261,8 @@ export default function Index({
                     </div>
                 </div>
 
-                {/* Returns Table */}
-                <div className="bg-card rounded-xl border border-border shadow-xs overflow-hidden">
+                {/* Returns Table (Desktop) */}
+                <div className="hidden md:block bg-card rounded-xl border border-border shadow-xs overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-muted-foreground">
                             <thead className="bg-muted/40 text-foreground uppercase font-semibold text-xs border-b border-border">
@@ -338,33 +338,107 @@ export default function Index({
                             </tbody>
                         </table>
                     </div>
+                </div>
 
-                    {/* Pagination */}
-                    {returns.links && returns.links.length > 3 && (
-                        <div className="px-5 py-4 bg-muted/20 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3">
-                            <p className="text-xs text-muted-foreground">
-                                Showing <span className="font-semibold">{returns.from || 0}</span> to <span className="font-semibold">{returns.to || 0}</span> of <span className="font-semibold">{returns.total}</span> returns
-                            </p>
-                            <div className="flex gap-1">
-                                {returns.links.map((link, idx) => (
-                                    <Link
-                                        key={idx}
-                                        href={link.url || '#'}
-                                        preserveScroll
-                                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${
-                                            link.active
-                                                ? 'bg-primary text-primary-foreground font-bold border-primary'
-                                                : link.url
-                                                ? 'bg-background text-foreground hover:bg-muted border-border'
-                                                : 'bg-muted text-muted-foreground border-border cursor-not-allowed'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
+                {/* Returns Card View (Mobile / Tablet) */}
+                <div className="grid grid-cols-1 gap-3 md:hidden">
+                    {returns.data.length === 0 ? (
+                        <div className="bg-card p-8 rounded-xl border border-border text-center text-muted-foreground space-y-2">
+                            <RotateCcw className="h-8 w-8 mx-auto text-muted-foreground/40" />
+                            <p className="font-semibold text-foreground text-sm">No return requests found.</p>
+                            <p className="text-xs text-muted-foreground">Try adjusting your active filters.</p>
                         </div>
+                    ) : (
+                        returns.data.map(row => (
+                            <div
+                                key={row.id}
+                                className="bg-card p-4 rounded-xl border border-border shadow-xs space-y-3"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <Link
+                                            href={isSalesmanView ? `/salesman/returns/${row.id}` : `/admin/returns/${row.id}`}
+                                            className="font-mono font-bold text-sm text-primary hover:underline"
+                                        >
+                                            {row.return_number}
+                                        </Link>
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            {row.customer?.name} ({row.customer?.code})
+                                        </div>
+                                    </div>
+                                    <div>{getStatusBadge(row.status)}</div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border/50">
+                                    <div>
+                                        <span className="text-muted-foreground block text-[11px]">Order:</span>
+                                        <span className="font-medium text-foreground">{row.order?.order_number || `#${row.order_id}`}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-muted-foreground block text-[11px]">Estimated Credit:</span>
+                                        <span className="font-mono font-bold text-foreground">
+                                            ${parseFloat(String(row.estimated_refund_total || 0)).toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {!isSalesmanView && row.warehouse && (
+                                        <div>
+                                            <span className="text-muted-foreground block text-[11px]">Warehouse:</span>
+                                            <span className="text-foreground">{row.warehouse.name}</span>
+                                        </div>
+                                    )}
+                                    <div className={!isSalesmanView && row.warehouse ? 'text-right' : 'col-span-2'}>
+                                        <span className="text-muted-foreground block text-[11px]">Requested:</span>
+                                        <span className="text-muted-foreground">
+                                            {new Date(row.requested_at).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-border/50 flex justify-end">
+                                    <Link
+                                        href={isSalesmanView ? `/salesman/returns/${row.id}` : `/admin/returns/${row.id}`}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Button variant="outline" size="sm" className="w-full sm:w-auto h-8 gap-1.5 text-xs">
+                                            <Eye className="w-3.5 h-3.5" />
+                                            View Details
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
+
+                {/* Pagination */}
+                {returns.links && returns.links.length > 3 && (
+                    <div className="bg-card rounded-xl border border-border px-5 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <p className="text-xs text-muted-foreground">
+                            Showing <span className="font-semibold">{returns.from || 0}</span> to <span className="font-semibold">{returns.to || 0}</span> of <span className="font-semibold">{returns.total}</span> returns
+                        </p>
+                        <div className="flex gap-1 flex-wrap justify-center">
+                            {returns.links.map((link, idx) => (
+                                <Link
+                                    key={idx}
+                                    href={link.url || '#'}
+                                    preserveScroll
+                                    className={`px-3 py-1.5 text-xs rounded border transition-colors ${
+                                        link.active
+                                            ? 'bg-primary text-primary-foreground font-bold border-primary'
+                                            : link.url
+                                            ? 'bg-background text-foreground hover:bg-muted border-border'
+                                            : 'bg-muted text-muted-foreground border-border cursor-not-allowed'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

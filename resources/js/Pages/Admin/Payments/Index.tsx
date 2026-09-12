@@ -500,7 +500,7 @@ export default function PaymentsIndex({
                                 <select
                                     value={filters.method || 'ALL'}
                                     onChange={(e) => handleFilterChange({ method: e.target.value })}
-                                    className="h-9 px-2.5 text-xs bg-background border border-input rounded-md text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary cursor-pointer"
+                                    className="h-9 px-2.5 text-xs bg-background border border-input rounded-md text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary cursor-pointer w-full sm:w-auto"
                                     aria-label="Filter by payment method"
                                 >
                                     <option value="ALL">All Payment Methods</option>
@@ -512,7 +512,7 @@ export default function PaymentsIndex({
                                 <select
                                     value={filters.customer_id || ''}
                                     onChange={(e) => handleFilterChange({ customer_id: e.target.value })}
-                                    className="h-9 px-2.5 text-xs bg-background border border-input rounded-md text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary max-w-[220px] truncate cursor-pointer"
+                                    className="h-9 px-2.5 text-xs bg-background border border-input rounded-md text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary max-w-full sm:max-w-[220px] truncate cursor-pointer w-full sm:w-auto"
                                     aria-label="Filter by customer account"
                                 >
                                     <option value="">All Customers</option>
@@ -546,7 +546,8 @@ export default function PaymentsIndex({
 
                 {/* Table View (Desktop) */}
                 <div className="hidden lg:block bg-card rounded-xl border border-border shadow-xs overflow-hidden">
-                    <table className="w-full text-left text-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
                         <thead className="bg-muted/50 border-b border-border text-[11px] uppercase font-semibold text-muted-foreground tracking-wider">
                             <tr>
                                 <th className="px-4 py-3">Payment Number</th>
@@ -690,7 +691,8 @@ export default function PaymentsIndex({
                                 ))
                             )}
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
 
                 {/* Card View (Mobile / Tablet) */}
