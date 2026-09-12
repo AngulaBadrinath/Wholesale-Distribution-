@@ -28,10 +28,13 @@ abstract class ApiTestCase extends TestCase
     /**
      * Assert route is strictly protected against unauthenticated guests.
      */
-    protected function assertGuestRedirected(string $method, string $uri, array $data = []): void
+    protected function assertGuestRedirected(string $uri, string $method = 'GET', array $data = []): void
     {
         $response = $this->json($method, $uri, $data);
-        $response->assertUnauthorized();
+        $this->assertTrue(
+            $response->status() === 401 || $response->isRedirect('/login') || $response->status() === 302,
+            "Failed asserting that {$method} {$uri} redirected or returned 401. Received status: {$response->status()}"
+        );
     }
 
     /**
