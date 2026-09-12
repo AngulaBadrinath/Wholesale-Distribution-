@@ -34,7 +34,7 @@ export default function DeliveryLayout({
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-primary/30 selection:text-primary-foreground">
             {/* Top Fixed Header */}
             <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-3">
@@ -47,7 +47,7 @@ export default function DeliveryLayout({
                             <ChevronLeft className="w-5 h-5" />
                         </Link>
                     ) : (
-                        <div className="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
                             <Truck className="w-5 h-5" />
                         </div>
                     )}
@@ -104,7 +104,7 @@ export default function DeliveryLayout({
                         href="/delivery?tab=today"
                         className={`flex flex-col items-center justify-center min-h-[48px] rounded-xl py-1 px-2 text-xs font-medium transition-all ${
                             currentUrl === '/delivery' || currentUrl.includes('tab=today')
-                                ? 'bg-indigo-600/20 text-indigo-400'
+                                ? 'bg-primary/20 text-primary font-semibold'
                                 : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
@@ -116,7 +116,7 @@ export default function DeliveryLayout({
                         href="/delivery?tab=active"
                         className={`flex flex-col items-center justify-center min-h-[48px] rounded-xl py-1 px-2 text-xs font-medium transition-all ${
                             currentUrl.includes('tab=active')
-                                ? 'bg-indigo-600/20 text-indigo-400'
+                                ? 'bg-primary/20 text-primary font-semibold'
                                 : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
@@ -128,7 +128,7 @@ export default function DeliveryLayout({
                         href="/delivery?tab=completed"
                         className={`flex flex-col items-center justify-center min-h-[48px] rounded-xl py-1 px-2 text-xs font-medium transition-all ${
                             currentUrl.includes('tab=completed')
-                                ? 'bg-indigo-600/20 text-indigo-400'
+                                ? 'bg-primary/20 text-primary font-semibold'
                                 : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
@@ -140,7 +140,7 @@ export default function DeliveryLayout({
                         href="/delivery?tab=all"
                         className={`flex flex-col items-center justify-center min-h-[48px] rounded-xl py-1 px-2 text-xs font-medium transition-all ${
                             currentUrl.includes('tab=all')
-                                ? 'bg-indigo-600/20 text-indigo-400'
+                                ? 'bg-primary/20 text-primary font-semibold'
                                 : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
