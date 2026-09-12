@@ -607,7 +607,7 @@ class ManualTestingSeeder extends Seeder
 
         // Ensure Invoice exists for Order 1
         if (! \App\Models\Invoice::where('order_id', $orderCompleted->id)->exists()) {
-            app(\App\Services\Invoices\InvoiceGeneratorService::class)->generateInvoiceForOrder($orderCompleted, $accountant);
+            app(\App\Services\Invoices\InvoiceGeneratorService::class)->generateForOrder($orderCompleted, $accountant);
         }
 
         // Seed Payment for Order 1

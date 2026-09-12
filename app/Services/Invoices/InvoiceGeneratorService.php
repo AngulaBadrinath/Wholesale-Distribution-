@@ -35,6 +35,11 @@ class InvoiceGeneratorService
      *
      * @throws ValidationException
      */
+    public function generateInvoiceForOrder(Order|int $orderInput, ?User $actor = null): Invoice
+    {
+        return $this->generateForOrder($orderInput, $actor);
+    }
+
     public function generateForOrder(Order|int $orderInput, ?User $actor = null): Invoice
     {
         $orderId = $orderInput instanceof Order ? $orderInput->id : $orderInput;
