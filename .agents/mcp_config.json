@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "unique-distributors-browser": {
+      "command": "node",
+      "args": [
+        "--no-warnings",
+        "tests/browser/interactive/mcp-server.ts"
+      ]
+    }
+  }
+}
