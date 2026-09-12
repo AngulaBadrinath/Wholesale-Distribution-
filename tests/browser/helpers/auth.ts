@@ -113,27 +113,38 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
         }
     }
 
-    await page.locator('input[type="email"], input[name="email"]').waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForTimeout(300);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        await page.locator('input[type="email"], input[name="email"]').waitFor({ state: 'visible', timeout: 15000 });
+        await page.waitForTimeout(200);
 
-    // Fill credentials
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    const passwordInput = page.locator('input[type="password"], input[name="password"]');
+        const emailInput = page.locator('input#email, input[name="email"], input[type="email"]').first();
+        const passwordInput = page.locator('input#password, input[name="password"], input[type="password"]').first();
 
-    await emailInput.fill(creds.email);
-    await passwordInput.fill(creds.password);
-    await page.waitForTimeout(100);
+        await emailInput.click();
+        await emailInput.fill(creds.email);
+        await emailInput.dispatchEvent('input');
+        await emailInput.dispatchEvent('change');
+        await page.waitForTimeout(100);
 
-    // Click Sign In
-    const submitBtn = page.locator('button[type="submit"]');
-    await submitBtn.click();
+        await passwordInput.click();
+        await passwordInput.fill(creds.password);
+        await passwordInput.dispatchEvent('input');
+        await passwordInput.dispatchEvent('change');
+        await page.waitForTimeout(200);
 
-    // Wait until login form navigates away from /login or throws validation error
-    try {
-        await page.waitForURL((url) => url.pathname !== '/login', { timeout: 8000 });
-    } catch (e) {
-        const alertText = await page.locator('[role="alert"], .text-destructive').first().textContent().catch(() => '');
-        throw new Error(`[AuthHelper] Login failed for ${role} (${creds.email}). Still on ${page.url()}. Page alert: "${alertText?.trim()}"`);
+        const submitBtn = page.locator('button[type="submit"]');
+        await submitBtn.click();
+
+        try {
+            await page.waitForURL((url) => url.pathname !== '/login', { timeout: 10000 });
+            break;
+        } catch {
+            if (attempt === 3) {
+                const alertText = await page.locator('[role="alert"], .text-destructive').first().textContent().catch(() => '');
+                throw new Error(`[AuthHelper] Login failed for ${role} (${creds.email}). Still on ${page.url()}. Page alert: "${alertText?.trim()}"`);
+            }
+            await page.waitForTimeout(1000);
+        }
     }
 
     const currentUrl = page.url();

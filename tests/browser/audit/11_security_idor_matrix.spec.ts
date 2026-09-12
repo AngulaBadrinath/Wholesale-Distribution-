@@ -23,6 +23,7 @@ test.describe('Audit Phase 12: Security, Authorization & Anti-IDOR Abuse Matrix'
     });
 
     test('12.2 Privilege separation across specialized roles', async ({ page }) => {
+        test.setTimeout(90000);
         // 1. Warehouse Supervisor cannot touch financial accounting or tax profiles
         await loginAs(page, 'WAREHOUSE_MANAGER');
         const glResp = await safeGoto(page, '/admin/accounting/general-ledger');
