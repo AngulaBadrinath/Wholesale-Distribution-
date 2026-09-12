@@ -5,6 +5,7 @@ import path from 'path';
 import { resolveBrowser, type ResolvedBrowser } from '../resolver.ts';
 import { VIEWPORT_MATRIX, type ViewportConfig } from '../viewports.ts';
 import { loginAs, type UserRole, QA_USER_CREDENTIALS } from '../helpers/auth.ts';
+import { checkCdpEndpoint, launchDedicatedChrome } from './launch-chrome.ts';
 import {
     attachDiagnosticsCollector,
     type BrowserDiagnostics,
@@ -152,10 +153,12 @@ export class InteractiveBrowserController {
     }
 
     /**
-     * Start the persistent real headed browser session.
+     * Start the persistent real headed browser session by attaching to the visible Chrome via CDP.
+     * Guarantees ONE single visible Chrome instance across all tools.
      */
     async start(options: LaunchOptions = {}): Promise<ControllerStatus> {
         if (this.isRunning && this.browser && this.context) {
+            this.syncPages();
             return this.getStatus();
         }
 
@@ -163,74 +166,76 @@ export class InteractiveBrowserController {
             this.baseUrl = options.baseUrl;
         }
 
-        // 1. Resolve local Chrome/Chromium without CDN dependencies
-        if (options.executablePath) {
-            this.resolvedBrowser = {
-                executablePath: path.resolve(options.executablePath),
-                browserName: 'Custom Specified Browser',
-                version: 'Custom',
-                source: 'configured',
-            };
-        } else {
-            this.resolvedBrowser = resolveBrowser();
+        const port = parseInt(process.env.CHROME_DEBUG_PORT || '9222', 10);
+        const cdpUrl = `http://127.0.0.1:${port}`;
+
+        // 1. Ensure the dedicated visible Chrome instance is running on port 9222
+        const cdpCheck = await checkCdpEndpoint(port);
+        if (!cdpCheck.isRunning) {
+            await launchDedicatedChrome({ port });
         }
 
-        const isHeaded = options.headed !== undefined ? options.headed : true;
-        const shouldRecordVideo = options.recordVideo || process.env.BROWSER_RECORD_VIDEO === 'true';
-        const shouldTrace = options.trace || process.env.BROWSER_TRACE === 'true';
+        this.resolvedBrowser = resolveBrowser();
 
-        const launchArgs = [
-            '--start-maximized',
-            '--no-default-browser-check',
-            '--no-first-run',
-            '--disable-blink-features=AutomationControlled',
-        ];
+        // 2. Connect Playwright over CDP to the SAME visible Chrome window
+        this.browser = await chromium.connectOverCDP(cdpUrl);
+        const contexts = this.browser.contexts();
+        this.context = contexts[0] || (await this.browser.newContext({ ignoreHTTPSErrors: true }));
 
-        // 2. Launch real browser instance
-        this.browser = await chromium.launch({
-            executablePath: this.resolvedBrowser.executablePath,
-            headless: !isHeaded,
-            args: launchArgs,
-        });
+        // 3. Track all existing pages in the visible Chrome instance
+        this.pages = [];
+        this.pageCollectors.clear();
+        this.syncPages();
 
-        const contextOptions: Parameters<Browser['newContext']>[0] = {
-            viewport: options.viewport || null,
-            ignoreHTTPSErrors: true,
-        };
-
-        if (shouldRecordVideo) {
-            const videoDir = path.join(this.artifactsDir, 'videos');
-            fs.mkdirSync(videoDir, { recursive: true });
-            contextOptions.recordVideo = { dir: videoDir };
+        if (this.pages.length === 0) {
+            const firstPage = await this.context.newPage();
+            this.trackNewPage(firstPage);
+            this.activePageIndex = 0;
         }
 
-        this.context = await this.browser.newContext(contextOptions);
-
-        if (shouldTrace) {
-            await this.context.tracing.start({ screenshots: true, snapshots: true });
-        }
-
-        // 3. Listen to new tabs created by links/scripts
+        // Listen for new tabs opened by user or scripts
         this.context.on('page', (newPage) => {
             this.trackNewPage(newPage);
         });
 
-        // 4. Initialize first tab
-        const firstPage = await this.context.newPage();
-        this.trackNewPage(firstPage);
-        this.activePageIndex = 0;
+        this.isRunning = true;
+        const activePage = this.getActivePage();
 
         if (options.viewport) {
             this.currentViewport = options.viewport;
-            await firstPage.setViewportSize(options.viewport);
+            await activePage.setViewportSize(options.viewport);
         }
 
-        const initialUrl = options.startUrl || this.baseUrl;
-        this.checkDomainAllowed(initialUrl);
-        await safeGoto(firstPage, initialUrl);
+        if (options.startUrl) {
+            this.checkDomainAllowed(options.startUrl);
+            await safeGoto(activePage, options.startUrl);
+        }
 
-        this.isRunning = true;
         return this.getStatus();
+    }
+
+    /**
+     * Re-synchronize tracked pages with live browser context tabs.
+     */
+    private syncPages(): void {
+        if (!this.context) return;
+        const currentPages = this.context.pages();
+        for (const p of currentPages) {
+            if (!this.pages.includes(p)) {
+                this.trackNewPage(p);
+            }
+        }
+        // Remove closed or stale pages
+        this.pages = this.pages.filter((p) => {
+            try {
+                return !p.isClosed() && currentPages.includes(p);
+            } catch {
+                return false;
+            }
+        });
+        if (this.activePageIndex >= this.pages.length) {
+            this.activePageIndex = Math.max(0, this.pages.length - 1);
+        }
     }
 
     /**
@@ -260,6 +265,7 @@ export class InteractiveBrowserController {
      */
     getActivePage(): Page {
         this.ensureRunning();
+        this.syncPages();
         if (this.pages.length === 0) {
             throw new Error('[InteractiveBrowser] No open tabs found in the active session.');
         }
@@ -488,26 +494,37 @@ export class InteractiveBrowserController {
             const key = presetOrWidth.toLowerCase().trim();
             const aliasMap: Record<string, string> = {
                 mobile_s: 'mobile_s_320',
+                mobile_320: 'mobile_s_320',
                 mobile_m: 'mobile_m_375',
+                mobile_375: 'mobile_m_375',
                 mobile: 'mobile_standard_390',
+                mobile_390: 'mobile_standard_390',
                 mobile_standard: 'mobile_standard_390',
                 phone: 'mobile_standard_390',
                 mobile_l: 'mobile_max_430',
+                mobile_430: 'mobile_max_430',
                 mobile_max: 'mobile_max_430',
                 small_tablet: 'small_tablet_640',
+                tablet_640: 'small_tablet_640',
                 tablet: 'tablet_portrait_768',
+                tablet_768: 'tablet_portrait_768',
                 tablet_portrait: 'tablet_portrait_768',
                 ipad: 'tablet_portrait_768',
                 tablet_l: 'tablet_air_820',
+                tablet_820: 'tablet_air_820',
                 tablet_air: 'tablet_air_820',
                 desktop_sm: 'desktop_standard_1024',
+                desktop_1024: 'desktop_standard_1024',
                 desktop_standard: 'desktop_standard_1024',
                 desktop_md: 'desktop_large_1280',
+                desktop_1280: 'desktop_large_1280',
                 desktop_large: 'desktop_large_1280',
                 laptop: 'desktop_large_1280',
                 desktop: 'desktop_xl_1440',
+                desktop_1440: 'desktop_xl_1440',
                 desktop_xl: 'desktop_xl_1440',
                 desktop_fhd: 'desktop_fhd_1920',
+                desktop_1920: 'desktop_fhd_1920',
                 fhd: 'desktop_fhd_1920',
                 '1920': 'desktop_fhd_1920',
             };
