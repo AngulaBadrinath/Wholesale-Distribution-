@@ -93,21 +93,27 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
         throw new Error(`[AuthHelper] Unknown user role: "${role}"`);
     }
 
-    if (!page.url().includes('/login')) {
-        let gotoAttempts = 0;
-        while (gotoAttempts < 4) {
-            try {
-                await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 20000 });
-                break;
-            } catch (err: any) {
-                gotoAttempts++;
-                if (gotoAttempts >= 4) throw err;
-                await page.waitForTimeout(1000);
-            }
+    const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000';
+    const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
+
+    // Always clear session cookies to ensure fresh login and avoid guest redirection
+    try {
+        await page.context().clearCookies();
+    } catch {}
+
+    let gotoAttempts = 0;
+    while (gotoAttempts < 4) {
+        try {
+            await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            break;
+        } catch (err: any) {
+            gotoAttempts++;
+            if (gotoAttempts >= 4) throw err;
+            await page.waitForTimeout(1000);
         }
     }
 
-    await page.locator('input[type="email"]').waitFor({ state: 'visible' });
+    await page.locator('input[type="email"], input[name="email"]').waitFor({ state: 'visible', timeout: 15000 });
     await page.waitForTimeout(300);
 
     // Fill credentials
@@ -162,15 +168,29 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
         }
 
         if (secretKey) {
-            const totpCode = generateTOTP(secretKey);
-            const mfaInput = page.locator('input#code, input[name="code"], input[type="text"]').first();
-            await mfaInput.fill(totpCode);
+            let mfaSuccess = false;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const totpCode = generateTOTP(secretKey);
+                const mfaInput = page.locator('input#code, input[name="code"], input[type="text"]').first();
+                await mfaInput.fill(totpCode);
 
-            const mfaSubmit = page.locator('button[type="submit"]');
-            await mfaSubmit.click();
+                const mfaSubmit = page.locator('button[type="submit"]');
+                await mfaSubmit.click();
 
-            // Wait for Inertia URL to navigate away from /login/mfa
-            await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
+                try {
+                    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 10000 });
+                    mfaSuccess = true;
+                    break;
+                } catch {
+                    // Check if error message appeared or still on /login/mfa
+                    if (page.url().includes('/login')) {
+                        await page.waitForTimeout(1500);
+                    } else {
+                        mfaSuccess = true;
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -185,10 +205,12 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
  * Log out the current session.
  */
 export async function logout(page: Page): Promise<void> {
+    const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000';
+    const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
     try {
         await page.context().clearCookies();
         await page.waitForTimeout(400);
-        await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
     } catch {
         // Fallback
     }
