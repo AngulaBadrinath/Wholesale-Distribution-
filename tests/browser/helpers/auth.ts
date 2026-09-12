@@ -1,6 +1,6 @@
-import { Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { execSync } from 'child_process';
-import { generateTOTP } from './totp';
+import { generateTOTP } from './totp.ts';
 
 export type UserRole =
     | 'SUPER_ADMIN'

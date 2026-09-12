@@ -9,7 +9,11 @@
         "browser:check": "node scripts/browser-check.js",
         "browser:headed": "node scripts/browser-headed.js",
         "browser:verify": "playwright test tests/browser/setup.spec.ts",
-        "browser:visual": "node scripts/browser-visual.js"
+        "browser:visual": "node scripts/browser-visual.js",
+        "browser:interactive": "node tests/browser/interactive/cli.ts",
+        "browser:interactive:headed": "node tests/browser/interactive/server.ts",
+        "browser:interactive:diagnostics": "node tests/browser/interactive/cli.ts diagnostics",
+        "browser:qa": "node tests/browser/interactive/cli.ts"
     },
     "devDependencies": {
         "@playwright/test": "^1.63.0",

@@ -48,8 +48,12 @@ Priority 3: Actionable Error (Clear instructions on installing Chrome or setting
 |---|---|
 | `npm run browser:check` | Inspects system, verifies browser resolution, prints executable path & version. |
 | `npm run browser:verify` | Executes the complete Playwright browser test suite (`tests/browser/setup.spec.ts`). |
-| `npm run browser:headed` | Launches a live, interactive Chromium browser window connected to `PLAYWRIGHT_BASE_URL`. |
+| `npm run browser:headed` | Launches a live Chromium browser window connected to `PLAYWRIGHT_BASE_URL`. |
 | `npm run browser:visual` | Captures high-fidelity rendered screenshots across responsive breakpoints into `artifacts/browser/visual/`. |
+| `npm run browser:interactive` | Starts the persistent, interactive headed QA browser session with REPL and daemon. |
+| `npm run browser:qa -- <cmd>` | Executes a single interactive QA action (e.g. `navigate`, `login`, `screenshot`, `diagnostics`). |
+
+For full interactive runner documentation, see [INTERACTIVE_BROWSER_QA.md](file:///f:/Wholesale%20Distribution%20Management%20System/docs/INTERACTIVE_BROWSER_QA.md).
 
 ---
 

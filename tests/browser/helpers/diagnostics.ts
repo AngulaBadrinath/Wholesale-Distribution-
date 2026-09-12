@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
@@ -159,9 +159,11 @@ export function attachDiagnosticsCollector(page: Page): {
 }
 
 export class DiagnosticsCollector {
+    private page: Page;
     private collector: ReturnType<typeof attachDiagnosticsCollector>;
 
-    constructor(private page: Page) {
+    constructor(page: Page) {
+        this.page = page;
         this.collector = attachDiagnosticsCollector(page);
     }
 
