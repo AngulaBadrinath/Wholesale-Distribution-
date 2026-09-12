@@ -14,6 +14,7 @@
         "browser:interactive:headed": "node tests/browser/interactive/server.ts",
         "browser:interactive:diagnostics": "node tests/browser/interactive/cli.ts diagnostics",
         "browser:qa": "node tests/browser/interactive/cli.ts",
+        "browser:open": "node --no-warnings tests/browser/interactive/launch-chrome.ts",
         "browser:mcp": "node --no-warnings tests/browser/interactive/mcp-server.ts",
         "test:mcp": "node --no-warnings tests/browser/interactive/mcp-test.ts"
     },
