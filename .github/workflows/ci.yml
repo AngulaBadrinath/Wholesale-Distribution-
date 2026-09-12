@@ -72,7 +72,16 @@ jobs:
           DB_PASSWORD: wdms_secret
         run: php artisan migrate --force
 
-      - name: Execute PHPUnit Tests
+      - name: Execute Domain Invariant Tests
+        run: php artisan test --testsuite=Domain
+
+      - name: Execute API & Security Tests
+        run: php artisan test --testsuite=API
+
+      - name: Execute Database & Accounting Invariant Tests
+        run: php artisan test --testsuite=Database
+
+      - name: Execute Full PHPUnit Suite
         run: php artisan test
 
   frontend-checks:
