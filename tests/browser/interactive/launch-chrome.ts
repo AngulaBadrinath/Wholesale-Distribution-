@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import http from 'http';
 import { spawn, execSync } from 'child_process';
-import { resolveBrowser } from '../resolver.ts';
+import { resolveChromeOnly, type ResolvedBrowser } from '../resolver.ts';
 
 export interface LaunchChromeConfig {
     port?: number;
@@ -21,6 +21,32 @@ export interface MonitorPlacement {
     width: number;
     height: number;
     monitorDescription: string;
+}
+
+/**
+ * Safely terminate stale QA Chrome instances (ONLY those matching our specific QA profile).
+ * Never terminates user's personal Chrome or unrelated processes.
+ */
+export function terminateStaleQaChrome(profileDir: string, port = 9222): void {
+    if (process.platform !== 'win32') return;
+    try {
+        const escapedProfile = profileDir.replace(/\\/g, '\\\\');
+        const script = `
+            $portProcs = Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+            foreach ($pidVal in $portProcs) {
+                $proc = Get-CimInstance Win32_Process -Filter "ProcessId = $pidVal" -ErrorAction SilentlyContinue
+                if ($proc -and $proc.CommandLine -match "qa-profile") {
+                    Stop-Process -Id $pidVal -Force -ErrorAction SilentlyContinue
+                }
+            }
+        `;
+        execSync(`powershell -NoProfile -Command "${script.replace(/\r?\n/g, ' ')}"`, {
+            stdio: ['pipe', 'pipe', 'ignore'],
+            timeout: 5000,
+        });
+    } catch {
+        // Silently ignore if no stale QA process was running
+    }
 }
 
 /**
@@ -120,26 +146,35 @@ export async function launchDedicatedChrome(config: LaunchChromeConfig = {}): Pr
     // 1. Health check existing CDP endpoint
     const existing = await checkCdpEndpoint(port);
     if (existing.isRunning) {
-        console.log(`\n================================================================`);
-        console.log(`  [QA Chrome] Already Running & Healthy`);
-        console.log(`  CDP Endpoint : http://127.0.0.1:${port}`);
-        console.log(`  Browser      : ${existing.versionData?.Browser || 'Chrome/Chromium'}`);
-        console.log(`  Profile      : ${profileDir}`);
-        console.log(`  Target URL   : ${targetUrl}`);
-        console.log(`================================================================\n`);
-        return {
-            port,
-            profileDir,
-            executablePath: 'Attached to active instance',
-            cdpUrl: `http://127.0.0.1:${port}`,
-            targetUrl,
-            monitor: { x: 0, y: 0, width: 1440, height: 900, monitorDescription: 'Existing Window' },
-        };
+        const browserStr = existing.versionData?.Browser || '';
+        const isOfficialChrome = browserStr.includes('Chrome') && !browserStr.includes('Brave') && !browserStr.includes('Edg');
+
+        if (isOfficialChrome) {
+            console.log(`\n================================================================`);
+            console.log(`  [QA Chrome] Authoritative Google Chrome Already Running & Healthy`);
+            console.log(`  CDP Endpoint : http://127.0.0.1:${port}`);
+            console.log(`  Browser      : ${browserStr}`);
+            console.log(`  Profile      : ${profileDir}`);
+            console.log(`  Target URL   : ${targetUrl}`);
+            console.log(`================================================================\n`);
+            return {
+                port,
+                profileDir,
+                executablePath: 'Attached to active Google Chrome instance',
+                cdpUrl: `http://127.0.0.1:${port}`,
+                targetUrl,
+                monitor: { x: 0, y: 0, width: 1440, height: 900, monitorDescription: 'Existing Window' },
+            };
+        } else {
+            console.warn(`[QA Chrome] Non-Chrome browser detected on port ${port}: ${browserStr}. Terminating rogue QA process...`);
+            terminateStaleQaChrome(profileDir, port);
+            await new Promise((r) => setTimeout(r, 1000));
+        }
     }
 
-    // 2. Resolve local Chrome binary
-    const resolved = resolveBrowser();
-    console.log(`[QA Chrome] Resolved Browser Binary: ${resolved.executablePath} (${resolved.browserName} v${resolved.version})`);
+    // 2. Resolve official Google Chrome ONLY (never Brave or Edge)
+    const resolved = resolveChromeOnly();
+    console.log(`[QA Chrome] Authoritative Browser Binary: ${resolved.executablePath} (${resolved.browserName} v${resolved.version})`);
 
     // 3. Detect monitor placement
     const detectedMonitor = detectMonitorPlacement();
@@ -220,7 +255,11 @@ export async function launchDedicatedChrome(config: LaunchChromeConfig = {}): Pr
 
 if (process.argv[1]?.endsWith('launch-chrome.ts') || process.argv[1]?.endsWith('launch-chrome.js')) {
     launchDedicatedChrome()
-        .then(() => process.exit(0))
+        .then(() => {
+            console.log('[QA Chrome] Dedicated QA Chrome is running on CDP http://127.0.0.1:9222.');
+            console.log('[QA Chrome] Keeping process alive to maintain window session. Ready for MCP.');
+            setInterval(() => {}, 30000);
+        })
         .catch((err) => {
             console.error('[QA Chrome Launch Error]', err.message || err);
             process.exit(1);

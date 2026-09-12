@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { resolveBrowser, type ResolvedBrowser } from '../resolver.ts';
+import { resolveChromeOnly, type ResolvedBrowser } from '../resolver.ts';
 import { VIEWPORT_MATRIX, type ViewportConfig } from '../viewports.ts';
 import { loginAs, type UserRole, QA_USER_CREDENTIALS } from '../helpers/auth.ts';
 import { checkCdpEndpoint, launchDedicatedChrome } from './launch-chrome.ts';
@@ -175,12 +175,15 @@ export class InteractiveBrowserController {
             await launchDedicatedChrome({ port });
         }
 
-        this.resolvedBrowser = resolveBrowser();
+        this.resolvedBrowser = resolveChromeOnly();
 
         // 2. Connect Playwright over CDP to the SAME visible Chrome window
         this.browser = await chromium.connectOverCDP(cdpUrl);
         const contexts = this.browser.contexts();
-        this.context = contexts[0] || (await this.browser.newContext({ ignoreHTTPSErrors: true }));
+        if (contexts.length === 0) {
+            throw new Error('[InteractiveBrowser] No existing BrowserContext found on CDP :9222. Dedicated Chrome must be running.');
+        }
+        this.context = contexts[0];
 
         // 3. Track all existing pages in the visible Chrome instance
         this.pages = [];
@@ -261,7 +264,7 @@ export class InteractiveBrowserController {
     }
 
     /**
-     * Get the active Page instance.
+     * Get the authoritative active Page instance, filtering out internal browser pages.
      */
     getActivePage(): Page {
         this.ensureRunning();
@@ -269,6 +272,28 @@ export class InteractiveBrowserController {
         if (this.pages.length === 0) {
             throw new Error('[InteractiveBrowser] No open tabs found in the active session.');
         }
+
+        // Filter out internal browser pages (chrome://, chrome-extension://, devtools://)
+        const appPages = this.pages.filter((p) => {
+            try {
+                const u = p.url();
+                return !u.startsWith('chrome://') && !u.startsWith('chrome-extension://') && !u.startsWith('devtools://');
+            } catch {
+                return false;
+            }
+        });
+
+        if (appPages.length > 0) {
+            if (this.activePageIndex >= 0 && this.activePageIndex < this.pages.length) {
+                const current = this.pages[this.activePageIndex];
+                if (appPages.includes(current)) {
+                    return current;
+                }
+            }
+            this.activePageIndex = this.pages.indexOf(appPages[0]);
+            return appPages[0];
+        }
+
         if (this.activePageIndex < 0 || this.activePageIndex >= this.pages.length) {
             this.activePageIndex = 0;
         }

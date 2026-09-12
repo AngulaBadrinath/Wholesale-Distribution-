@@ -17,18 +17,11 @@ const WINDOWS_SEARCH_PATHS = [
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
     path.join(process.env.LOCALAPPDATA || 'C:\\Users\\' + (process.env.USERNAME || 'default') + '\\AppData\\Local', 'Google\\Chrome\\Application\\chrome.exe'),
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-    path.join(process.env.LOCALAPPDATA || 'C:\\Users\\' + (process.env.USERNAME || 'default') + '\\AppData\\Local', 'Microsoft\\Edge\\Application\\msedge.exe'),
-    'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-    path.join(process.env.LOCALAPPDATA || 'C:\\Users\\' + (process.env.USERNAME || 'default') + '\\AppData\\Local', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'),
 ];
 
 const MACOS_SEARCH_PATHS = [
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
     path.join(os.homedir(), 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
     path.join(os.homedir(), 'Applications/Chromium.app/Contents/MacOS/Chromium'),
 ];
@@ -39,8 +32,6 @@ const LINUX_SEARCH_PATHS = [
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
     '/snap/bin/chromium',
-    '/usr/bin/microsoft-edge',
-    '/usr/bin/brave-browser',
 ];
 
 /**
@@ -150,5 +141,44 @@ export function resolveBrowser(): ResolvedBrowser {
         `1. Ensure Google Chrome, Microsoft Edge, or Chromium is installed.\n` +
         `2. Or set the PLAYWRIGHT_BROWSER_PATH environment variable to your browser executable path:\n` +
         `   e.g. set PLAYWRIGHT_BROWSER_PATH=C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe`
+    );
+}
+
+/**
+ * Strictly resolve official Google Chrome for QA and Interactive Audit mode.
+ * Throws an explicit error if official Google Chrome is not installed.
+ */
+export function resolveChromeOnly(): ResolvedBrowser {
+    const candidatePaths: string[] = [];
+    if (process.platform === 'win32') {
+        candidatePaths.push(
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            path.join(process.env.LOCALAPPDATA || 'C:\\Users\\' + (process.env.USERNAME || 'default') + '\\AppData\\Local', 'Google\\Chrome\\Application\\chrome.exe')
+        );
+    } else if (process.platform === 'darwin') {
+        candidatePaths.push(
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            path.join(os.homedir(), 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+        );
+    } else {
+        candidatePaths.push('/usr/bin/google-chrome', '/usr/bin/google-chrome-stable');
+    }
+
+    for (const candidate of candidatePaths) {
+        if (fs.existsSync(candidate)) {
+            return {
+                executablePath: candidate,
+                browserName: 'Google Chrome',
+                version: getBrowserVersion(candidate),
+                source: 'discovered',
+            };
+        }
+    }
+
+    throw new Error(
+        `[BrowserResolver] Official Google Chrome is required for Interactive QA Audit, but was not found.\n` +
+        `Checked paths:\n${candidatePaths.map(p => `  - ${p}`).join('\n')}\n` +
+        `Please install Google Chrome at "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe".`
     );
 }
