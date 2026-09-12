@@ -2,7 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
-import type { ControllerStatus } from './controller.ts';
+import type { ControllerStatus, PageObservation } from './controller.ts';
 import type { UserRole } from '../helpers/auth.ts';
 
 const DEFAULT_PORT = parseInt(process.env.PLAYWRIGHT_QA_PORT || '4444', 10);
@@ -195,6 +195,25 @@ export class InteractiveBrowserClient {
 
     async forward(): Promise<CommandResponse> {
         return this.sendCommand('forward', {});
+    }
+
+    async observe(
+        detailLevel: 'summary' | 'detailed' = 'summary',
+        captureScreenshot = false
+    ): Promise<CommandResponse> {
+        return this.sendCommand('observe', { detailLevel, captureScreenshot });
+    }
+
+    async executeSequence(steps: Array<{ action: string; [key: string]: any }>): Promise<CommandResponse> {
+        return this.sendCommand('executeSequence', { steps });
+    }
+
+    async confirmDestructiveAction(
+        actionDescription: string,
+        confirmed: boolean,
+        action?: { action: string; [key: string]: any }
+    ): Promise<CommandResponse> {
+        return this.sendCommand('confirmDestructiveAction', { actionDescription, confirmed, action });
     }
 
     // HTTP helpers

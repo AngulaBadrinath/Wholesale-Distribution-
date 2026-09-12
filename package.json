@@ -13,9 +13,12 @@
         "browser:interactive": "node tests/browser/interactive/cli.ts",
         "browser:interactive:headed": "node tests/browser/interactive/server.ts",
         "browser:interactive:diagnostics": "node tests/browser/interactive/cli.ts diagnostics",
-        "browser:qa": "node tests/browser/interactive/cli.ts"
+        "browser:qa": "node tests/browser/interactive/cli.ts",
+        "browser:mcp": "node --no-warnings tests/browser/interactive/mcp-server.ts",
+        "test:mcp": "node --no-warnings tests/browser/interactive/mcp-test.ts"
     },
     "devDependencies": {
+        "@modelcontextprotocol/sdk": "^1.30.0",
         "@playwright/test": "^1.63.0",
         "@tailwindcss/vite": "^4.0.0",
         "@types/node": "^26.4.1",

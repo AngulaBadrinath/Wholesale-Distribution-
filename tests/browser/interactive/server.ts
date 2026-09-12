@@ -1,7 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { InteractiveBrowserController } from './controller.ts';
+import { InteractiveBrowserController, redactSensitiveData } from './controller.ts';
 
 const DEFAULT_PORT = parseInt(process.env.PLAYWRIGHT_QA_PORT || '4444', 10);
 const ARTIFACTS_DIR = path.resolve(process.cwd(), 'artifacts', 'browser', 'interactive');
@@ -64,14 +64,14 @@ export class InteractiveBrowserServer {
                 if (req.method === 'GET' && url.pathname === '/api/status') {
                     const currentStatus = await this.controller.getStatus();
                     res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: currentStatus }));
+                    res.end(JSON.stringify({ success: true, data: redactSensitiveData(currentStatus) }));
                     return;
                 }
 
                 if (req.method === 'GET' && url.pathname === '/api/diagnostics') {
                     const diagnostics = this.controller.getDiagnostics();
                     res.writeHead(200);
-                    res.end(JSON.stringify({ success: true, data: diagnostics }));
+                    res.end(JSON.stringify({ success: true, data: redactSensitiveData(diagnostics) }));
                     return;
                 }
 
@@ -90,8 +90,9 @@ export class InteractiveBrowserServer {
                         body += chunk;
                     });
                     req.on('end', async () => {
+                        let payload: any = {};
                         try {
-                            const payload = JSON.parse(body || '{}');
+                            payload = JSON.parse(body || '{}');
                             const action = payload.action;
                             const params = payload.params || {};
 
@@ -104,12 +105,14 @@ export class InteractiveBrowserServer {
                             const result = await this.executeAction(action, params);
                             const currentStatus = await this.controller.getStatus();
                             res.writeHead(200);
-                            res.end(JSON.stringify({
-                                success: true,
-                                action,
-                                result,
-                                status: currentStatus,
-                            }));
+                            res.end(
+                                JSON.stringify({
+                                    success: true,
+                                    action,
+                                    result: redactSensitiveData(result),
+                                    status: redactSensitiveData(currentStatus),
+                                })
+                            );
                         } catch (err: any) {
                             let screenshotPath: string | undefined;
                             try {
@@ -118,20 +121,27 @@ export class InteractiveBrowserServer {
                             } catch {}
 
                             const currentStatus = await this.controller.getStatus().catch(() => null);
-                            const diagnostics = this.controller.getDiagnostics();
+                            let diagnostics = null;
+                            try {
+                                diagnostics = this.controller.getDiagnostics();
+                            } catch {}
 
                             res.writeHead(500);
-                            res.end(JSON.stringify({
-                                success: false,
-                                error: err.message || String(err),
-                                action: payload?.action,
-                                screenshotPath,
-                                status: currentStatus,
-                                diagnosticsSummary: {
-                                    consoleErrors: diagnostics.consoleErrors,
-                                    networkErrors: diagnostics.networkErrors,
-                                },
-                            }));
+                            res.end(
+                                JSON.stringify({
+                                    success: false,
+                                    error: err.message || String(err),
+                                    action: payload?.action,
+                                    screenshotPath,
+                                    status: redactSensitiveData(currentStatus),
+                                    diagnosticsSummary: diagnostics
+                                        ? {
+                                              consoleErrors: redactSensitiveData(diagnostics.consoleErrors),
+                                              networkErrors: redactSensitiveData(diagnostics.networkErrors),
+                                          }
+                                        : undefined,
+                                })
+                            );
                         }
                     });
                     return;
@@ -235,6 +245,22 @@ export class InteractiveBrowserServer {
             case 'forward':
                 return await this.controller.forward();
 
+            case 'observe':
+                return await this.controller.observe({
+                    detailLevel: params.detailLevel,
+                    captureScreenshot: params.captureScreenshot,
+                });
+
+            case 'executeSequence':
+                return await this.controller.executeSequence(params.steps || []);
+
+            case 'confirmDestructiveAction':
+                return await this.controller.confirmDestructiveAction({
+                    actionDescription: params.actionDescription,
+                    confirmed: params.confirmed,
+                    action: params.action,
+                });
+
             case 'diagnostics':
                 return this.controller.getDiagnostics();
 
@@ -277,7 +303,7 @@ export class InteractiveBrowserServer {
 }
 
 // Direct execution entrypoint
-if (process.argv[1] && process.argv[1].endsWith('server.ts') || process.argv[1]?.endsWith('server.js')) {
+if ((process.argv[1] && process.argv[1].endsWith('server.ts')) || process.argv[1]?.endsWith('server.js')) {
     const portArg = process.argv.find((a) => a.startsWith('--port='));
     const port = portArg ? parseInt(portArg.split('=')[1], 10) : DEFAULT_PORT;
     const headless = process.argv.includes('--headless');

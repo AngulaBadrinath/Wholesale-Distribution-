@@ -50,6 +50,82 @@ export interface LaunchOptions {
     viewport?: { width: number; height: number };
 }
 
+export interface InteractiveElementInfo {
+    tagName: string;
+    type?: string;
+    name?: string;
+    id?: string;
+    selector?: string;
+    text?: string;
+    label?: string;
+    placeholder?: string;
+    value?: string;
+    role?: string;
+    ariaLabel?: string;
+    checked?: boolean;
+    disabled?: boolean;
+    href?: string;
+}
+
+export interface PageObservation {
+    url: string;
+    title: string;
+    viewport: { width: number; height: number } | null;
+    activeTabIndex: number;
+    totalTabs: number;
+    headings: string[];
+    buttons: InteractiveElementInfo[];
+    inputs: InteractiveElementInfo[];
+    selects: InteractiveElementInfo[];
+    links: InteractiveElementInfo[];
+    alerts: string[];
+    tables: Array<{ headers: string[]; rowCount: number; sampleRows?: string[][] }>;
+    visibleTextExcerpt: string;
+    diagnosticsSummary: {
+        consoleErrorsCount: number;
+        networkErrorsCount: number;
+        recentErrors: string[];
+    };
+    screenshotPath?: string;
+    screenshotRelativePath?: string;
+}
+
+/**
+ * Redact sensitive fields, passwords, auth tokens, and secrets.
+ */
+export function redactSensitiveData<T>(data: T): T {
+    if (!data) return data;
+    if (typeof data === 'string') {
+        return data
+            .replace(/(password|token|secret|totp|pin|cvv)=([^& \s]+)/gi, '$1=[REDACTED]')
+            .replace(/(Bearer\s+)[A-Za-z0-9\-_.]+/gi, '$1[REDACTED]')
+            .replace(/(X-Amz-Signature=[A-Za-z0-9]+)/gi, 'X-Amz-Signature=[REDACTED]') as unknown as T;
+    }
+    if (Array.isArray(data)) {
+        return data.map((item) => redactSensitiveData(item)) as unknown as T;
+    }
+    if (typeof data === 'object') {
+        const copy: any = {};
+        for (const [key, value] of Object.entries(data)) {
+            const lowerKey = key.toLowerCase();
+            if (
+                lowerKey.includes('password') ||
+                lowerKey.includes('secret') ||
+                lowerKey.includes('token') ||
+                lowerKey.includes('totp') ||
+                lowerKey.includes('cookie') ||
+                lowerKey === 'authorization'
+            ) {
+                copy[key] = '[REDACTED]';
+            } else {
+                copy[key] = redactSensitiveData(value);
+            }
+        }
+        return copy as T;
+    }
+    return data;
+}
+
 export class InteractiveBrowserController {
     private browser: Browser | null = null;
     private context: BrowserContext | null = null;
@@ -150,6 +226,7 @@ export class InteractiveBrowserController {
         }
 
         const initialUrl = options.startUrl || this.baseUrl;
+        this.checkDomainAllowed(initialUrl);
         await safeGoto(firstPage, initialUrl);
 
         this.isRunning = true;
@@ -193,6 +270,36 @@ export class InteractiveBrowserController {
     }
 
     /**
+     * Verify URL against allowed domain policy.
+     */
+    checkDomainAllowed(urlOrPath: string): void {
+        if (process.env.ALLOW_EXTERNAL_NAVIGATION === 'true') {
+            return;
+        }
+        if (!urlOrPath.startsWith('http://') && !urlOrPath.startsWith('https://')) {
+            return; // Relative path is local by definition
+        }
+        try {
+            const parsed = new URL(urlOrPath);
+            const host = parsed.hostname.toLowerCase();
+            let baseHost = 'localhost';
+            try {
+                baseHost = new URL(this.baseUrl).hostname.toLowerCase();
+            } catch {}
+
+            const allowedHosts = ['localhost', '127.0.0.1', '0.0.0.0', baseHost];
+            const isAllowed = allowedHosts.some((allowed) => host === allowed || host.endsWith('.' + allowed));
+            if (!isAllowed) {
+                throw new Error(
+                    `[Security Policy] Navigation to external domain "${host}" is blocked. Allowed domains: ${allowedHosts.join(', ')}.`
+                );
+            }
+        } catch (err: any) {
+            if (err.message.includes('[Security Policy]')) throw err;
+        }
+    }
+
+    /**
      * Navigate active tab to relative path or absolute URL.
      */
     async navigate(urlOrPath: string): Promise<ControllerStatus> {
@@ -204,6 +311,7 @@ export class InteractiveBrowserController {
             targetUrl = `${this.baseUrl}${cleanPath}`;
         }
 
+        this.checkDomainAllowed(targetUrl);
         await safeGoto(page, targetUrl);
         return this.getStatus();
     }
@@ -353,21 +461,61 @@ export class InteractiveBrowserController {
 
         if (typeof presetOrWidth === 'number') {
             targetWidth = presetOrWidth;
-            targetHeight = height || (presetOrWidth === 320 ? 568 : presetOrWidth === 375 ? 667 : presetOrWidth === 390 ? 844 : presetOrWidth === 768 ? 1024 : 900);
+            targetHeight =
+                height ||
+                (presetOrWidth === 320
+                    ? 568
+                    : presetOrWidth === 375
+                    ? 667
+                    : presetOrWidth === 390
+                    ? 844
+                    : presetOrWidth === 430
+                    ? 932
+                    : presetOrWidth === 640
+                    ? 800
+                    : presetOrWidth === 768
+                    ? 1024
+                    : presetOrWidth === 820
+                    ? 1180
+                    : presetOrWidth === 1024
+                    ? 768
+                    : presetOrWidth === 1280
+                    ? 800
+                    : presetOrWidth === 1440
+                    ? 900
+                    : 1080);
         } else {
-            const key = presetOrWidth.toLowerCase();
-            if (key === 'mobile' || key === 'phone') {
-                targetWidth = 390;
-                targetHeight = 844;
-            } else if (key === 'tablet' || key === 'ipad') {
-                targetWidth = 768;
-                targetHeight = 1024;
-            } else if (key === 'desktop' || key === 'laptop') {
-                targetWidth = 1440;
-                targetHeight = 900;
-            } else if (VIEWPORT_MATRIX[key]) {
-                targetWidth = VIEWPORT_MATRIX[key].width;
-                targetHeight = VIEWPORT_MATRIX[key].height;
+            const key = presetOrWidth.toLowerCase().trim();
+            const aliasMap: Record<string, string> = {
+                mobile_s: 'mobile_s_320',
+                mobile_m: 'mobile_m_375',
+                mobile: 'mobile_standard_390',
+                mobile_standard: 'mobile_standard_390',
+                phone: 'mobile_standard_390',
+                mobile_l: 'mobile_max_430',
+                mobile_max: 'mobile_max_430',
+                small_tablet: 'small_tablet_640',
+                tablet: 'tablet_portrait_768',
+                tablet_portrait: 'tablet_portrait_768',
+                ipad: 'tablet_portrait_768',
+                tablet_l: 'tablet_air_820',
+                tablet_air: 'tablet_air_820',
+                desktop_sm: 'desktop_standard_1024',
+                desktop_standard: 'desktop_standard_1024',
+                desktop_md: 'desktop_large_1280',
+                desktop_large: 'desktop_large_1280',
+                laptop: 'desktop_large_1280',
+                desktop: 'desktop_xl_1440',
+                desktop_xl: 'desktop_xl_1440',
+                desktop_fhd: 'desktop_fhd_1920',
+                fhd: 'desktop_fhd_1920',
+                '1920': 'desktop_fhd_1920',
+            };
+
+            const mappedKey = aliasMap[key] || key;
+            if (VIEWPORT_MATRIX[mappedKey]) {
+                targetWidth = VIEWPORT_MATRIX[mappedKey].width;
+                targetHeight = VIEWPORT_MATRIX[mappedKey].height;
             } else {
                 const num = parseInt(presetOrWidth, 10);
                 if (!isNaN(num)) {
@@ -385,7 +533,9 @@ export class InteractiveBrowserController {
     /**
      * Capture screenshot and save to artifacts/browser/interactive/screenshots.
      */
-    async screenshot(options: { name?: string; fullPage?: boolean } = {}): Promise<{ filePath: string; relativePath: string; status: ControllerStatus }> {
+    async screenshot(
+        options: { name?: string; fullPage?: boolean } = {}
+    ): Promise<{ filePath: string; relativePath: string; status: ControllerStatus }> {
         const page = this.getActivePage();
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const customName = options.name ? options.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'interactive_qa';
@@ -398,6 +548,307 @@ export class InteractiveBrowserController {
         const relativePath = path.relative(process.cwd(), filePath);
         const status = await this.getStatus();
         return { filePath, relativePath, status };
+    }
+
+    /**
+     * Inspect and observe the current page in a compact, structured semantic form.
+     */
+    async observe(
+        options: { detailLevel?: 'summary' | 'detailed'; captureScreenshot?: boolean } = {}
+    ): Promise<PageObservation> {
+        this.ensureRunning();
+        const page = this.getActivePage();
+        const url = page.url();
+        const title = await page.title().catch(() => '');
+
+        // Extract semantic page details directly from the live DOM
+        const domDetails = await page.evaluate(() => {
+            const isVisible = (el: Element): boolean => {
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                    return false;
+                }
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+            };
+
+            // Headings
+            const headingEls = Array.from(document.querySelectorAll('h1, h2, h3, h4')).filter(isVisible);
+            const headings = headingEls.map((h) => `${h.tagName}: ${(h.textContent || '').trim()}`).filter(Boolean);
+
+            // Buttons
+            const buttonEls = Array.from(
+                document.querySelectorAll('button, input[type="button"], input[type="submit"], [role="button"]')
+            ).filter(isVisible);
+            const buttons = buttonEls.slice(0, 30).map((b) => {
+                const el = b as HTMLElement;
+                const text = (el.innerText || el.getAttribute('value') || el.getAttribute('aria-label') || '').trim();
+                const disabled = (el as HTMLButtonElement).disabled || el.getAttribute('aria-disabled') === 'true';
+                const id = el.id ? `#${el.id}` : '';
+                const role = el.getAttribute('role') || el.tagName.toLowerCase();
+                return {
+                    tagName: el.tagName.toLowerCase(),
+                    id: el.id || undefined,
+                    selector: id || undefined,
+                    text: text.slice(0, 80),
+                    role,
+                    disabled,
+                };
+            });
+
+            // Inputs
+            const inputEls = Array.from(
+                document.querySelectorAll('input:not([type="button"]):not([type="submit"]):not([type="hidden"]), textarea')
+            ).filter(isVisible);
+            const inputs = inputEls.slice(0, 30).map((inp) => {
+                const el = inp as HTMLInputElement;
+                const type = el.type || 'text';
+                const isSecret =
+                    type === 'password' ||
+                    /password|secret|token|totp|pin|cvv/i.test(el.name || '') ||
+                    /password|secret|token|totp|pin|cvv/i.test(el.id || '');
+
+                let label = '';
+                if (el.id) {
+                    const labelEl = document.querySelector(`label[for="${el.id}"]`);
+                    if (labelEl) label = (labelEl.textContent || '').trim();
+                }
+                if (!label && el.closest('label')) {
+                    label = (el.closest('label')?.textContent || '').trim();
+                }
+
+                return {
+                    tagName: el.tagName.toLowerCase(),
+                    type,
+                    name: el.name || undefined,
+                    id: el.id || undefined,
+                    label: label || undefined,
+                    placeholder: el.placeholder || undefined,
+                    value: isSecret ? '[REDACTED]' : el.value ? el.value.slice(0, 100) : undefined,
+                    disabled: el.disabled,
+                    checked: el.type === 'checkbox' || el.type === 'radio' ? el.checked : undefined,
+                };
+            });
+
+            // Selects
+            const selectEls = Array.from(document.querySelectorAll('select')).filter(isVisible);
+            const selects = selectEls.slice(0, 15).map((sel) => {
+                const el = sel as HTMLSelectElement;
+                let label = '';
+                if (el.id) {
+                    const labelEl = document.querySelector(`label[for="${el.id}"]`);
+                    if (labelEl) label = (labelEl.textContent || '').trim();
+                }
+                const selectedOption = el.options[el.selectedIndex];
+                return {
+                    tagName: 'select',
+                    name: el.name || undefined,
+                    id: el.id || undefined,
+                    label: label || undefined,
+                    value: selectedOption ? selectedOption.text : el.value,
+                    disabled: el.disabled,
+                };
+            });
+
+            // Navigation Links
+            const linkEls = Array.from(document.querySelectorAll('a[href]')).filter(isVisible);
+            const links = linkEls.slice(0, 30).map((a) => {
+                const el = a as HTMLAnchorElement;
+                return {
+                    tagName: 'a',
+                    text: (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 60),
+                    href: el.getAttribute('href') || '',
+                };
+            });
+
+            // Visible Alerts & Validation Errors
+            const alertEls = Array.from(
+                document.querySelectorAll(
+                    '[role="alert"], .alert, .text-destructive, [aria-invalid="true"], .error-message, .validation-error'
+                )
+            ).filter(isVisible);
+            const alerts = alertEls
+                .map((a) => (a.textContent || '').trim())
+                .filter((txt) => txt.length > 0 && txt.length < 300)
+                .slice(0, 10);
+
+            // Tables summary
+            const tableEls = Array.from(document.querySelectorAll('table')).filter(isVisible);
+            const tables = tableEls.slice(0, 5).map((tbl) => {
+                const ths = Array.from(tbl.querySelectorAll('th')).map((th) => (th.textContent || '').trim());
+                const rows = Array.from(tbl.querySelectorAll('tbody tr'));
+                const sampleRows = rows.slice(0, 3).map((r) =>
+                    Array.from(r.querySelectorAll('td'))
+                        .map((td) => (td.textContent || '').trim().slice(0, 40))
+                        .slice(0, 6)
+                );
+                return {
+                    headers: ths.slice(0, 10),
+                    rowCount: rows.length,
+                    sampleRows: sampleRows.length > 0 ? sampleRows : undefined,
+                };
+            });
+
+            // Visible Text Excerpt
+            const rawBody = (document.body.innerText || '').replace(/\s+/g, ' ').trim();
+            const visibleTextExcerpt = rawBody.slice(0, 1000);
+
+            return {
+                headings,
+                buttons,
+                inputs,
+                selects,
+                links,
+                alerts,
+                tables,
+                visibleTextExcerpt,
+            };
+        });
+
+        const diagnostics = this.getDiagnostics();
+        const recentErrors = diagnostics.consoleErrors.map((e) => e.text).slice(-5);
+
+        let screenshotPath: string | undefined;
+        let screenshotRelativePath: string | undefined;
+
+        if (options.captureScreenshot) {
+            const shot = await this.screenshot({ name: 'observe_snapshot' });
+            screenshotPath = shot.filePath;
+            screenshotRelativePath = shot.relativePath;
+        }
+
+        return {
+            url,
+            title,
+            viewport: this.currentViewport,
+            activeTabIndex: this.activePageIndex,
+            totalTabs: this.pages.length,
+            headings: domDetails.headings,
+            buttons: options.detailLevel === 'summary' ? domDetails.buttons.slice(0, 15) : domDetails.buttons,
+            inputs: options.detailLevel === 'summary' ? domDetails.inputs.slice(0, 15) : domDetails.inputs,
+            selects: domDetails.selects,
+            links: options.detailLevel === 'summary' ? domDetails.links.slice(0, 15) : domDetails.links,
+            alerts: domDetails.alerts,
+            tables: domDetails.tables,
+            visibleTextExcerpt: domDetails.visibleTextExcerpt,
+            diagnosticsSummary: {
+                consoleErrorsCount: diagnostics.consoleErrors.length,
+                networkErrorsCount: diagnostics.networkErrors.length,
+                recentErrors,
+            },
+            screenshotPath,
+            screenshotRelativePath,
+        };
+    }
+
+    /**
+     * Execute a sequence of structured actions safely without eval.
+     */
+    async executeSequence(
+        steps: Array<{ action: string; [key: string]: any }>
+    ): Promise<{ results: any[]; finalStatus: ControllerStatus }> {
+        const results = [];
+        for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+            const action = step.action;
+            const params = { ...step };
+            delete params.action;
+
+            let stepResult: any;
+            switch (action) {
+                case 'navigate':
+                case 'goto':
+                    stepResult = await this.navigate(params.url || params.path || params.urlOrPath);
+                    break;
+                case 'click':
+                    stepResult = await this.click(params.selector, params.timeout);
+                    break;
+                case 'clickText':
+                    stepResult = await this.clickText(params.text, params.exact, params.timeout);
+                    break;
+                case 'clickRole':
+                    stepResult = await this.clickRole(params.role, params.name, params.timeout);
+                    break;
+                case 'fill':
+                    stepResult = await this.fill(params.selector, params.value, params.timeout);
+                    break;
+                case 'fillLabel':
+                    stepResult = await this.fillLabel(params.label, params.value, params.timeout);
+                    break;
+                case 'select':
+                    stepResult = await this.select(params.selector, params.value || params.valueOrLabel, params.timeout);
+                    break;
+                case 'check':
+                    stepResult = await this.check(params.selector, params.timeout);
+                    break;
+                case 'uncheck':
+                    stepResult = await this.uncheck(params.selector, params.timeout);
+                    break;
+                case 'press':
+                    stepResult = await this.press(params.selector || 'body', params.key, params.timeout);
+                    break;
+                case 'waitFor':
+                    stepResult = await this.waitFor(params.selector, params.timeout);
+                    break;
+                case 'wait':
+                    stepResult = await this.wait(params.ms || 1000);
+                    break;
+                case 'setViewport':
+                case 'viewport':
+                    stepResult = await this.setViewport(params.preset || params.width, params.height);
+                    break;
+                case 'screenshot':
+                    stepResult = await this.screenshot({ name: params.name, fullPage: params.fullPage });
+                    break;
+                case 'reload':
+                    stepResult = await this.reload();
+                    break;
+                case 'back':
+                    stepResult = await this.back();
+                    break;
+                case 'forward':
+                    stepResult = await this.forward();
+                    break;
+                default:
+                    throw new Error(`Unsupported sequence action: "${action}" at step index ${i}.`);
+            }
+            results.push({ step: i, action, success: true, result: stepResult });
+        }
+        const finalStatus = await this.getStatus();
+        return { results, finalStatus };
+    }
+
+    /**
+     * Execute a potentially destructive action only after explicit confirmation.
+     */
+    async confirmDestructiveAction(options: {
+        actionDescription: string;
+        confirmed: boolean;
+        action?: { action: string; [key: string]: any };
+    }): Promise<{ confirmed: boolean; executed: boolean; message: string; result?: any }> {
+        if (!options.confirmed) {
+            return {
+                confirmed: false,
+                executed: false,
+                message: `Action "${options.actionDescription}" requires explicit confirmation. Please confirm with the user before executing.`,
+            };
+        }
+
+        if (options.action) {
+            const seq = await this.executeSequence([options.action]);
+            return {
+                confirmed: true,
+                executed: true,
+                message: `Action "${options.actionDescription}" was confirmed and executed successfully.`,
+                result: seq.results[0]?.result,
+            };
+        }
+
+        return {
+            confirmed: true,
+            executed: false,
+            message: `Action "${options.actionDescription}" is confirmed.`,
+        };
     }
 
     /**
@@ -419,6 +870,7 @@ export class InteractiveBrowserController {
                 const cleanPath = urlOrPath.startsWith('/') ? urlOrPath : `/${urlOrPath}`;
                 targetUrl = `${this.baseUrl}${cleanPath}`;
             }
+            this.checkDomainAllowed(targetUrl);
             await safeGoto(newPage, targetUrl);
         }
 
@@ -447,6 +899,10 @@ export class InteractiveBrowserController {
         const targetIndex = index !== undefined ? index : this.activePageIndex;
         if (targetIndex < 0 || targetIndex >= this.pages.length) {
             throw new Error(`[InteractiveBrowser] Tab index ${targetIndex} out of range.`);
+        }
+
+        if (this.pages.length <= 1) {
+            throw new Error(`[InteractiveBrowser] Cannot close the only remaining active tab. Use browser_stop to close browser.`);
         }
 
         const pageToClose = this.pages[targetIndex];
