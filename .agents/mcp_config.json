@@ -1,18 +1,11 @@
 {
   "mcpServers": {
-    "chrome-devtools": {
+    "playwright": {
       "command": "npx",
       "args": [
         "-y",
-        "chrome-devtools-mcp@latest",
-        "--browser-url=http://127.0.0.1:9222"
-      ]
-    },
-    "unique-distributors-browser": {
-      "command": "node",
-      "args": [
-        "--no-warnings",
-        "tests/browser/interactive/mcp-server.ts"
+        "@playwright/mcp@latest",
+        "--cdp-endpoint=http://127.0.0.1:9222"
       ]
     }
   }

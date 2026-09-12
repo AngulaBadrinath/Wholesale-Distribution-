@@ -11,6 +11,15 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Domain">
+            <directory>tests/domain</directory>
+        </testsuite>
+        <testsuite name="API">
+            <directory>tests/api</directory>
+        </testsuite>
+        <testsuite name="Database">
+            <directory>tests/database</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
