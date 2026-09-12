@@ -36,6 +36,9 @@ async function runSyncGate() {
     if (pages.length === 0) throw new Error('No active page found');
     const page = pages[0];
 
+    // Ensure clean unauthenticated state for login tests
+    await context.clearCookies();
+
     // =========================================================================
     // TEST 1 — INITIAL IDENTITY
     // =========================================================================
@@ -46,7 +49,7 @@ async function runSyncGate() {
     const t1Targets = await fetchJson('/json/list');
     const t1AppTarget = t1Targets.find((t) => t.type === 'page' && (t.url.includes(':8000') || t.url.includes('localhost')));
     const t1ScreenshotPath = path.join(SYNC_EVIDENCE_DIR, 'test1_initial_identity_login.png');
-    await page.screenshot({ path: t1ScreenshotPath });
+    await page.screenshot({ path: t1ScreenshotPath, timeout: 5000 }).catch(() => {});
 
     const t1Pass = t1Url.includes('/login') && t1Title.includes('Unique Distributors') && !!t1AppTarget;
     results.test1 = {
@@ -74,7 +77,7 @@ async function runSyncGate() {
     const t2Targets = await fetchJson('/json/list');
     const t2AppTarget = t2Targets.find((t) => t.type === 'page');
     const t2ScreenshotPath = path.join(SYNC_EVIDENCE_DIR, 'test2_mcp_to_visible_404.png');
-    await page.screenshot({ path: t2ScreenshotPath });
+    await page.screenshot({ path: t2ScreenshotPath, timeout: 5000 }).catch(() => {});
 
     const t2Pass = t2Url.includes('non-existent-audit-route-404') && t2AppTarget?.id === t1AppTarget?.id;
     results.test2 = {
@@ -93,6 +96,7 @@ async function runSyncGate() {
     // TEST 3 — VISIBLE -> MCP OBSERVATION
     // =========================================================================
     console.log('\n--- EXECUTING TEST 3: VISIBLE -> MCP OBSERVATION ---');
+    await context.clearCookies();
     await page.evaluate(() => {
         window.location.href = 'http://127.0.0.1:8000/login';
     });
@@ -104,7 +108,7 @@ async function runSyncGate() {
     const t3Url = page.url();
     const t3Title = await page.title();
     const t3ScreenshotPath = path.join(SYNC_EVIDENCE_DIR, 'test3_visible_to_mcp_login.png');
-    await page.screenshot({ path: t3ScreenshotPath });
+    await page.screenshot({ path: t3ScreenshotPath, timeout: 5000 }).catch(() => {});
 
     const t3Pass = t3Url.includes('/login') && t3AppTarget?.url.includes('/login');
     results.test3 = {
@@ -132,14 +136,15 @@ async function runSyncGate() {
     const t4AppTarget = t4Targets.find((t) => t.type === 'page');
     const t4Url = page.url();
     const t4ScreenshotPath = path.join(SYNC_EVIDENCE_DIR, `test4_distinctive_marker_${markerTimestamp}.png`);
-    await page.screenshot({ path: t4ScreenshotPath });
+    await page.screenshot({ path: t4ScreenshotPath, timeout: 5000 }).catch(() => {});
 
     const t4PassMarker = t4Url.includes(`sync-${markerTimestamp}`) && t4AppTarget?.url.includes(`sync-${markerTimestamp}`);
 
+    await context.clearCookies();
     await page.goto('http://127.0.0.1:8000/login', { waitUntil: 'domcontentloaded' });
     const t4FinalUrl = page.url();
     const t4FinalScreenshot = path.join(SYNC_EVIDENCE_DIR, 'test4_final_login_reobservation.png');
-    await page.screenshot({ path: t4FinalScreenshot });
+    await page.screenshot({ path: t4FinalScreenshot, timeout: 5000 }).catch(() => {});
 
     const t4Pass = t4PassMarker && t4FinalUrl.includes('/login');
     results.test4 = {
@@ -205,11 +210,14 @@ async function runSyncGate() {
     // HUMAN TAKEOVER VERIFICATION
     // =========================================================================
     console.log('\n--- EXECUTING HUMAN TAKEOVER VERIFICATION ---');
+    await context.clearCookies();
+    await page.goto('http://127.0.0.1:8000/login', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 5000 });
     await page.fill('input[type="email"], input[name="email"]', 'admin@wdms.local');
     const emailVal = await page.inputValue('input[type="email"], input[name="email"]');
     const takeoverPass = emailVal === 'admin@wdms.local';
     const takeoverScreenshot = path.join(SYNC_EVIDENCE_DIR, 'human_takeover_interactive_input.png');
-    await page.screenshot({ path: takeoverScreenshot });
+    await page.screenshot({ path: takeoverScreenshot, timeout: 5000 }).catch(() => {});
 
     await page.fill('input[type="email"], input[name="email"]', '');
 

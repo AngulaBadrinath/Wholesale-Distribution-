@@ -157,13 +157,26 @@ export async function launchDedicatedChrome(config: LaunchChromeConfig = {}): Pr
             console.log(`  Profile      : ${profileDir}`);
             console.log(`  Target URL   : ${targetUrl}`);
             console.log(`================================================================\n`);
+
+            // Foreground the existing Chrome window on the interactive desktop
+            try {
+                const helperPath = path.resolve(projectRoot, 'scripts', 'manage-qa-chrome.ps1');
+                execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${helperPath}" -Action foreground -Port ${port}`, {
+                    stdio: ['pipe', 'pipe', 'ignore'],
+                    timeout: 5000,
+                });
+                console.log(`[QA Chrome] Existing Chrome window restored and brought to OS foreground.`);
+            } catch (err: any) {
+                console.warn(`[QA Chrome] Could not foreground existing window: ${err.message}`);
+            }
+
             return {
                 port,
                 profileDir,
                 executablePath: 'Attached to active Google Chrome instance',
                 cdpUrl: `http://127.0.0.1:${port}`,
                 targetUrl,
-                monitor: { x: 0, y: 0, width: 1440, height: 900, monitorDescription: 'Existing Window' },
+                monitor: { x: 40, y: 40, width: 1440, height: 800, monitorDescription: 'Existing Window' },
             };
         } else {
             console.warn(`[QA Chrome] Non-Chrome browser detected on port ${port}: ${browserStr}. Terminating rogue QA process...`);
@@ -191,29 +204,23 @@ export async function launchDedicatedChrome(config: LaunchChromeConfig = {}): Pr
         monitorDescription: detectedMonitor.monitorDescription,
     };
 
-    // 4. Construct clean Chrome launch flags (no anti-detection/stealth flags)
-    const chromeArgs = [
-        `--remote-debugging-port=${port}`,
-        `--remote-debugging-address=127.0.0.1`,
-        `--user-data-dir=${profileDir}`,
-        '--no-first-run',
-        '--no-default-browser-check',
-        `--window-position=${placement.x},${placement.y}`,
-        `--window-size=${placement.width},${placement.height}`,
-        targetUrl,
-    ];
-
-    console.log(`[QA Chrome] Spawning Chrome OS Window...`);
+    // 4. Launch on WinSta0\Default interactive desktop via PowerShell helper
+    console.log(`[QA Chrome] Spawning Chrome OS Window on Interactive Desktop (WinSta0\\Default)...`);
     console.log(`  Target Display : ${placement.monitorDescription}`);
     console.log(`  Coordinates    : X: ${placement.x}, Y: ${placement.y} (${placement.width}x${placement.height})`);
     console.log(`  CDP Binding    : 127.0.0.1:${port}`);
     console.log(`  QA Profile     : ${profileDir}`);
 
-    const child = spawn(resolved.executablePath, chromeArgs, {
-        detached: true,
-        stdio: 'ignore',
-    });
-    child.unref();
+    const helperPath = path.resolve(projectRoot, 'scripts', 'manage-qa-chrome.ps1');
+    try {
+        const out = execSync(
+            `powershell -NoProfile -ExecutionPolicy Bypass -File "${helperPath}" -Action launch -Port ${port} -TargetUrl "${targetUrl}"`,
+            { encoding: 'utf8', timeout: 15000 }
+        );
+        console.log(`[QA Chrome] Launch result: ${out.trim()}`);
+    } catch (err: any) {
+        throw new Error(`[QA Chrome] Failed to launch Chrome on interactive desktop: ${err.message}`);
+    }
 
     // 5. Poll CDP endpoint until ready
     let isReady = false;
@@ -227,7 +234,7 @@ export async function launchDedicatedChrome(config: LaunchChromeConfig = {}): Pr
         if (check.isRunning) {
             isReady = true;
             console.log(`\n================================================================`);
-            console.log(`  [QA Chrome] Visible Chrome Window Successfully Launched`);
+            console.log(`  [QA Chrome] Visible Chrome Window Successfully Launched & Foregrounded`);
             console.log(`  CDP Endpoint : http://127.0.0.1:${port}`);
             console.log(`  Target URL   : ${targetUrl}`);
             console.log(`  Profile      : ${profileDir}`);
