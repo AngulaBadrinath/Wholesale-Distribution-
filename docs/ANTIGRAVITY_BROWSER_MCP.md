@@ -16,42 +16,23 @@ The Unique Distributors Browser MCP Tool Suite transforms the existing persisten
 ┌─────────────────────────────────────────────────────────────┐
 │                      ANTIGRAVITY AGENT                      │
 │        (Conversational AI / Browser QA Subagent)            │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               │ stdio (Model Context Protocol JSON-RPC)
+└──────────────┬───────────────────────────────┬──────────────┘
+               │                               │
+               ▼                               ▼
+┌─────────────────────────────┐ ┌─────────────────────────────┐
+│     CHROME DEVTOOLS MCP     │ │ UNIQUE DISTRIBUTORS BROWSER │
+│ (chrome-devtools-mcp@1.9.0) │ │   tests/.../mcp-server.ts   │
+│ - take_snapshot (a11y tree) │ │ - browser_login (TOTP MFA)  │
+│ - click / fill / type_text  │ │ - browser_viewport matrix   │
+│ - DevTools console/network  │ │ - confirm_destructive_act   │
+└──────────────┬──────────────┘ └──────────────┬──────────────┘
+               │                               │
+               └───────────────┬───────────────┘
                                ▼
-┌─────────────────────────────────────────────────────────────┐
-│      UNIQUE DISTRIBUTORS BROWSER MCP SERVER (STDIO)         │
-│          tests/browser/interactive/mcp-server.ts             │
-│   - Tool validation (Zod schemas)                           │
-│   - Sensitive credential redaction                          │
-│   - Domain allowlist enforcement                            │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               │ HTTP POST / GET (localhost:4444)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│          INTERACTIVE BROWSER HTTP DAEMON SERVER             │
-│            tests/browser/interactive/server.ts              │
-│   - Session locking (artifacts/.../session.json)            │
-│   - Multi-tab tracking & diagnostics streaming              │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               │ In-process Controller API
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│             INTERACTIVE BROWSER CONTROLLER                  │
-│          tests/browser/interactive/controller.ts            │
-│   - Page observation & semantic DOM tree extraction         │
-│   - Viewport matrix resizing                                │
-│   - Safe structured sequence execution                      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               │ Playwright Chromium Engine
+            CHROME DEVTOOLS PROTOCOL (CDP 9222)
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │           REAL HEADED LOCAL GOOGLE CHROME WINDOW            │
-│      (Discovered via tests/browser/resolver.ts)             │
 │      - Persistent BrowserContext                            │
 │      - Live cookie, session, and local storage state        │
 │      - Visible on desktop / secondary monitor               │
@@ -67,6 +48,18 @@ The tool server is registered in [`.agents/mcp_config.json`](file:///.agents/mcp
 ```json
 {
   "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@1.9.0",
+        "--browserUrl",
+        "http://127.0.0.1:9222",
+        "--workspace",
+        "F:\\Wholesale Distribution Management System",
+        "--redactNetworkHeaders"
+      ]
+    },
     "unique-distributors-browser": {
       "command": "node",
       "args": [
